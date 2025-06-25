@@ -1,4 +1,4 @@
-# To learn more about how to use Nix to configure your environment
+# Para saber mais sobre como usar o Nix para configurar seu ambiente
 # see: https://firebase.google.com/docs/studio/customize-workspace
 {pkgs}: {
   # Which nixpkgs channel to use.
