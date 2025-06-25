@@ -16,19 +16,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Eye, EyeOff, LogOut, LogIn } from 'lucide-react';
+import { UserX, Eye, EyeOff, LogOut, LogIn, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface MediumCardProps {
   medium: Medium;
+  removeMedium: (mediumId: string) => void;
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
 }
 
-export function MediumCard({ medium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: MediumCardProps) {
+export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: MediumCardProps) {
   const { toast } = useToast();
+
+  const handleRemoveMedium = () => {
+    removeMedium(medium.id);
+    toast({
+        title: "Médium Removido",
+        description: `O médium ${medium.name} foi removido com sucesso.`,
+    })
+  };
 
   const handleRemoveConsulente = (entityId: string, consulenteId: string, consulenteName: string) => {
     removeConsulente(medium.id, entityId, consulenteId);
@@ -57,28 +66,52 @@ export function MediumCard({ medium, removeConsulente, toggleMediumPresence, tog
             </Badge>
           </CardDescription>
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon">
-              {medium.isPresent ? <LogOut className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-              <span className="sr-only">Alternar Presença</span>
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Isso marcará o(a) médium como {medium.isPresent ? 'ausente' : 'presente'}.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => toggleMediumPresence(medium.id)}>
-                Continuar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex items-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  {medium.isPresent ? <LogOut className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+                  <span className="sr-only">Alternar Presença</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso marcará o(a) médium como {medium.isPresent ? 'ausente' : 'presente'}.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => toggleMediumPresence(medium.id)}>
+                    Continuar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
+                        <Trash2 className="h-5 w-5" />
+                        <span className="sr-only">Remover Médium</span>
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRemoveMedium} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Excluir
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         {medium.entities && medium.entities.map((entity, index) => (

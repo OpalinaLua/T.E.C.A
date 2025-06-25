@@ -11,6 +11,7 @@ export default function Home() {
     mediums,
     isLoaded,
     addMedium,
+    removeMedium,
     addConsulente,
     removeConsulente,
     toggleMediumPresence,
@@ -61,6 +62,7 @@ export default function Home() {
           <div className="lg:col-span-2">
             <SchoolOverview
               mediums={mediums}
+              removeMedium={removeMedium}
               removeConsulente={removeConsulente}
               toggleMediumPresence={toggleMediumPresence}
               toggleEntityAvailability={toggleEntityAvailability}

@@ -8,12 +8,13 @@ import { LogIn } from 'lucide-react';
 
 interface SchoolOverviewProps {
   mediums: Medium[];
+  removeMedium: (mediumId: string) => void;
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
 }
 
-export function SchoolOverview({ mediums, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: SchoolOverviewProps) {
   const presentMediums = mediums.filter(m => m.isPresent);
   const absentMediums = mediums.filter(m => !m.isPresent);
 
@@ -27,6 +28,7 @@ export function SchoolOverview({ mediums, removeConsulente, toggleMediumPresence
               <MediumCard
                 key={medium.id}
                 medium={medium}
+                removeMedium={removeMedium}
                 removeConsulente={removeConsulente}
                 toggleMediumPresence={toggleMediumPresence}
                 toggleEntityAvailability={toggleEntityAvailability}

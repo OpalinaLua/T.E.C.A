@@ -46,6 +46,10 @@ export function useSchoolData() {
     setMediums(prev => [...prev, newMedium]);
   }, []);
 
+  const removeMedium = useCallback((mediumId: string) => {
+    setMediums(prev => prev.filter(medium => medium.id !== mediumId));
+  }, []);
+
   const addConsulente = useCallback((consulenteName: string, mediumId: string, entityId: string) => {
     const newConsulente: Consulente = {
       id: `consulente-${Date.now()}`,
@@ -125,6 +129,7 @@ export function useSchoolData() {
     mediums,
     isLoaded,
     addMedium,
+    removeMedium,
     addConsulente,
     removeConsulente,
     toggleMediumPresence,
