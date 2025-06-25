@@ -48,7 +48,7 @@ export default function Home() {
             SchoolSync
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
-            A simple way to manage school attendance.
+            Uma forma simples de gerenciar a frequência escolar.
           </p>
         </header>
 

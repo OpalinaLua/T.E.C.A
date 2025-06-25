@@ -32,16 +32,16 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
   const handleRemoveStudent = (subjectId: string, studentId: string, studentName: string) => {
     removeStudent(teacher.id, subjectId, studentId);
     toast({
-        title: "Student Excluded",
-        description: `${studentName} has been removed.`,
+        title: "Aluno Removido",
+        description: `${studentName} foi removido(a).`,
     })
   };
 
   const handleRemoveSubject = (subjectId: string, subjectName: string) => {
     removeSubjectFromTeacher(teacher.id, subjectId);
     toast({
-        title: "Subject Unassigned",
-        description: `${subjectName} was unassigned from ${teacher.name}.`,
+        title: "Matéria Desassociada",
+        description: `${subjectName} foi desassociada de ${teacher.name}.`,
     })
   };
 
@@ -52,7 +52,7 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
           <CardTitle className="font-headline text-2xl">{teacher.name}</CardTitle>
           <CardDescription>
             <Badge variant="outline" className={teacher.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}>
-              {teacher.isPresent ? 'Present' : 'Absent'}
+              {teacher.isPresent ? 'Presente' : 'Ausente'}
             </Badge>
           </CardDescription>
         </div>
@@ -60,20 +60,20 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="icon">
               {teacher.isPresent ? <LogOut className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-              <span className="sr-only">Toggle Presence</span>
+              <span className="sr-only">Alternar Presença</span>
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will mark the teacher as {teacher.isPresent ? 'absent' : 'present'}.
+                Isso marcará o(a) professor(a) como {teacher.isPresent ? 'ausente' : 'presente'}.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={() => toggleTeacherPresence(teacher.id)}>
-                Continue
+                Continuar
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -89,20 +89,20 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
                     <BookX className="h-4 w-4" />
-                    <span className="sr-only">Unassign subject</span>
+                    <span className="sr-only">Desassociar matéria</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Unassign Subject?</AlertDialogTitle>
+                    <AlertDialogTitle>Desassociar Matéria?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will remove "{subject.name}" and all enrolled students from {teacher.name}. This action cannot be undone.
+                      Isso removerá "{subject.name}" e todos os alunos matriculados de {teacher.name}. Esta ação não pode ser desfeita.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={() => handleRemoveSubject(subject.id, subject.name)} className="bg-destructive text-destructive-foreground">
-                      Unassign
+                      Desassociar
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -117,20 +117,20 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
                       <AlertDialogTrigger asChild>
                          <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive">
                             <UserX className="h-4 w-4" />
-                            <span className="sr-only">Exclude student</span>
+                            <span className="sr-only">Excluir aluno</span>
                          </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Exclude Student?</AlertDialogTitle>
+                          <AlertDialogTitle>Excluir Aluno?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to remove {student.name} from this class?
+                            Tem certeza de que deseja remover {student.name} desta turma?
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleRemoveStudent(subject.id, student.id, student.name)} className="bg-destructive text-destructive-foreground">
-                            Exclude
+                            Excluir
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -139,7 +139,7 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground italic">No students enrolled.</p>
+              <p className="text-sm text-muted-foreground italic">Nenhum aluno matriculado.</p>
             )}
           </div>
         ))}

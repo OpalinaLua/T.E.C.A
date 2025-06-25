@@ -39,13 +39,13 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
       setSelectedTeacherId('');
       setSelectedSubjectId('');
       toast({
-        title: "Success",
-        description: `Student ${name.trim()} has been registered.`,
+        title: "Sucesso",
+        description: `Aluno(a) ${name.trim()} foi matriculado(a).`,
       });
     } else {
         toast({
-            title: "Error",
-            description: "Please fill out all fields to register a student.",
+            title: "Erro",
+            description: "Por favor, preencha todos os campos para matricular um aluno.",
             variant: "destructive",
         });
     }
@@ -54,26 +54,26 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Student Registration</CardTitle>
-        <CardDescription>Enroll a student with an available teacher and subject.</CardDescription>
+        <CardTitle>Matrícula de Aluno</CardTitle>
+        <CardDescription>Matricule um aluno com um professor e matéria disponíveis.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="student-name" className="text-sm font-medium">Student Name</label>
+            <label htmlFor="student-name" className="text-sm font-medium">Nome do Aluno</label>
             <Input
               id="student-name"
-              placeholder="e.g., Jane Doe"
+              placeholder="ex: Maria da Silva"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Teacher</label>
+            <label className="text-sm font-medium">Professor(a)</label>
             <Select onValueChange={handleTeacherChange} value={selectedTeacherId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a teacher" />
+                <SelectValue placeholder="Selecione um(a) professor(a)" />
               </SelectTrigger>
               <SelectContent>
                 {availableTeachers.map(teacher => (
@@ -83,10 +83,10 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Subject</label>
+            <label className="text-sm font-medium">Matéria</label>
             <Select onValueChange={setSelectedSubjectId} value={selectedSubjectId} disabled={!selectedTeacherId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a subject" />
+                <SelectValue placeholder="Selecione uma matéria" />
               </SelectTrigger>
               <SelectContent>
                 {availableSubjects.map(subject => (
@@ -98,7 +98,7 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={availableTeachers.length === 0}>
-            {availableTeachers.length > 0 ? 'Enroll Student' : 'No Teachers Available'}
+            {availableTeachers.length > 0 ? 'Matricular Aluno' : 'Nenhum Professor Disponível'}
           </Button>
         </CardFooter>
       </form>

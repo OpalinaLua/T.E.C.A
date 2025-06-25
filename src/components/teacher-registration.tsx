@@ -37,13 +37,13 @@ export function TeacherRegistration({ addTeacher }: TeacherRegistrationProps) {
       setSubjects([]);
       setCurrentSubject('');
       toast({
-        title: "Success",
-        description: `Teacher ${name.trim()} has been registered.`,
+        title: "Sucesso",
+        description: `Professor(a) ${name.trim()} foi cadastrado(a).`,
       });
     } else {
         toast({
-            title: "Error",
-            description: "Please provide a teacher name and at least one subject.",
+            title: "Erro",
+            description: "Por favor, forneça um nome para o professor e pelo menos uma matéria.",
             variant: "destructive",
         });
     }
@@ -52,27 +52,27 @@ export function TeacherRegistration({ addTeacher }: TeacherRegistrationProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Teacher Registration</CardTitle>
-        <CardDescription>Add a new teacher and their subjects to the system.</CardDescription>
+        <CardTitle>Cadastro de Professor</CardTitle>
+        <CardDescription>Adicione um novo professor e suas matérias ao sistema.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="teacher-name" className="text-sm font-medium">Teacher Name</label>
+            <label htmlFor="teacher-name" className="text-sm font-medium">Nome do Professor</label>
             <Input
               id="teacher-name"
-              placeholder="e.g., Mr. Smith"
+              placeholder="ex: Prof. João"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="subject-name" className="text-sm font-medium">Subjects</label>
+            <label htmlFor="subject-name" className="text-sm font-medium">Matérias</label>
             <div className="flex gap-2">
               <Input
                 id="subject-name"
-                placeholder="e.g., Mathematics"
+                placeholder="ex: Matemática"
                 value={currentSubject}
                 onChange={(e) => setCurrentSubject(e.target.value)}
                 onKeyDown={(e) => {
@@ -84,7 +84,7 @@ export function TeacherRegistration({ addTeacher }: TeacherRegistrationProps) {
               />
               <Button type="button" onClick={handleAddSubject} variant="outline" size="icon">
                 <Plus className="h-4 w-4" />
-                <span className="sr-only">Add Subject</span>
+                <span className="sr-only">Adicionar Matéria</span>
               </Button>
             </div>
           </div>
@@ -94,14 +94,14 @@ export function TeacherRegistration({ addTeacher }: TeacherRegistrationProps) {
                 {subject}
                 <button type="button" onClick={() => handleRemoveSubject(subject)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
                   <X className="h-3 w-3" />
-                  <span className="sr-only">Remove {subject}</span>
+                  <span className="sr-only">Remover {subject}</span>
                 </button>
               </Badge>
             ))}
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Register Teacher</Button>
+          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Cadastrar Professor</Button>
         </CardFooter>
       </form>
     </Card>
