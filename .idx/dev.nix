@@ -1,5 +1,5 @@
 # Para saber mais sobre como usar o Nix para configurar seu ambiente
-# see: https://firebase.google.com/docs/studio/customize-workspace
+# consulte: https://firebase.google.com/docs/studio/customize-workspace
 {pkgs}: {
   # Which nixpkgs channel to use.
   channel = "stable-24.11"; # or "unstable"
