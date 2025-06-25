@@ -14,9 +14,10 @@ interface SchoolOverviewProps {
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
+  updateMedium: (mediumId: string, data: { name?: string; entities?: any[] }) => void;
 }
 
-export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: SchoolOverviewProps) {
   const presentMediums = mediums.filter(m => m.isPresent);
   const absentMediums = mediums.filter(m => !m.isPresent);
 
@@ -34,6 +35,7 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
                 removeConsulente={removeConsulente}
                 toggleMediumPresence={toggleMediumPresence}
                 toggleEntityAvailability={toggleEntityAvailability}
+                updateMedium={updateMedium}
               />
             ))}
           </div>

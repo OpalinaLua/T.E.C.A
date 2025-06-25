@@ -17,6 +17,7 @@ export default function Home() {
     removeConsulente,
     toggleMediumPresence,
     toggleEntityAvailability,
+    updateMedium,
   } = useSchoolData();
 
   if (!isLoaded) {
@@ -67,6 +68,7 @@ export default function Home() {
               removeConsulente={removeConsulente}
               toggleMediumPresence={toggleMediumPresence}
               toggleEntityAvailability={toggleEntityAvailability}
+              updateMedium={updateMedium}
             />
           </div>
         </div>

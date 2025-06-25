@@ -79,6 +79,7 @@ export default function Home() {
     removeConsulente,
     toggleMediumPresence,
     toggleEntityAvailability,
+    updateMedium,
   } = useSchoolData();
 
   if (!isLoaded) {
@@ -129,6 +130,7 @@ export default function Home() {
               removeConsulente={removeConsulente}
               toggleMediumPresence={toggleMediumPresence}
               toggleEntityAvailability={toggleEntityAvailability}
+              updateMedium={updateMedium}
             />
           </div>
         </div>
@@ -327,6 +329,24 @@ export function useSchoolData() {
     }
   }, [mediums]);
 
+  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            const mediumRef = doc(db, MEDIUMS_COLLECTION, mediumId);
+            await updateDoc(mediumRef, updatedData);
+        } catch (error) {
+            console.error("Erro ao atualizar médium: ", error);
+        }
+    } else {
+        setMediums(prev => prev.map(m => {
+            if (m.id === mediumId) {
+                return { ...m, ...updatedData } as Medium;
+            }
+            return m;
+        }));
+    }
+  }, []);
+
   return {
     mediums,
     isLoaded,
@@ -336,6 +356,7 @@ export function useSchoolData() {
     removeConsulente,
     toggleMediumPresence,
     toggleEntityAvailability,
+    updateMedium,
   };
 }
 ```
@@ -361,9 +382,10 @@ interface SchoolOverviewProps {
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
+  updateMedium: (mediumId: string, data: { name?: string; entities?: any[] }) => void;
 }
 
-export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: SchoolOverviewProps) {
   const presentMediums = mediums.filter(m => m.isPresent);
   const absentMediums = mediums.filter(m => !m.isPresent);
 
@@ -381,6 +403,7 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
                 removeConsulente={removeConsulente}
                 toggleMediumPresence={toggleMediumPresence}
                 toggleEntityAvailability={toggleEntityAvailability}
+                updateMedium={updateMedium}
               />
             ))}
           </div>
@@ -423,7 +446,8 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
 ```tsx
 "use client";
 
-import type { Medium } from '@/lib/types';
+import { useState } from 'react';
+import type { Medium, Entity } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -439,7 +463,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Eye, EyeOff, LogOut, LogIn, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { UserX, Eye, EyeOff, LogOut, LogIn, Trash2, Pencil, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -449,10 +484,14 @@ interface MediumCardProps {
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
+  updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
 }
 
-export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: MediumCardProps) {
+export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: MediumCardProps) {
   const { toast } = useToast();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editedName, setEditedName] = useState(medium.name);
+  const [editedEntities, setEditedEntities] = useState<Entity[]>(JSON.parse(JSON.stringify(medium.entities)));
 
   const handleRemoveMedium = () => {
     removeMedium(medium.id);
@@ -477,6 +516,66 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
         description: `A entidade ${entityName} foi marcada como ${!isAvailable ? 'disponível' : 'indisponível'}.`,
     })
   };
+  
+  const handleEntityNameChange = (entityId: string, newName: string) => {
+    setEditedEntities(currentEntities => 
+      currentEntities.map(e => e.id === entityId ? { ...e, name: newName } : e)
+    );
+  };
+  
+  const handleRemoveEntityFromEdit = (entityId: string) => {
+      const entity = editedEntities.find(e => e.id === entityId);
+      if (entity && entity.consulentes.length > 0) {
+          toast({
+              title: "Ação não permitida",
+              description: `Não é possível remover a entidade "${entity.name}" pois ela possui consulentes agendados.`,
+              variant: "destructive"
+          });
+          return;
+      }
+      setEditedEntities(currentEntities => currentEntities.filter(e => e.id !== entityId));
+  }
+  
+  const handleAddEntityToEdit = () => {
+      setEditedEntities(currentEntities => [
+          ...currentEntities,
+          {
+              id: `entity-${Date.now()}`,
+              name: "Nova Entidade",
+              consulentes: [],
+              isAvailable: true,
+          }
+      ])
+  }
+
+  const handleUpdate = () => {
+    if (editedName.trim() === '') {
+      toast({ title: "Erro", description: "O nome do médium não pode ser vazio.", variant: "destructive" });
+      return;
+    }
+    if (editedEntities.some(e => e.name.trim() === '')) {
+      toast({ title: "Erro", description: "O nome da entidade não pode ser vazio.", variant: "destructive" });
+      return;
+    }
+    
+    const nameChanged = editedName !== medium.name;
+    const entitiesChanged = JSON.stringify(editedEntities) !== JSON.stringify(medium.entities);
+
+    if (nameChanged || entitiesChanged) {
+        updateMedium(medium.id, { name: editedName, entities: editedEntities });
+        toast({
+            title: "Médium Atualizado",
+            description: `Os dados de ${editedName} foram atualizados.`,
+        });
+    }
+
+    setIsEditDialogOpen(false);
+  }
+
+  const resetEditState = () => {
+      setEditedName(medium.name);
+      setEditedEntities(JSON.parse(JSON.stringify(medium.entities)));
+  }
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
@@ -490,6 +589,54 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
           </CardDescription>
         </div>
         <div className="flex items-center">
+            <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+              if (!open) resetEditState();
+              setIsEditDialogOpen(open);
+            }}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Pencil className="h-5 w-5" />
+                  <span className="sr-only">Editar Médium</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Editar Médium</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Nome
+                    </Label>
+                    <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label className="text-right pt-2">Entidades</Label>
+                    <div className="col-span-3 space-y-2">
+                      {editedEntities.map((entity) => (
+                        <div key={entity.id} className="flex items-center gap-2">
+                          <Input value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="shrink-0">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={handleAddEntityToEdit} className="w-full">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Adicionar Entidade
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancelar</Button>
+                  </DialogClose>
+                  <Button onClick={handleUpdate}>Salvar Alterações</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon">

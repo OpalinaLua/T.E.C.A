@@ -182,6 +182,24 @@ export function useSchoolData() {
     }
   }, [mediums]);
 
+  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            const mediumRef = doc(db, MEDIUMS_COLLECTION, mediumId);
+            await updateDoc(mediumRef, updatedData);
+        } catch (error) {
+            console.error("Erro ao atualizar médium: ", error);
+        }
+    } else {
+        setMediums(prev => prev.map(m => {
+            if (m.id === mediumId) {
+                return { ...m, ...updatedData } as Medium;
+            }
+            return m;
+        }));
+    }
+  }, []);
+
   return {
     mediums,
     isLoaded,
@@ -191,5 +209,6 @@ export function useSchoolData() {
     removeConsulente,
     toggleMediumPresence,
     toggleEntityAvailability,
+    updateMedium,
   };
 }
