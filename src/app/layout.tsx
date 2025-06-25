@@ -14,6 +14,16 @@ const ptSans = PT_Sans({
 export const metadata: Metadata = {
   title: 'T.E.C.A',
   description: 'Uma forma simples para consulência.',
+  applicationName: 'T.E.C.A',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'T.E.C.A',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  themeColor: '#09090b',
 };
 
 export default function RootLayout({
@@ -23,7 +33,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={ptSans.variable}>
-      <head />
       <body className="font-body antialiased">
         {children}
         <Toaster />
