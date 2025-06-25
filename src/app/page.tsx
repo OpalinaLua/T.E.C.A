@@ -14,7 +14,7 @@ export default function Home() {
     addStudent,
     removeStudent,
     toggleTeacherPresence,
-    removeSubjectFromTeacher,
+    toggleSubjectAvailability,
   } = useSchoolData();
 
   if (!isLoaded) {
@@ -63,7 +63,7 @@ export default function Home() {
               teachers={teachers}
               removeStudent={removeStudent}
               toggleTeacherPresence={toggleTeacherPresence}
-              removeSubjectFromTeacher={removeSubjectFromTeacher}
+              toggleSubjectAvailability={toggleSubjectAvailability}
             />
           </div>
         </div>

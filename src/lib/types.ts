@@ -7,6 +7,7 @@ export interface Subject {
   id: string;
   name: string;
   students: Student[];
+  isAvailable: boolean;
 }
 
 export interface Teacher {

@@ -40,6 +40,7 @@ export function useSchoolData() {
         id: `subject-${Date.now()}-${index}`,
         name: sub,
         students: [],
+        isAvailable: true,
       })),
     };
     setTeachers(prev => [...prev, newTeacher]);
@@ -101,17 +102,22 @@ export function useSchoolData() {
     );
   }, []);
 
-  const removeSubjectFromTeacher = useCallback((teacherId: string, subjectId: string) => {
+  const toggleSubjectAvailability = useCallback((teacherId: string, subjectId: string) => {
     setTeachers(prev =>
       prev.map(teacher => {
         if (teacher.id === teacherId) {
           return {
             ...teacher,
-            subjects: teacher.subjects.filter(s => s.id !== subjectId),
+            subjects: teacher.subjects.map(subject => {
+              if (subject.id === subjectId) {
+                return { ...subject, isAvailable: !subject.isAvailable };
+              }
+              return subject;
+            }),
           };
         }
         return teacher;
-      }).filter(teacher => teacher.subjects.length > 0)
+      })
     );
   }, []);
 
@@ -122,6 +128,6 @@ export function useSchoolData() {
     addStudent,
     removeStudent,
     toggleTeacherPresence,
-    removeSubjectFromTeacher,
+    toggleSubjectAvailability,
   };
 }

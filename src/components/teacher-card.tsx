@@ -16,17 +16,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, BookX, Trash2, LogOut, LogIn } from 'lucide-react';
+import { UserX, Eye, EyeOff, LogOut, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface TeacherCardProps {
   teacher: Teacher;
   removeStudent: (teacherId: string, subjectId: string, studentId: string) => void;
   toggleTeacherPresence: (teacherId: string) => void;
-  removeSubjectFromTeacher: (teacherId: string, subjectId: string) => void;
+  toggleSubjectAvailability: (teacherId: string, subjectId: string) => void;
 }
 
-export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, removeSubjectFromTeacher }: TeacherCardProps) {
+export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, toggleSubjectAvailability }: TeacherCardProps) {
   const { toast } = useToast();
 
   const handleRemoveStudent = (subjectId: string, studentId: string, studentName: string) => {
@@ -37,11 +38,11 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
     })
   };
 
-  const handleRemoveSubject = (subjectId: string, subjectName: string) => {
-    removeSubjectFromTeacher(teacher.id, subjectId);
+  const handleToggleAvailability = (subjectId: string, subjectName: string, isAvailable: boolean) => {
+    toggleSubjectAvailability(teacher.id, subjectId);
     toast({
-        title: "Matéria Desassociada",
-        description: `${subjectName} foi desassociada de ${teacher.name}.`,
+        title: "Disponibilidade Alterada",
+        description: `A matéria ${subjectName} foi marcada como ${!isAvailable ? 'disponível' : 'indisponível'}.`,
     })
   };
 
@@ -81,28 +82,28 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         {teacher.subjects.map((subject, index) => (
-          <div key={subject.id}>
+          <div key={subject.id} className={cn(!subject.isAvailable && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-lg">{subject.name}</h3>
+              <h3 className={cn("font-semibold text-lg", !subject.isAvailable && "line-through")}>{subject.name}</h3>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
-                    <BookX className="h-4 w-4" />
-                    <span className="sr-only">Desassociar matéria</span>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                    {subject.isAvailable ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">Alterar Disponibilidade da Matéria</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Desassociar Matéria?</AlertDialogTitle>
+                    <AlertDialogTitle>Alterar Disponibilidade?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Isso removerá "{subject.name}" e todos os alunos matriculados de {teacher.name}. Esta ação não pode ser desfeita.
+                      Isso marcará a matéria "{subject.name}" como {subject.isAvailable ? 'indisponível' : 'disponível'}. Os alunos permanecerão matriculados.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleRemoveSubject(subject.id, subject.name)} className="bg-destructive text-destructive-foreground">
-                      Desassociar
+                    <AlertDialogAction onClick={() => handleToggleAvailability(subject.id, subject.name, subject.isAvailable)}>
+                      Confirmar
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -115,7 +116,7 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, rem
                     <span className="text-secondary-foreground">{student.name}</span>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive">
+                         <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive" disabled={!subject.isAvailable}>
                             <UserX className="h-4 w-4" />
                             <span className="sr-only">Excluir aluno</span>
                          </Button>

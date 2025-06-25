@@ -10,10 +10,10 @@ interface SchoolOverviewProps {
   teachers: Teacher[];
   removeStudent: (teacherId: string, subjectId: string, studentId: string) => void;
   toggleTeacherPresence: (teacherId: string) => void;
-  removeSubjectFromTeacher: (teacherId: string, subjectId: string) => void;
+  toggleSubjectAvailability: (teacherId: string, subjectId: string) => void;
 }
 
-export function SchoolOverview({ teachers, removeStudent, toggleTeacherPresence, removeSubjectFromTeacher }: SchoolOverviewProps) {
+export function SchoolOverview({ teachers, removeStudent, toggleTeacherPresence, toggleSubjectAvailability }: SchoolOverviewProps) {
   const presentTeachers = teachers.filter(t => t.isPresent);
   const absentTeachers = teachers.filter(t => !t.isPresent);
 
@@ -29,7 +29,7 @@ export function SchoolOverview({ teachers, removeStudent, toggleTeacherPresence,
                 teacher={teacher}
                 removeStudent={removeStudent}
                 toggleTeacherPresence={toggleTeacherPresence}
-                removeSubjectFromTeacher={removeSubjectFromTeacher}
+                toggleSubjectAvailability={toggleSubjectAvailability}
               />
             ))}
           </div>

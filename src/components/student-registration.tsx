@@ -19,11 +19,11 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const { toast } = useToast();
 
-  const availableTeachers = useMemo(() => teachers.filter(t => t.isPresent && t.subjects.length > 0), [teachers]);
+  const availableTeachers = useMemo(() => teachers.filter(t => t.isPresent && t.subjects.some(s => s.isAvailable)), [teachers]);
   
   const availableSubjects = useMemo(() => {
     const teacher = availableTeachers.find(t => t.id === selectedTeacherId);
-    return teacher ? teacher.subjects : [];
+    return teacher ? teacher.subjects.filter(s => s.isAvailable) : [];
   }, [availableTeachers, selectedTeacherId]);
 
   const handleTeacherChange = (teacherId: string) => {
