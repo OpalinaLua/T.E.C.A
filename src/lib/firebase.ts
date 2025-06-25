@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBBw04_jbA8PSZvnnUtV5kF_tmvBkOk6HA",
@@ -16,9 +16,13 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 
-// Initialize Analytics if running in the browser
+// Initialize Analytics if running in the browser and it is supported
 if (typeof window !== 'undefined') {
-  getAnalytics(app);
+  isSupported().then(supported => {
+    if (supported) {
+      getAnalytics(app);
+    }
+  });
 }
 
 export { db };
