@@ -15,4 +15,5 @@ export interface Medium {
   name: string;
   entities: Entity[];
   isPresent: boolean;
+  createdAt: any; 
 }
