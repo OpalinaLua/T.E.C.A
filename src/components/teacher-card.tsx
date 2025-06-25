@@ -81,7 +81,7 @@ export function MediumCard({ medium, removeConsulente, toggleMediumPresence, tog
         </AlertDialog>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
-        {medium.entities.map((entity, index) => (
+        {medium.entities && medium.entities.map((entity, index) => (
           <div key={entity.id} className={cn(!entity.isAvailable && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
