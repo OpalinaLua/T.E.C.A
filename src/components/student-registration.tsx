@@ -19,7 +19,7 @@ export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteReg
   const [selectedEntityId, setSelectedEntityId] = useState('');
   const { toast } = useToast();
 
-  const availableMediums = useMemo(() => mediums.filter(t => t.isPresent && t.entities.some(s => s.isAvailable)), [mediums]);
+  const availableMediums = useMemo(() => mediums.filter(t => t.isPresent && t.entities && t.entities.some(s => s.isAvailable)), [mediums]);
   
   const availableEntities = useMemo(() => {
     const medium = availableMediums.find(t => t.id === selectedMediumId);
