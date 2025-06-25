@@ -21,9 +21,8 @@ export function useSchoolData() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // A verificação `db.app` garante que o Firestore só será consultado 
-    // se a configuração do Firebase estiver preenchida.
-    if (db && db.app.options.projectId) {
+    // A verificação `db.app.options.projectId` agora também checa se o ID não é o placeholder.
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
       const mediumsCollection = collection(db, MEDIUMS_COLLECTION);
       const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
@@ -59,18 +58,27 @@ export function useSchoolData() {
       })),
       createdAt: new Date(),
     };
-    try {
-      await addDoc(collection(db, MEDIUMS_COLLECTION), newMedium);
-    } catch (error) {
-      console.error("Erro ao adicionar médium: ", error);
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            await addDoc(collection(db, MEDIUMS_COLLECTION), newMedium);
+        } catch (error) {
+            console.error("Erro ao adicionar médium: ", error);
+        }
+    } else {
+        // Fallback para localStorage se o Firebase não estiver configurado
+        setMediums(prev => [...prev, {...newMedium, id: `local-${Date.now()}`}]);
     }
   }, []);
 
   const removeMedium = useCallback(async (mediumId: string) => {
-    try {
-      await deleteDoc(doc(db, MEDIUMS_COLLECTION, mediumId));
-    } catch (error) {
-      console.error("Erro ao remover médium: ", error);
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            await deleteDoc(doc(db, MEDIUMS_COLLECTION, mediumId));
+        } catch (error) {
+            console.error("Erro ao remover médium: ", error);
+        }
+    } else {
+        setMediums(prev => prev.filter(m => m.id !== mediumId));
     }
   }, []);
 
@@ -87,18 +95,22 @@ export function useSchoolData() {
       if (entity.id === entityId) {
         return {
           ...entity,
-          consulentes: [...entity.consulentes, newConsulente],
+          consulentes: [...(entity.consulentes || []), newConsulente],
         };
       }
       return entity;
     });
-
-    try {
-      await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
-        entities: updatedEntities,
-      });
-    } catch (error) {
-      console.error("Erro ao adicionar consulente: ", error);
+    
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
+                entities: updatedEntities,
+            });
+        } catch (error) {
+            console.error("Erro ao adicionar consulente: ", error);
+        }
+    } else {
+        setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
     }
   }, [mediums]);
 
@@ -116,24 +128,33 @@ export function useSchoolData() {
       return entity;
     });
 
-    try {
-      await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
-        entities: updatedEntities,
-      });
-    } catch (error) {
-      console.error("Erro ao remover consulente: ", error);
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
+                entities: updatedEntities,
+            });
+        } catch (error) {
+            console.error("Erro ao remover consulente: ", error);
+        }
+    } else {
+        setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
     }
   }, [mediums]);
   
   const toggleMediumPresence = useCallback(async (mediumId: string) => {
     const medium = mediums.find(m => m.id === mediumId);
     if (!medium) return;
-    try {
-      await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
-        isPresent: !medium.isPresent,
-      });
-    } catch (error) {
-      console.error("Erro ao alternar presença do médium: ", error);
+
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
+                isPresent: !medium.isPresent,
+            });
+        } catch (error) {
+            console.error("Erro ao alternar presença do médium: ", error);
+        }
+    } else {
+        setMediums(prev => prev.map(m => m.id === mediumId ? {...m, isPresent: !m.isPresent} : m));
     }
   }, [mediums]);
 
@@ -148,12 +169,16 @@ export function useSchoolData() {
       return entity;
     });
 
-    try {
-      await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
-        entities: updatedEntities,
-      });
-    } catch (error) {
-      console.error("Erro ao alternar disponibilidade da entidade: ", error);
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+            await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
+                entities: updatedEntities,
+            });
+        } catch (error) {
+            console.error("Erro ao alternar disponibilidade da entidade: ", error);
+        }
+    } else {
+        setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
     }
   }, [mediums]);
 
