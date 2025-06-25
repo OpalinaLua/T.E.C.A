@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'SchoolSync',
-  description: 'Gerencie professores e alunos com facilidade.',
+  title: 'T.E.C.A',
+  description: 'Uma forma simples para consulência.',
 };
 
 export default function RootLayout({

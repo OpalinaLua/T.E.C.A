@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Teacher, Subject, Student } from '@/lib/types';
+import type { Medium, Entity, Consulente } from '@/lib/types';
 
 const SCHOOL_DATA_KEY = 'schoolSyncData';
 
 export function useSchoolData() {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [mediums, setMediums] = useState<Medium[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const item = window.localStorage.getItem(SCHOOL_DATA_KEY);
       if (item) {
-        setTeachers(JSON.parse(item));
+        setMediums(JSON.parse(item));
       }
     } catch (error) {
       console.warn(`Error reading localStorage key “${SCHOOL_DATA_KEY}”:`, error);
@@ -24,110 +24,110 @@ export function useSchoolData() {
   useEffect(() => {
     if (isLoaded) {
       try {
-        window.localStorage.setItem(SCHOOL_DATA_KEY, JSON.stringify(teachers));
+        window.localStorage.setItem(SCHOOL_DATA_KEY, JSON.stringify(mediums));
       } catch (error) {
         console.warn(`Error setting localStorage key “${SCHOOL_DATA_KEY}”:`, error);
       }
     }
-  }, [teachers, isLoaded]);
+  }, [mediums, isLoaded]);
 
-  const addTeacher = useCallback((name: string, subjects: string[]) => {
-    const newTeacher: Teacher = {
-      id: `teacher-${Date.now()}`,
+  const addMedium = useCallback((name: string, entities: string[]) => {
+    const newMedium: Medium = {
+      id: `medium-${Date.now()}`,
       name,
       isPresent: true,
-      subjects: subjects.map((sub, index) => ({
-        id: `subject-${Date.now()}-${index}`,
-        name: sub,
-        students: [],
+      entities: entities.map((entity, index) => ({
+        id: `entity-${Date.now()}-${index}`,
+        name: entity,
+        consulentes: [],
         isAvailable: true,
       })),
     };
-    setTeachers(prev => [...prev, newTeacher]);
+    setMediums(prev => [...prev, newMedium]);
   }, []);
 
-  const addStudent = useCallback((studentName: string, teacherId: string, subjectId: string) => {
-    const newStudent: Student = {
-      id: `student-${Date.now()}`,
-      name: studentName,
+  const addConsulente = useCallback((consulenteName: string, mediumId: string, entityId: string) => {
+    const newConsulente: Consulente = {
+      id: `consulente-${Date.now()}`,
+      name: consulenteName,
     };
-    setTeachers(prev =>
-      prev.map(teacher => {
-        if (teacher.id === teacherId) {
+    setMediums(prev =>
+      prev.map(medium => {
+        if (medium.id === mediumId) {
           return {
-            ...teacher,
-            subjects: teacher.subjects.map(subject => {
-              if (subject.id === subjectId) {
+            ...medium,
+            entities: medium.entities.map(entity => {
+              if (entity.id === entityId) {
                 return {
-                  ...subject,
-                  students: [...subject.students, newStudent],
+                  ...entity,
+                  consulentes: [...entity.consulentes, newConsulente],
                 };
               }
-              return subject;
+              return entity;
             }),
           };
         }
-        return teacher;
+        return medium;
       })
     );
   }, []);
 
-  const removeStudent = useCallback((teacherId: string, subjectId: string, studentId: string) => {
-    setTeachers(prev =>
-      prev.map(teacher => {
-        if (teacher.id === teacherId) {
+  const removeConsulente = useCallback((mediumId: string, entityId: string, consulenteId: string) => {
+    setMediums(prev =>
+      prev.map(medium => {
+        if (medium.id === mediumId) {
           return {
-            ...teacher,
-            subjects: teacher.subjects.map(subject => {
-              if (subject.id === subjectId) {
+            ...medium,
+            entities: medium.entities.map(entity => {
+              if (entity.id === entityId) {
                 return {
-                  ...subject,
-                  students: subject.students.filter(s => s.id !== studentId),
+                  ...entity,
+                  consulentes: entity.consulentes.filter(c => c.id !== consulenteId),
                 };
               }
-              return subject;
+              return entity;
             }),
           };
         }
-        return teacher;
+        return medium;
       })
     );
   }, []);
   
-  const toggleTeacherPresence = useCallback((teacherId: string) => {
-    setTeachers(prev =>
-      prev.map(teacher =>
-        teacher.id === teacherId ? { ...teacher, isPresent: !teacher.isPresent } : teacher
+  const toggleMediumPresence = useCallback((mediumId: string) => {
+    setMediums(prev =>
+      prev.map(medium =>
+        medium.id === mediumId ? { ...medium, isPresent: !medium.isPresent } : medium
       )
     );
   }, []);
 
-  const toggleSubjectAvailability = useCallback((teacherId: string, subjectId: string) => {
-    setTeachers(prev =>
-      prev.map(teacher => {
-        if (teacher.id === teacherId) {
+  const toggleEntityAvailability = useCallback((mediumId: string, entityId: string) => {
+    setMediums(prev =>
+      prev.map(medium => {
+        if (medium.id === mediumId) {
           return {
-            ...teacher,
-            subjects: teacher.subjects.map(subject => {
-              if (subject.id === subjectId) {
-                return { ...subject, isAvailable: !subject.isAvailable };
+            ...medium,
+            entities: medium.entities.map(entity => {
+              if (entity.id === entityId) {
+                return { ...entity, isAvailable: !entity.isAvailable };
               }
-              return subject;
+              return entity;
             }),
           };
         }
-        return teacher;
+        return medium;
       })
     );
   }, []);
 
   return {
-    teachers,
+    mediums,
     isLoaded,
-    addTeacher,
-    addStudent,
-    removeStudent,
-    toggleTeacherPresence,
-    toggleSubjectAvailability,
+    addMedium,
+    addConsulente,
+    removeConsulente,
+    toggleMediumPresence,
+    toggleEntityAvailability,
   };
 }

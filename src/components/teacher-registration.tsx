@@ -8,42 +8,42 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface TeacherRegistrationProps {
-  addTeacher: (name: string, subjects: string[]) => void;
+interface MediumRegistrationProps {
+  addMedium: (name: string, entities: string[]) => void;
 }
 
-export function TeacherRegistration({ addTeacher }: TeacherRegistrationProps) {
+export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
   const [name, setName] = useState('');
-  const [currentSubject, setCurrentSubject] = useState('');
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [currentEntity, setCurrentEntity] = useState('');
+  const [entities, setEntities] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const handleAddSubject = () => {
-    if (currentSubject.trim() && !subjects.includes(currentSubject.trim())) {
-      setSubjects([...subjects, currentSubject.trim()]);
-      setCurrentSubject('');
+  const handleAddEntity = () => {
+    if (currentEntity.trim() && !entities.includes(currentEntity.trim())) {
+      setEntities([...entities, currentEntity.trim()]);
+      setCurrentEntity('');
     }
   };
 
-  const handleRemoveSubject = (subjectToRemove: string) => {
-    setSubjects(subjects.filter(s => s !== subjectToRemove));
+  const handleRemoveEntity = (entityToRemove: string) => {
+    setEntities(entities.filter(s => s !== entityToRemove));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && subjects.length > 0) {
-      addTeacher(name.trim(), subjects);
+    if (name.trim() && entities.length > 0) {
+      addMedium(name.trim(), entities);
       setName('');
-      setSubjects([]);
-      setCurrentSubject('');
+      setEntities([]);
+      setCurrentEntity('');
       toast({
         title: "Sucesso",
-        description: `Professor(a) ${name.trim()} foi cadastrado(a).`,
+        description: `Médium ${name.trim()} foi cadastrado(a).`,
       });
     } else {
         toast({
             title: "Erro",
-            description: "Por favor, forneça um nome para o professor e pelo menos uma matéria.",
+            description: "Por favor, forneça um nome para o médium e pelo menos uma entidade.",
             variant: "destructive",
         });
     }
@@ -52,56 +52,56 @@ export function TeacherRegistration({ addTeacher }: TeacherRegistrationProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Cadastro de Professor</CardTitle>
-        <CardDescription>Adicione um novo professor e suas matérias ao sistema.</CardDescription>
+        <CardTitle>Cadastro de Médium</CardTitle>
+        <CardDescription>Adicione um novo médium e suas entidades ao sistema.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="teacher-name" className="text-sm font-medium">Nome do Professor</label>
+            <label htmlFor="medium-name" className="text-sm font-medium">Nome do Médium</label>
             <Input
-              id="teacher-name"
-              placeholder="ex: Prof. João"
+              id="medium-name"
+              placeholder="ex: Médium João"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="subject-name" className="text-sm font-medium">Matérias</label>
+            <label htmlFor="entity-name" className="text-sm font-medium">Entidades</label>
             <div className="flex gap-2">
               <Input
-                id="subject-name"
-                placeholder="ex: Matemática"
-                value={currentSubject}
-                onChange={(e) => setCurrentSubject(e.target.value)}
+                id="entity-name"
+                placeholder="ex: Pombagira"
+                value={currentEntity}
+                onChange={(e) => setCurrentEntity(e.target.value)}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        handleAddSubject();
+                        handleAddEntity();
                     }
                 }}
               />
-              <Button type="button" onClick={handleAddSubject} variant="outline" size="icon">
+              <Button type="button" onClick={handleAddEntity} variant="outline" size="icon">
                 <Plus className="h-4 w-4" />
-                <span className="sr-only">Adicionar Matéria</span>
+                <span className="sr-only">Adicionar Entidade</span>
               </Button>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {subjects.map((subject, index) => (
+            {entities.map((entity, index) => (
               <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                {subject}
-                <button type="button" onClick={() => handleRemoveSubject(subject)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                {entity}
+                <button type="button" onClick={() => handleRemoveEntity(entity)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
                   <X className="h-3 w-3" />
-                  <span className="sr-only">Remover {subject}</span>
+                  <span className="sr-only">Remover {entity}</span>
                 </button>
               </Badge>
             ))}
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Cadastrar Professor</Button>
+          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Cadastrar Médium</Button>
         </CardFooter>
       </form>
     </Card>

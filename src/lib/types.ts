@@ -1,18 +1,18 @@
-export interface Student {
+export interface Consulente {
   id: string;
   name: string;
 }
 
-export interface Subject {
+export interface Entity {
   id: string;
   name: string;
-  students: Student[];
+  consulentes: Consulente[];
   isAvailable: boolean;
 }
 
-export interface Teacher {
+export interface Medium {
   id: string;
   name: string;
-  subjects: Subject[];
+  entities: Entity[];
   isPresent: boolean;
 }

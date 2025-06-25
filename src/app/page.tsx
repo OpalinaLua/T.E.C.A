@@ -1,20 +1,20 @@
 "use client";
 
 import { useSchoolData } from '@/hooks/use-school-data';
-import { TeacherRegistration } from '@/components/teacher-registration';
-import { StudentRegistration } from '@/components/student-registration';
+import { MediumRegistration } from '@/components/teacher-registration';
+import { ConsulenteRegistration } from '@/components/student-registration';
 import { SchoolOverview } from '@/components/school-overview';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   const {
-    teachers,
+    mediums,
     isLoaded,
-    addTeacher,
-    addStudent,
-    removeStudent,
-    toggleTeacherPresence,
-    toggleSubjectAvailability,
+    addMedium,
+    addConsulente,
+    removeConsulente,
+    toggleMediumPresence,
+    toggleEntityAvailability,
   } = useSchoolData();
 
   if (!isLoaded) {
@@ -45,25 +45,25 @@ export default function Home() {
       <div className="max-w-7xl mx-auto space-y-8">
         <header>
           <h1 className="text-5xl font-bold font-headline text-primary">
-            SchoolSync
+            T.E.C.A
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
-            Uma forma simples de gerenciar a frequência escolar.
+            Uma forma simples para consulência.
           </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
-            <TeacherRegistration addTeacher={addTeacher} />
-            <StudentRegistration teachers={teachers} addStudent={addStudent} />
+            <MediumRegistration addMedium={addMedium} />
+            <ConsulenteRegistration mediums={mediums} addConsulente={addConsulente} />
           </aside>
           
           <div className="lg:col-span-2">
             <SchoolOverview
-              teachers={teachers}
-              removeStudent={removeStudent}
-              toggleTeacherPresence={toggleTeacherPresence}
-              toggleSubjectAvailability={toggleSubjectAvailability}
+              mediums={mediums}
+              removeConsulente={removeConsulente}
+              toggleMediumPresence={toggleMediumPresence}
+              toggleEntityAvailability={toggleEntityAvailability}
             />
           </div>
         </div>

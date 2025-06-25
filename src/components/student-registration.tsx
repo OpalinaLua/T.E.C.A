@@ -1,51 +1,51 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import type { Teacher } from '@/lib/types';
+import type { Medium } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 
-interface StudentRegistrationProps {
-  teachers: Teacher[];
-  addStudent: (studentName: string, teacherId: string, subjectId: string) => void;
+interface ConsulenteRegistrationProps {
+  mediums: Medium[];
+  addConsulente: (consulenteName: string, mediumId: string, entityId: string) => void;
 }
 
-export function StudentRegistration({ teachers, addStudent }: StudentRegistrationProps) {
+export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteRegistrationProps) {
   const [name, setName] = useState('');
-  const [selectedTeacherId, setSelectedTeacherId] = useState('');
-  const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [selectedMediumId, setSelectedMediumId] = useState('');
+  const [selectedEntityId, setSelectedEntityId] = useState('');
   const { toast } = useToast();
 
-  const availableTeachers = useMemo(() => teachers.filter(t => t.isPresent && t.subjects.some(s => s.isAvailable)), [teachers]);
+  const availableMediums = useMemo(() => mediums.filter(t => t.isPresent && t.entities.some(s => s.isAvailable)), [mediums]);
   
-  const availableSubjects = useMemo(() => {
-    const teacher = availableTeachers.find(t => t.id === selectedTeacherId);
-    return teacher ? teacher.subjects.filter(s => s.isAvailable) : [];
-  }, [availableTeachers, selectedTeacherId]);
+  const availableEntities = useMemo(() => {
+    const medium = availableMediums.find(t => t.id === selectedMediumId);
+    return medium ? medium.entities.filter(s => s.isAvailable) : [];
+  }, [availableMediums, selectedMediumId]);
 
-  const handleTeacherChange = (teacherId: string) => {
-    setSelectedTeacherId(teacherId);
-    setSelectedSubjectId('');
+  const handleMediumChange = (mediumId: string) => {
+    setSelectedMediumId(mediumId);
+    setSelectedEntityId('');
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && selectedTeacherId && selectedSubjectId) {
-      addStudent(name.trim(), selectedTeacherId, selectedSubjectId);
+    if (name.trim() && selectedMediumId && selectedEntityId) {
+      addConsulente(name.trim(), selectedMediumId, selectedEntityId);
       setName('');
-      setSelectedTeacherId('');
-      setSelectedSubjectId('');
+      setSelectedMediumId('');
+      setSelectedEntityId('');
       toast({
         title: "Sucesso",
-        description: `Aluno(a) ${name.trim()} foi matriculado(a).`,
+        description: `Consulente ${name.trim()} foi agendado(a).`,
       });
     } else {
         toast({
             title: "Erro",
-            description: "Por favor, preencha todos os campos para matricular um aluno.",
+            description: "Por favor, preencha todos os campos para agendar um consulente.",
             variant: "destructive",
         });
     }
@@ -54,15 +54,15 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Matrícula de Aluno</CardTitle>
-        <CardDescription>Matricule um aluno com um professor e matéria disponíveis.</CardDescription>
+        <CardTitle>Agendamento de Consulente</CardTitle>
+        <CardDescription>Agende um consulente com um médium e entidade disponíveis.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="student-name" className="text-sm font-medium">Nome do Aluno</label>
+            <label htmlFor="consulente-name" className="text-sm font-medium">Nome do Consulente</label>
             <Input
-              id="student-name"
+              id="consulente-name"
               placeholder="ex: Maria da Silva"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -70,35 +70,35 @@ export function StudentRegistration({ teachers, addStudent }: StudentRegistratio
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Professor(a)</label>
-            <Select onValueChange={handleTeacherChange} value={selectedTeacherId}>
+            <label className="text-sm font-medium">Médium</label>
+            <Select onValueChange={handleMediumChange} value={selectedMediumId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione um(a) professor(a)" />
+                <SelectValue placeholder="Selecione um(a) médium" />
               </SelectTrigger>
               <SelectContent>
-                {availableTeachers.map(teacher => (
-                  <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
+                {availableMediums.map(medium => (
+                  <SelectItem key={medium.id} value={medium.id}>{medium.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Matéria</label>
-            <Select onValueChange={setSelectedSubjectId} value={selectedSubjectId} disabled={!selectedTeacherId}>
+            <label className="text-sm font-medium">Entidade</label>
+            <Select onValueChange={setSelectedEntityId} value={selectedEntityId} disabled={!selectedMediumId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione uma matéria" />
+                <SelectValue placeholder="Selecione uma entidade" />
               </SelectTrigger>
               <SelectContent>
-                {availableSubjects.map(subject => (
-                  <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                {availableEntities.map(entity => (
+                  <SelectItem key={entity.id} value={entity.id}>{entity.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={availableTeachers.length === 0}>
-            {availableTeachers.length > 0 ? 'Matricular Aluno' : 'Nenhum Professor Disponível'}
+          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={availableMediums.length === 0}>
+            {availableMediums.length > 0 ? 'Agendar Consulente' : 'Nenhum Médium Disponível'}
           </Button>
         </CardFooter>
       </form>

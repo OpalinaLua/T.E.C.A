@@ -1,6 +1,6 @@
 "use client";
 
-import type { Teacher } from '@/lib/types';
+import type { Medium } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,29 +20,29 @@ import { UserX, Eye, EyeOff, LogOut, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-interface TeacherCardProps {
-  teacher: Teacher;
-  removeStudent: (teacherId: string, subjectId: string, studentId: string) => void;
-  toggleTeacherPresence: (teacherId: string) => void;
-  toggleSubjectAvailability: (teacherId: string, subjectId: string) => void;
+interface MediumCardProps {
+  medium: Medium;
+  removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
+  toggleMediumPresence: (mediumId: string) => void;
+  toggleEntityAvailability: (mediumId: string, entityId: string) => void;
 }
 
-export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, toggleSubjectAvailability }: TeacherCardProps) {
+export function MediumCard({ medium, removeConsulente, toggleMediumPresence, toggleEntityAvailability }: MediumCardProps) {
   const { toast } = useToast();
 
-  const handleRemoveStudent = (subjectId: string, studentId: string, studentName: string) => {
-    removeStudent(teacher.id, subjectId, studentId);
+  const handleRemoveConsulente = (entityId: string, consulenteId: string, consulenteName: string) => {
+    removeConsulente(medium.id, entityId, consulenteId);
     toast({
-        title: "Aluno Removido",
-        description: `${studentName} foi removido(a).`,
+        title: "Consulente Removido",
+        description: `${consulenteName} foi removido(a).`,
     })
   };
 
-  const handleToggleAvailability = (subjectId: string, subjectName: string, isAvailable: boolean) => {
-    toggleSubjectAvailability(teacher.id, subjectId);
+  const handleToggleAvailability = (entityId: string, entityName: string, isAvailable: boolean) => {
+    toggleEntityAvailability(medium.id, entityId);
     toast({
         title: "Disponibilidade Alterada",
-        description: `A matéria ${subjectName} foi marcada como ${!isAvailable ? 'disponível' : 'indisponível'}.`,
+        description: `A entidade ${entityName} foi marcada como ${!isAvailable ? 'disponível' : 'indisponível'}.`,
     })
   };
 
@@ -50,17 +50,17 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, tog
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
       <CardHeader className="flex-row items-start justify-between">
         <div>
-          <CardTitle className="font-headline text-2xl">{teacher.name}</CardTitle>
+          <CardTitle className="font-headline text-2xl">{medium.name}</CardTitle>
           <CardDescription>
-            <Badge variant="outline" className={teacher.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}>
-              {teacher.isPresent ? 'Presente' : 'Ausente'}
+            <Badge variant="outline" className={medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}>
+              {medium.isPresent ? 'Presente' : 'Ausente'}
             </Badge>
           </CardDescription>
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="icon">
-              {teacher.isPresent ? <LogOut className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+              {medium.isPresent ? <LogOut className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
               <span className="sr-only">Alternar Presença</span>
             </Button>
           </AlertDialogTrigger>
@@ -68,12 +68,12 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, tog
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
               <AlertDialogDescription>
-                Isso marcará o(a) professor(a) como {teacher.isPresent ? 'ausente' : 'presente'}.
+                Isso marcará o(a) médium como {medium.isPresent ? 'ausente' : 'presente'}.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => toggleTeacherPresence(teacher.id)}>
+              <AlertDialogAction onClick={() => toggleMediumPresence(medium.id)}>
                 Continuar
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -81,56 +81,56 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, tog
         </AlertDialog>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
-        {teacher.subjects.map((subject, index) => (
-          <div key={subject.id} className={cn(!subject.isAvailable && "opacity-60")}>
+        {medium.entities.map((entity, index) => (
+          <div key={entity.id} className={cn(!entity.isAvailable && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
-              <h3 className={cn("font-semibold text-lg", !subject.isAvailable && "line-through")}>{subject.name}</h3>
+              <h3 className={cn("font-semibold text-lg", !entity.isAvailable && "line-through")}>{entity.name}</h3>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                    {subject.isAvailable ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    <span className="sr-only">Alterar Disponibilidade da Matéria</span>
+                    {entity.isAvailable ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">Alterar Disponibilidade da Entidade</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Alterar Disponibilidade?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Isso marcará a matéria "{subject.name}" como {subject.isAvailable ? 'indisponível' : 'disponível'}. Os alunos permanecerão matriculados.
+                      Isso marcará a entidade "{entity.name}" como {entity.isAvailable ? 'indisponível' : 'disponível'}. Os consulentes permanecerão agendados.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleToggleAvailability(subject.id, subject.name, subject.isAvailable)}>
+                    <AlertDialogAction onClick={() => handleToggleAvailability(entity.id, entity.name, entity.isAvailable)}>
                       Confirmar
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            {subject.students.length > 0 ? (
+            {entity.consulentes.length > 0 ? (
               <ul className="space-y-2">
-                {subject.students.map(student => (
-                  <li key={student.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 group">
-                    <span className="text-secondary-foreground">{student.name}</span>
+                {entity.consulentes.map(consulente => (
+                  <li key={consulente.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 group">
+                    <span className="text-secondary-foreground">{consulente.name}</span>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive" disabled={!subject.isAvailable}>
+                         <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive" disabled={!entity.isAvailable}>
                             <UserX className="h-4 w-4" />
-                            <span className="sr-only">Excluir aluno</span>
+                            <span className="sr-only">Excluir consulente</span>
                          </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir Aluno?</AlertDialogTitle>
+                          <AlertDialogTitle>Excluir Consulente?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Tem certeza de que deseja remover {student.name} desta turma?
+                            Tem certeza de que deseja remover {consulente.name} desta entidade?
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleRemoveStudent(subject.id, student.id, student.name)} className="bg-destructive text-destructive-foreground">
+                          <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground">
                             Excluir
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -140,7 +140,7 @@ export function TeacherCard({ teacher, removeStudent, toggleTeacherPresence, tog
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground italic">Nenhum aluno matriculado.</p>
+              <p className="text-sm text-muted-foreground italic">Nenhum consulente agendado.</p>
             )}
           </div>
         ))}
