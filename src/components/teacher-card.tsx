@@ -63,14 +63,6 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
     })
   };
 
-  const handleToggleAvailability = (entityId: string, entityName: string, isAvailable: boolean) => {
-    toggleEntityAvailability(medium.id, entityId);
-    toast({
-        title: "Disponibilidade Alterada",
-        description: `A entidade ${entityName} foi marcada como ${!isAvailable ? 'disponível' : 'indisponível'}.`,
-    })
-  };
-  
   const handleEntityNameChange = (entityId: string, newName: string) => {
     setEditedEntities(currentEntities => 
       currentEntities.map(e => e.id === entityId ? { ...e, name: newName } : e)
@@ -203,6 +195,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                   <AlertDialogDescription>
                     Isso marcará o(a) médium como {medium.isPresent ? 'ausente' : 'presente'}.
+                    {medium.isPresent && (medium.entities.some(e => e.consulentes?.length > 0)) && ' Ao fazer isso, todos os consulentes agendados para este médium serão removidos.'}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -254,12 +247,13 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   <AlertDialogHeader>
                     <AlertDialogTitle>Alterar Disponibilidade?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Isso marcará a entidade "{entity.name}" como {entity.isAvailable ? 'indisponível' : 'disponível'}. Os consulentes permanecerão agendados.
+                      Isso marcará a entidade "{entity.name}" como {entity.isAvailable ? 'indisponível' : 'disponível'}.
+                      {entity.isAvailable && (entity.consulentes?.length > 0) && ' Ao fazer isso, todos os consulentes agendados para esta entidade serão removidos.'}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleToggleAvailability(entity.id, entity.name, entity.isAvailable)}>
+                    <AlertDialogAction onClick={() => toggleEntityAvailability(medium.id, entity.id)}>
                       Confirmar
                     </AlertDialogAction>
                   </AlertDialogFooter>

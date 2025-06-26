@@ -13,16 +13,17 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Medium, Entity, Consulente } from '@/lib/types';
+import { useToast } from './use-toast';
 
 const MEDIUMS_COLLECTION = 'mediums';
 
 export function useSchoolData() {
   const [mediums, setMediums] = useState<Medium[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
-      console.log("Setting up Firebase real-time listener...");
       const mediumsCollection = collection(db, MEDIUMS_COLLECTION);
       const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
@@ -36,7 +37,6 @@ export function useSchoolData() {
         if (!isLoaded) {
           setIsLoaded(true);
         }
-        console.log("Firestore real-time update received:", mediumsData);
 
       }, (error) => {
         console.error("----------- FIREBASE LISTENER ERROR -----------");
@@ -49,15 +49,12 @@ export function useSchoolData() {
         setIsLoaded(true);
       });
 
-      return () => {
-        console.log("Cleaning up Firebase listener.");
-        unsubscribe();
-      };
+      return () => unsubscribe();
     } else {
       console.warn("Firebase config not found or is set to placeholder values. Running in offline mode. Data will not be saved.");
       setIsLoaded(true);
     }
-  }, []);
+  }, [isLoaded]);
 
   const addMedium = useCallback(async (name: string, entities: string[]) => {
     const newMedium = {
@@ -157,26 +154,54 @@ export function useSchoolData() {
     const medium = mediums.find(m => m.id === mediumId);
     if (!medium) return;
 
+    const newIsPresent = !medium.isPresent;
+    let updatedEntities = medium.entities;
+    const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
+
+    if (!newIsPresent) {
+      updatedEntities = medium.entities.map(entity => ({
+        ...entity,
+        consulentes: [],
+      }));
+    }
+
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
         try {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
-                isPresent: !medium.isPresent,
+                isPresent: newIsPresent,
+                entities: updatedEntities,
+            });
+            const newStatus = newIsPresent ? 'presente' : 'ausente';
+            let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
+            if (!newIsPresent && hadConsulentes) {
+                description += " Todos os consulentes agendados foram removidos.";
+            }
+            toast({
+                title: "Presença Alterada",
+                description: description,
             });
         } catch (error) {
             console.error("Erro ao alternar presença do médium: ", error);
         }
     } else {
-        setMediums(prev => prev.map(m => m.id === mediumId ? {...m, isPresent: !m.isPresent} : m));
+        setMediums(prev => prev.map(m => m.id === mediumId ? {...m, isPresent: newIsPresent, entities: updatedEntities} : m));
     }
-  }, [mediums]);
+  }, [mediums, toast]);
 
   const toggleEntityAvailability = useCallback(async (mediumId: string, entityId: string) => {
     const mediumToUpdate = mediums.find(m => m.id === mediumId);
     if (!mediumToUpdate) return;
 
+    const entityToUpdate = mediumToUpdate.entities.find(e => e.id === entityId);
+    if (!entityToUpdate) return;
+    
+    const hadConsulentes = (entityToUpdate.consulentes?.length || 0) > 0;
+
     const updatedEntities = mediumToUpdate.entities.map(entity => {
       if (entity.id === entityId) {
-        return { ...entity, isAvailable: !entity.isAvailable };
+        const newIsAvailable = !entity.isAvailable;
+        const updatedConsulentes = !newIsAvailable ? [] : (entity.consulentes || []);
+        return { ...entity, isAvailable: newIsAvailable, consulentes: updatedConsulentes };
       }
       return entity;
     });
@@ -186,13 +211,22 @@ export function useSchoolData() {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
                 entities: updatedEntities,
             });
+            const newStatus = !entityToUpdate.isAvailable ? 'disponível' : 'indisponível';
+            let description = `A entidade ${entityToUpdate.name} foi marcada como ${newStatus}.`;
+            if (entityToUpdate.isAvailable && hadConsulentes) { 
+                description += " Todos os consulentes agendados foram removidos.";
+            }
+            toast({
+                title: "Disponibilidade Alterada",
+                description: description,
+            });
         } catch (error) {
             console.error("Erro ao alternar disponibilidade da entidade: ", error);
         }
     } else {
         setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
     }
-  }, [mediums]);
+  }, [mediums, toast]);
 
   const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
@@ -210,7 +244,7 @@ export function useSchoolData() {
             return m;
         }));
     }
-  }, [mediums]);
+  }, []);
 
   return {
     mediums,
