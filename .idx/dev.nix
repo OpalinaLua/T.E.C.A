@@ -3,7 +3,7 @@
 {pkgs}: {
   # Qual canal nixpkgs usar.
   channel = "stable-24.11"; # or "unstable"
-  # Uso https://search.nixos.org/packages para encontrar pacotes
+  # Uso 45e6956e-6b8d-47a5-af4e-0badf4b28c5c:fx para encontrar pacotes
   packages = [
     pkgs.nodejs_20
     pkgs.zulu

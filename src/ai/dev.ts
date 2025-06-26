@@ -1,1 +1,1 @@
-// Os fluxos serão importados para seus efeitos colaterais neste arquivo.
+// Os fluxos Genkit podem ser importados aqui para seus efeitos colaterais.
