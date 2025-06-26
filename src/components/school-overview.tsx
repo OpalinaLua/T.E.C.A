@@ -7,7 +7,9 @@ import { LogIn } from 'lucide-react';
 import { MediumCard } from './teacher-card';
 
 
-// --- Component: SchoolOverview ---
+// --- Componente: Visão Geral da Escola ---
+// Este componente é responsável por exibir as listas de médiuns,
+// separando-os em "Presentes" e "Ausentes".
 interface SchoolOverviewProps {
   mediums: Medium[];
   removeMedium: (mediumId: string) => void;
@@ -18,15 +20,18 @@ interface SchoolOverviewProps {
 }
 
 export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: SchoolOverviewProps) {
+  // Filtra a lista de médiuns para criar listas separadas de presentes e ausentes.
   const presentMediums = mediums.filter(m => m.isPresent);
   const absentMediums = mediums.filter(m => !m.isPresent);
 
   return (
     <div className="space-y-8">
+      {/* Seção de Médiuns Presentes */}
       <div>
         <h2 className="text-3xl font-bold font-headline mb-4">Médiuns Presentes</h2>
         {presentMediums.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Mapeia a lista de médiuns presentes para renderizar um MediumCard para cada um. */}
             {presentMediums.map(medium => (
               <MediumCard
                 key={medium.id}
@@ -40,12 +45,14 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
             ))}
           </div>
         ) : (
+          // Mensagem exibida quando não há médiuns presentes.
           <div className="text-center py-10 px-4 border-2 border-dashed rounded-lg">
             <h3 className="text-lg font-medium text-muted-foreground">Nenhum médium está marcado como presente no momento.</h3>
           </div>
         )}
       </div>
 
+      {/* Seção de Médiuns Ausentes (só aparece se houver algum) */}
       {absentMediums.length > 0 && (
         <div>
           <h2 className="text-3xl font-bold font-headline mb-4">Médiuns Ausentes</h2>

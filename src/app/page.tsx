@@ -6,7 +6,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MediumRegistration } from '@/components/teacher-registration';
 import { ConsulenteRegistration } from '@/components/student-registration';
 
-// --- Main Page Component ---
+// --- Componente Principal da Página ---
+// Este é o componente que renderiza a página inicial do aplicativo.
+// Ele utiliza o hook `useSchoolData` para obter e manipular os dados
+// e organiza a interface em três seções principais:
+// 1. Cadastro de Médiuns
+// 2. Agendamento de Consulentes
+// 3. Visão Geral dos Médiuns (presentes e ausentes)
 export default function Home() {
   const {
     mediums,
@@ -20,6 +26,7 @@ export default function Home() {
     updateMedium,
   } = useSchoolData();
 
+  // Exibe um esqueleto de carregamento enquanto os dados do Firebase são buscados.
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -56,11 +63,13 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Coluna da esquerda com os formulários de cadastro */}
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
             <MediumRegistration addMedium={addMedium} />
             <ConsulenteRegistration mediums={mediums} addConsulente={addConsulente} />
           </aside>
           
+          {/* Coluna da direita com a exibição dos médiuns */}
           <div className="lg:col-span-2">
             <SchoolOverview
               mediums={mediums}

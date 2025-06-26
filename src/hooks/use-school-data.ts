@@ -9,7 +9,7 @@ import {
   updateDoc,
   query,
   orderBy,
-  onSnapshot,
+  onSnapshot, // Importado para escutar atualizações em tempo real
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Medium, Entity, Consulente } from '@/lib/types';
@@ -17,16 +17,27 @@ import { useToast } from './use-toast';
 
 const MEDIUMS_COLLECTION = 'mediums';
 
+/**
+ * Hook personalizado para gerenciar todos os dados dos médiuns.
+ * Este hook encapsula toda a lógica de interação com o Firebase (Firestore),
+ * incluindo leitura, adição, atualização e remoção de dados.
+ * Ele também gerencia o estado local e mantém a interface sincronizada.
+ */
 export function useSchoolData() {
   const [mediums, setMediums] = useState<Medium[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
+  // Efeito para buscar os dados do Firestore em tempo real assim que o componente é montado.
   useEffect(() => {
+    // Verifica se a configuração do Firebase é válida antes de tentar conectar.
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
       const mediumsCollection = collection(db, MEDIUMS_COLLECTION);
+      // Cria uma consulta para ordenar os médiuns por data de criação.
       const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
+      // `onSnapshot` estabelece uma conexão em tempo real.
+      // Ele "escuta" por qualquer mudança na coleção 'mediums'.
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const mediumsData = snapshot.docs.map(doc => ({
           ...doc.data(),
@@ -34,28 +45,34 @@ export function useSchoolData() {
         })) as Medium[];
         
         setMediums(mediumsData);
+        // Garante que o estado de "carregado" seja definido apenas uma vez.
         if (!isLoaded) {
           setIsLoaded(true);
         }
 
       }, (error) => {
-        console.error("----------- FIREBASE LISTENER ERROR -----------");
-        console.error("An error occurred while listening for real-time updates. This is very likely a PERMISSIONS or CONFIGURATION issue with your Firebase project.");
-        console.error("1. Ensure you have created a Firestore database in the Firebase Console.");
-        console.error("2. Ensure your Firestore Security Rules allow read access to the 'mediums' collection. Example for testing: allow read, write: if true;");
-        console.error("3. Ensure the Firestore API is enabled in your Google Cloud project.");
-        console.error("Full error object:", error);
+        // Bloco de erro para ajudar a depurar problemas de conexão ou permissão.
+        console.error("----------- ERRO DE ESCUTA DO FIREBASE -----------");
+        console.error("Ocorreu um erro ao escutar por atualizações em tempo real. Isso muito provavelmente é um problema de PERMISSÃO ou CONFIGURAÇÃO com seu projeto Firebase.");
+        console.error("1. Garanta que você criou um banco de dados Firestore no Console do Firebase.");
+        console.error("2. Garanta que suas Regras de Segurança do Firestore permitem leitura na coleção 'mediums'. Exemplo para teste: allow read, write: if true;");
+        console.error("3. Garanta que a API do Firestore está ativada no seu projeto Google Cloud.");
+        console.error("Objeto de erro completo:", error);
         console.error("----------------------------------------------------");
-        setIsLoaded(true);
+        setIsLoaded(true); // Permite que a UI seja renderizada mesmo com erro.
       });
 
+      // Função de limpeza: `unsubscribe` é chamado quando o componente é desmontado
+      // para fechar a conexão em tempo real e evitar vazamentos de memória.
       return () => unsubscribe();
     } else {
-      console.warn("Firebase config not found or is set to placeholder values. Running in offline mode. Data will not be saved.");
+      console.warn("Configuração do Firebase não encontrada ou está com valores de exemplo. Rodando em modo offline. Os dados não serão salvos.");
       setIsLoaded(true);
     }
-  }, [isLoaded]);
+  }, [isLoaded]); // A dependência `isLoaded` garante que o listener não seja recriado desnecessariamente.
 
+  // Função para adicionar um novo médium ao banco de dados.
+  // `useCallback` é usado para otimização, evitando recriações da função.
   const addMedium = useCallback(async (name: string, entities: string[]) => {
     const newMedium = {
       name,
@@ -66,19 +83,23 @@ export function useSchoolData() {
         consulentes: [],
         isAvailable: true,
       })),
-      createdAt: new Date(),
+      createdAt: new Date(), // `createdAt` é usado para ordenação.
     };
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
         try {
             await addDoc(collection(db, MEDIUMS_COLLECTION), newMedium);
+            // Nenhuma atualização de estado local é necessária aqui,
+            // pois o `onSnapshot` cuidará disso automaticamente.
         } catch (error) {
             console.error("Erro ao adicionar médium: ", error);
         }
     } else {
+        // Fallback para modo offline: atualiza o estado local diretamente.
         setMediums(prev => [...prev, {...newMedium, id: `local-${Date.now()}`} as Medium]);
     }
   }, []);
 
+  // Função para remover um médium.
   const removeMedium = useCallback(async (mediumId: string) => {
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
         try {
@@ -91,6 +112,7 @@ export function useSchoolData() {
     }
   }, []);
 
+  // Função para adicionar um consulente a uma entidade específica de um médium.
   const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string) => {
     const mediumToUpdate = mediums.find(m => m.id === mediumId);
     if (!mediumToUpdate) return;
@@ -121,8 +143,9 @@ export function useSchoolData() {
     } else {
         setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
     }
-  }, [mediums]);
+  }, [mediums]); // Depende de `mediums` para encontrar o médium a ser atualizado.
 
+  // Função para remover um consulente de uma entidade.
   const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string) => {
     const mediumToUpdate = mediums.find(m => m.id === mediumId);
     if (!mediumToUpdate) return;
@@ -150,6 +173,7 @@ export function useSchoolData() {
     }
   }, [mediums]);
   
+  // Função para alternar a presença de um médium (presente/ausente).
   const toggleMediumPresence = useCallback(async (mediumId: string) => {
     const medium = mediums.find(m => m.id === mediumId);
     if (!medium) return;
@@ -158,6 +182,7 @@ export function useSchoolData() {
     let updatedEntities = medium.entities;
     const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
 
+    // Se o médium for marcado como ausente, todos os seus consulentes são removidos.
     if (!newIsPresent) {
       updatedEntities = medium.entities.map(entity => ({
         ...entity,
@@ -171,6 +196,7 @@ export function useSchoolData() {
                 isPresent: newIsPresent,
                 entities: updatedEntities,
             });
+            // Exibe uma notificação para o usuário.
             const newStatus = newIsPresent ? 'presente' : 'ausente';
             let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
             if (!newIsPresent && hadConsulentes) {
@@ -188,6 +214,7 @@ export function useSchoolData() {
     }
   }, [mediums, toast]);
 
+  // Função para alternar a disponibilidade de uma entidade.
   const toggleEntityAvailability = useCallback(async (mediumId: string, entityId: string) => {
     const mediumToUpdate = mediums.find(m => m.id === mediumId);
     if (!mediumToUpdate) return;
@@ -200,6 +227,7 @@ export function useSchoolData() {
     const updatedEntities = mediumToUpdate.entities.map(entity => {
       if (entity.id === entityId) {
         const newIsAvailable = !entity.isAvailable;
+        // Se a entidade for marcada como indisponível, remove seus consulentes.
         const updatedConsulentes = !newIsAvailable ? [] : (entity.consulentes || []);
         return { ...entity, isAvailable: newIsAvailable, consulentes: updatedConsulentes };
       }
@@ -211,6 +239,7 @@ export function useSchoolData() {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
                 entities: updatedEntities,
             });
+             // Exibe uma notificação para o usuário.
             const newStatus = !entityToUpdate.isAvailable ? 'disponível' : 'indisponível';
             let description = `A entidade ${entityToUpdate.name} foi marcada como ${newStatus}.`;
             if (entityToUpdate.isAvailable && hadConsulentes) { 
@@ -228,6 +257,7 @@ export function useSchoolData() {
     }
   }, [mediums, toast]);
 
+  // Função para atualizar os dados de um médium (nome e/ou entidades).
   const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
         try {
@@ -244,8 +274,9 @@ export function useSchoolData() {
             return m;
         }));
     }
-  }, []);
+  }, []); // Sem dependências, pois não lê o estado atual para executar.
 
+  // Retorna o estado e as funções para serem usadas pelos componentes.
   return {
     mediums,
     isLoaded,

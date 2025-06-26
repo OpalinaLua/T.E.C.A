@@ -1,24 +1,24 @@
 # Para saber mais sobre como usar o Nix para configurar seu ambiente
 # consulte: https://firebase.google.com/docs/studio/customize-workspace
 {pkgs}: {
-  # Which nixpkgs channel to use.
+  # Qual canal nixpkgs usar.
   channel = "stable-24.11"; # or "unstable"
-  # Use https://search.nixos.org/packages to find packages
+  # Uso https://search.nixos.org/packages para encontrar pacotes
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
   ];
-  # Sets environment variables in the workspace
+  # Define as variáveis de ambiente no espaço de trabalho
   env = {};
-  # This adds a file watcher to startup the firebase emulators. The emulators will only start if
-  # a firebase.json file is written into the user's directory
+  # Isso adiciona um observador de arquivos para iniciar os emuladores do Firebase. Os emuladores só serão iniciados se
+  # um arquivo firebase.json for gravado no diretório do usuário
   services.firebase.emulators = {
     detect = true;
     projectId = "demo-app";
     services = ["auth" "firestore"];
   };
   idx = {
-    # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
+    # Procure as extensões que você deseja em https://open-vsx.org/ e usar "publisher.id"
     extensions = [
       # "vscodevim.vim"
     ];
@@ -29,7 +29,7 @@
         ];
       };
     };
-    # Enable previews and customize configuration
+    # Ativar visualizações e personalizar a configuração
     previews = {
       enable = true;
       previews = {
