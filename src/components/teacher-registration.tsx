@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Componente de formulário para cadastrar um novo médium.
+ * Permite ao usuário inserir o nome do médium e uma ou mais entidades associadas,
+ * cada uma com seu próprio limite de consulentes.
+ */
 "use client";
 
 import { useState } from 'react';
@@ -7,35 +12,73 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from './ui/label';
 
+// Interface para as props do componente.
 interface MediumRegistrationProps {
-  addMedium: (name: string, entities: string[]) => void;
+  addMedium: (name: string, entities: { name: string; limit: number }[]) => void;
+}
+
+// Interface para representar a estrutura de uma entidade sendo adicionada.
+interface EntityInput {
+    name: string;
+    limit: number;
 }
 
 export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
+  // Estados do componente
   const [name, setName] = useState('');
-  const [currentEntity, setCurrentEntity] = useState('');
-  const [entities, setEntities] = useState<string[]>([]);
+  const [currentEntityName, setCurrentEntityName] = useState('');
+  const [currentEntityLimit, setCurrentEntityLimit] = useState('10'); // Limite padrão
+  const [entities, setEntities] = useState<EntityInput[]>([]);
   const { toast } = useToast();
 
+  /**
+   * Adiciona uma nova entidade à lista de entidades a serem cadastradas com o médium.
+   */
   const handleAddEntity = () => {
-    if (currentEntity.trim() && !entities.includes(currentEntity.trim())) {
-      setEntities([...entities, currentEntity.trim()]);
-      setCurrentEntity('');
+    const limit = parseInt(currentEntityLimit, 10);
+    if (currentEntityName.trim() && !isNaN(limit) && limit > 0) {
+      if (entities.some(e => e.name === currentEntityName.trim())) {
+          toast({
+              title: "Entidade Duplicada",
+              description: `A entidade "${currentEntityName.trim()}" já foi adicionada.`,
+              variant: "destructive",
+          });
+          return;
+      }
+      setEntities([...entities, { name: currentEntityName.trim(), limit }]);
+      setCurrentEntityName('');
+      setCurrentEntityLimit('10'); // Reseta o limite para o padrão
+    } else {
+        toast({
+            title: "Dados Inválidos",
+            description: "Por favor, forneça um nome e um limite válido (maior que zero) para a entidade.",
+            variant: "destructive",
+        })
     }
   };
 
-  const handleRemoveEntity = (entityToRemove: string) => {
-    setEntities(entities.filter(s => s !== entityToRemove));
+  /**
+   * Remove uma entidade da lista.
+   * @param entityToRemove - O objeto da entidade a ser removida.
+   */
+  const handleRemoveEntity = (entityToRemove: EntityInput) => {
+    setEntities(entities.filter(s => s.name !== entityToRemove.name));
   };
 
+  /**
+   * Submete o formulário, cadastrando o novo médium.
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && entities.length > 0) {
       addMedium(name.trim(), entities);
+      // Limpa o formulário após o sucesso
       setName('');
       setEntities([]);
-      setCurrentEntity('');
+      setCurrentEntityName('');
+      setCurrentEntityLimit('10');
       toast({
         title: "Sucesso",
         description: `Médium ${name.trim()} foi cadastrado(a).`,
@@ -43,7 +86,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
     } else {
         toast({
             title: "Erro",
-            description: "Por favor, forneça um nome para o médium e pelo menos uma entidade.",
+            description: "Por favor, forneça um nome para o médium e adicione pelo menos uma entidade.",
             variant: "destructive",
         });
     }
@@ -53,12 +96,12 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Cadastro de Médium</CardTitle>
-        <CardDescription>Adicione um novo médium e suas entidades ao sistema.</CardDescription>
+        <CardDescription>Adicione um novo médium, suas entidades e o limite de consulentes por entidade.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="medium-name" className="text-sm font-medium">Nome do Médium</label>
+            <Label htmlFor="medium-name">Nome do Médium</Label>
             <Input
               id="medium-name"
               placeholder="ex: Médium João"
@@ -68,21 +111,42 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="entity-name" className="text-sm font-medium">Entidades</label>
-            <div className="flex gap-2">
-              <Input
-                id="entity-name"
-                placeholder="ex: Pombagira"
-                value={currentEntity}
-                onChange={(e) => setCurrentEntity(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddEntity();
-                    }
-                }}
-              />
-              <Button type="button" onClick={handleAddEntity} variant="outline" size="icon">
+            <Label>Entidades</Label>
+            <div className="flex items-end gap-2">
+              <div className="flex-grow space-y-1.5">
+                <Label htmlFor="entity-name" className="text-xs text-muted-foreground">Nome da Entidade</Label>
+                <Input
+                  id="entity-name"
+                  placeholder="ex: Pombagira"
+                  value={currentEntityName}
+                  onChange={(e) => setCurrentEntityName(e.target.value)}
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddEntity();
+                      }
+                  }}
+                />
+              </div>
+              <div className="space-y-1.5">
+                  <Label htmlFor="entity-limit" className="text-xs text-muted-foreground">Limite</Label>
+                  <Input
+                      id="entity-limit"
+                      type="number"
+                      min="1"
+                      placeholder="10"
+                      value={currentEntityLimit}
+                      onChange={(e) => setCurrentEntityLimit(e.target.value)}
+                      className="w-20"
+                      onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddEntity();
+                          }
+                      }}
+                  />
+              </div>
+              <Button type="button" onClick={handleAddEntity} variant="outline" size="icon" className="shrink-0">
                 <Plus className="h-4 w-4" />
                 <span className="sr-only">Adicionar Entidade</span>
               </Button>
@@ -90,11 +154,11 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
           </div>
           <div className="flex flex-wrap gap-2">
             {entities.map((entity, index) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                {entity}
+              <Badge key={index} variant="secondary" className="flex items-center gap-1.5 text-sm py-1">
+                {entity.name} ({entity.limit})
                 <button type="button" onClick={() => handleRemoveEntity(entity)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
                   <X className="h-3 w-3" />
-                  <span className="sr-only">Remover {entity}</span>
+                  <span className="sr-only">Remover {entity.name}</span>
                 </button>
               </Badge>
             ))}

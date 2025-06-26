@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Componente que exibe as informações de um médium em um card.
+ * Este componente mostra os detalhes do médium, suas entidades e consulentes.
+ * Também fornece ações como editar, remover, e alterar o status de presença do médium
+ * e a disponibilidade de suas entidades.
+ */
 "use client";
 
 import { useState } from 'react';
@@ -32,6 +38,7 @@ import { UserX, Eye, EyeOff, LogOut, LogIn, Trash2, Pencil, X, Plus } from 'luci
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+// Interface para as props do componente.
 interface MediumCardProps {
   medium: Medium;
   removeMedium: (mediumId: string) => void;
@@ -42,11 +49,15 @@ interface MediumCardProps {
 }
 
 export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: MediumCardProps) {
+  // Estados do componente para controle do diálogo de edição.
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedName, setEditedName] = useState(medium.name);
-  const [editedEntities, setEditedEntities] = useState<Entity[]>(JSON.parse(JSON.stringify(medium.entities)));
+  const [editedEntities, setEditedEntities] = useState<Entity[]>(JSON.parse(JSON.stringify(medium.entities))); // Cópia profunda para edição
 
+  /**
+   * Manipula a remoção do médium.
+   */
   const handleRemoveMedium = () => {
     removeMedium(medium.id);
     toast({
@@ -55,6 +66,9 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
     })
   };
 
+  /**
+   * Manipula a remoção de um consulente.
+   */
   const handleRemoveConsulente = (entityId: string, consulenteId: string, consulenteName: string) => {
     removeConsulente(medium.id, entityId, consulenteId);
     toast({
@@ -63,12 +77,20 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
     })
   };
 
+  // Funções para manipulação do estado de edição do médium e entidades.
   const handleEntityNameChange = (entityId: string, newName: string) => {
     setEditedEntities(currentEntities => 
       currentEntities.map(e => e.id === entityId ? { ...e, name: newName } : e)
     );
   };
   
+  const handleEntityLimitChange = (entityId: string, newLimit: string) => {
+    const limit = parseInt(newLimit, 10);
+    setEditedEntities(currentEntities => 
+        currentEntities.map(e => e.id === entityId ? { ...e, consulenteLimit: isNaN(limit) || limit < 0 ? 0 : limit } : e)
+    );
+  };
+
   const handleRemoveEntityFromEdit = (entityId: string) => {
       const entity = editedEntities.find(e => e.id === entityId);
       if (entity && entity.consulentes.length > 0) {
@@ -90,11 +112,16 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
               name: "Nova Entidade",
               consulentes: [],
               isAvailable: true,
+              consulenteLimit: 10, // Limite padrão para novas entidades
           }
       ])
   }
 
+  /**
+   * Salva as atualizações feitas no diálogo de edição.
+   */
   const handleUpdate = () => {
+    // Validações
     if (editedName.trim() === '') {
       toast({ title: "Erro", description: "O nome do médium não pode ser vazio.", variant: "destructive" });
       return;
@@ -104,6 +131,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
       return;
     }
     
+    // Verifica se houve mudanças para evitar atualizações desnecessárias.
     const nameChanged = editedName !== medium.name;
     const entitiesChanged = JSON.stringify(editedEntities) !== JSON.stringify(medium.entities);
 
@@ -118,6 +146,9 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
     setIsEditDialogOpen(false);
   }
 
+  /**
+   * Reseta o estado de edição para os valores originais do médium caso o usuário cancele a edição.
+   */
   const resetEditState = () => {
       setEditedName(medium.name);
       setEditedEntities(JSON.parse(JSON.stringify(medium.entities)));
@@ -125,6 +156,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
+      {/* Cabeçalho do Card com nome, status e botões de ação */}
       <CardHeader className="flex-row items-start justify-between">
         <div>
           <CardTitle className="font-headline text-2xl">{medium.name}</CardTitle>
@@ -135,6 +167,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
           </CardDescription>
         </div>
         <div className="flex items-center">
+            {/* Diálogo de Edição */}
             <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
               if (!open) resetEditState();
               setIsEditDialogOpen(open);
@@ -145,11 +178,11 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   <span className="sr-only">Editar Médium</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Editar Médium</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">
                       Nome
@@ -161,7 +194,8 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                     <div className="col-span-3 space-y-2">
                       {editedEntities.map((entity) => (
                         <div key={entity.id} className="flex items-center gap-2">
-                          <Input value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
+                          <Input placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
+                          <Input placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} className="w-20 shrink-0" />
                           <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="shrink-0">
                             <X className="h-4 w-4" />
                           </Button>
@@ -183,6 +217,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
               </DialogContent>
             </Dialog>
 
+            {/* Ações de Presença e Remoção */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -230,12 +265,16 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
             </AlertDialog>
         </div>
       </CardHeader>
+      
+      {/* Conteúdo do Card com a lista de entidades e consulentes */}
       <CardContent className="flex-grow space-y-4">
         {medium.entities && medium.entities.map((entity, index) => (
           <div key={entity.id} className={cn(!entity.isAvailable && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
-              <h3 className={cn("font-semibold text-lg", !entity.isAvailable && "line-through")}>{entity.name}</h3>
+              <h3 className={cn("font-semibold text-lg", !entity.isAvailable && "line-through")}>
+                {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
+              </h3>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation() }}>
