@@ -9,7 +9,7 @@ import {
   updateDoc,
   query,
   orderBy,
-  getDocs,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Medium, Entity, Consulente } from '@/lib/types';
@@ -21,37 +21,42 @@ export function useSchoolData() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
-        try {
-          console.log("Tentando buscar dados do Firestore com getDocs para depuração...");
-          const mediumsCollection = collection(db, MEDIUMS_COLLECTION);
-          const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
-          const snapshot = await getDocs(q);
+    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
+      console.log("Setting up Firebase real-time listener...");
+      const mediumsCollection = collection(db, MEDIUMS_COLLECTION);
+      const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
-          const mediumsData = snapshot.docs.map(doc => ({
-            ...doc.data(),
-            id: doc.id,
-          })) as Medium[];
-          
-          setMediums(mediumsData);
-          console.log("Dados buscados com sucesso:", mediumsData);
-
-        } catch (error) {
-          console.error("----------- ERRO DETALHADO DO FIREBASE -----------");
-          console.error("Ocorreu um erro ao buscar os dados:", error);
-          console.error("----------------------------------------------------");
-          console.error("Isso geralmente indica um problema de permissão (regras do Firestore) ou que a API do Firestore não está ativada no seu projeto Google Cloud.");
-        } finally {
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const mediumsData = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+        })) as Medium[];
+        
+        setMediums(mediumsData);
+        if (!isLoaded) {
           setIsLoaded(true);
         }
-      } else {
-        console.warn("Configuração do Firebase não encontrada. Os dados não serão salvos na nuvem.");
-        setIsLoaded(true);
-      }
-    };
+        console.log("Firestore real-time update received:", mediumsData);
 
-    fetchData();
+      }, (error) => {
+        console.error("----------- FIREBASE LISTENER ERROR -----------");
+        console.error("An error occurred while listening for real-time updates. This is very likely a PERMISSIONS or CONFIGURATION issue with your Firebase project.");
+        console.error("1. Ensure you have created a Firestore database in the Firebase Console.");
+        console.error("2. Ensure your Firestore Security Rules allow read access to the 'mediums' collection. Example for testing: allow read, write: if true;");
+        console.error("3. Ensure the Firestore API is enabled in your Google Cloud project.");
+        console.error("Full error object:", error);
+        console.error("----------------------------------------------------");
+        setIsLoaded(true);
+      });
+
+      return () => {
+        console.log("Cleaning up Firebase listener.");
+        unsubscribe();
+      };
+    } else {
+      console.warn("Firebase config not found or is set to placeholder values. Running in offline mode. Data will not be saved.");
+      setIsLoaded(true);
+    }
   }, []);
 
   const addMedium = useCallback(async (name: string, entities: string[]) => {
@@ -68,15 +73,12 @@ export function useSchoolData() {
     };
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
         try {
-            const docRef = await addDoc(collection(db, MEDIUMS_COLLECTION), newMedium);
-            // Manually update state after adding
-            setMediums(prev => [...prev, {...newMedium, id: docRef.id} as Medium]);
+            await addDoc(collection(db, MEDIUMS_COLLECTION), newMedium);
         } catch (error) {
             console.error("Erro ao adicionar médium: ", error);
         }
     } else {
-        // Fallback para localStorage se o Firebase não estiver configurado
-        setMediums(prev => [...prev, {...newMedium, id: `local-${Date.now()}`}]);
+        setMediums(prev => [...prev, {...newMedium, id: `local-${Date.now()}`} as Medium]);
     }
   }, []);
 
@@ -84,8 +86,6 @@ export function useSchoolData() {
     if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
         try {
             await deleteDoc(doc(db, MEDIUMS_COLLECTION, mediumId));
-             // Manually update state after removing
-            setMediums(prev => prev.filter(m => m.id !== mediumId));
         } catch (error) {
             console.error("Erro ao remover médium: ", error);
         }
@@ -118,8 +118,6 @@ export function useSchoolData() {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
                 entities: updatedEntities,
             });
-             // Manually update state
-            setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
         } catch (error) {
             console.error("Erro ao adicionar consulente: ", error);
         }
@@ -147,8 +145,6 @@ export function useSchoolData() {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
                 entities: updatedEntities,
             });
-             // Manually update state
-            setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
         } catch (error) {
             console.error("Erro ao remover consulente: ", error);
         }
@@ -166,8 +162,6 @@ export function useSchoolData() {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
                 isPresent: !medium.isPresent,
             });
-             // Manually update state
-            setMediums(prev => prev.map(m => m.id === mediumId ? {...m, isPresent: !m.isPresent} : m));
         } catch (error) {
             console.error("Erro ao alternar presença do médium: ", error);
         }
@@ -192,8 +186,6 @@ export function useSchoolData() {
             await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), {
                 entities: updatedEntities,
             });
-             // Manually update state
-            setMediums(prev => prev.map(m => m.id === mediumId ? {...m, entities: updatedEntities} : m));
         } catch (error) {
             console.error("Erro ao alternar disponibilidade da entidade: ", error);
         }
@@ -207,13 +199,6 @@ export function useSchoolData() {
         try {
             const mediumRef = doc(db, MEDIUMS_COLLECTION, mediumId);
             await updateDoc(mediumRef, updatedData);
-            // Manually update state
-             setMediums(prev => prev.map(m => {
-                if (m.id === mediumId) {
-                    return { ...m, ...updatedData } as Medium;
-                }
-                return m;
-            }));
         } catch (error) {
             console.error("Erro ao atualizar médium: ", error);
         }
