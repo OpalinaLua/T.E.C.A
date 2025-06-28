@@ -23,9 +23,6 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  icons: {
-    icon: '/icon.svg',
-  },
 };
 
 export const viewport: Viewport = {
