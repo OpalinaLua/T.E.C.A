@@ -93,10 +93,6 @@ export function useSchoolData() {
         createdAt: serverTimestamp(),
       };
       await addDoc(collection(db, 'mediums'), newMedium);
-      toast({
-        title: "Sucesso",
-        description: `Médium ${name.trim()} foi cadastrado(a).`,
-      });
     } catch (error) {
       console.error("Erro ao adicionar médium:", error);
       toast({ title: "Erro ao Salvar", description: "Não foi possível cadastrar o médium.", variant: "destructive" });
@@ -140,10 +136,6 @@ export function useSchoolData() {
     try {
         const mediumDocRef = doc(db, 'mediums', mediumId);
         await updateDoc(mediumDocRef, { entities: updatedEntities });
-        toast({
-            title: "Sucesso",
-            description: `Consulente ${consulenteName.trim()} foi agendado(a).`,
-        });
     } catch(error) {
         console.error("Erro ao adicionar consulente:", error);
         toast({ title: "Erro ao Agendar", description: "Não foi possível agendar o consulente.", variant: "destructive" });
@@ -153,7 +145,7 @@ export function useSchoolData() {
   /**
    * Remove um consulente de uma entidade de um médium.
    */
-  const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string) => {
+  const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => {
     const medium = mediums.find(m => m.id === mediumId);
     if (!medium) return;
 
@@ -168,11 +160,11 @@ export function useSchoolData() {
         await updateDoc(mediumDocRef, { entities: updatedEntities });
         toast({
             title: "Consulente Removido",
-            description: `O consulente foi removido(a).`,
+            description: `${consulenteName} foi removido(a).`,
         })
     } catch(error) {
         console.error("Erro ao remover consulente:", error);
-        toast({ title: "Erro ao Remover", description: "Não foi possível remover o consulente.", variant: "destructive" });
+        toast({ title: "Erro ao Remover", description: `Não foi possível remover ${consulenteName}.`, variant: "destructive" });
     }
   }, [mediums, toast]);
 
@@ -250,10 +242,6 @@ export function useSchoolData() {
     try {
       const mediumDocRef = doc(db, 'mediums', mediumId);
       await updateDoc(mediumDocRef, updatedData);
-      toast({
-        title: "Médium Atualizado",
-        description: `Os dados de ${updatedData.name || 'médium'} foram atualizados.`,
-      });
     } catch(error) {
         console.error("Erro ao atualizar médium:", error);
         toast({ title: "Erro ao Atualizar", description: "Não foi possível salvar as alterações.", variant: "destructive" });

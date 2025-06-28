@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils';
 interface MediumCardProps {
   medium: Medium;
   removeMedium: (mediumId: string) => void;
-  removeConsulente: (mediumId: string, entityId: string, consulenteId: string) => void;
+  removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
@@ -60,21 +60,13 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
    */
   const handleRemoveMedium = () => {
     removeMedium(medium.id);
-    toast({
-        title: "Médium Removido",
-        description: `O médium ${medium.name} foi removido com sucesso.`,
-    })
   };
 
   /**
    * Manipula a remoção de um consulente.
    */
   const handleRemoveConsulente = (entityId: string, consulenteId: string, consulenteName: string) => {
-    removeConsulente(medium.id, entityId, consulenteId);
-    toast({
-        title: "Consulente Removido",
-        description: `${consulenteName} foi removido(a).`,
-    })
+    removeConsulente(medium.id, entityId, consulenteId, consulenteName);
   };
 
   // Funções para manipulação do estado de edição do médium e entidades.
@@ -320,7 +312,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleRemoveConsulente(medium.id, entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground">
+                          <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Excluir
                           </AlertDialogAction>
                         </AlertDialogFooter>
