@@ -1,32 +1,23 @@
 /**
- * @fileoverview Hook personalizado para gerenciar os dados da escola no Firebase.
- * Este hook encapsula toda a lógica de interação com o Firestore,
- * incluindo leitura, adição, atualização e remoção de dados.
- * Ele fornece uma interface simples para os componentes da UI manipularem os dados.
+ * @fileoverview Hook personalizado para gerenciar os dados da escola.
+ * Este hook encapsula a lógica de estado, usando o localStorage do navegador
+ * para persistir os dados localmente. Isso permite que o aplicativo funcione
+ * offline e mantenha os dados entre as sessões no mesmo navegador.
+ * 
+ * ATENÇÃO: Os dados NÃO são salvos na nuvem e não serão sincronizados
+ * entre diferentes dispositivos ou navegadores. A integração com o Firebase
+ * foi desativada temporariamente para resolver erros de conexão.
  */
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  collection,
-  addDoc,
-  deleteDoc,
-  doc,
-  updateDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import type { Medium, Entity, Consulente } from '@/lib/types';
 import { useToast } from './use-toast';
 
-// Nome da coleção no Firestore onde os dados dos médiuns são armazenados.
-const MEDIUMS_COLLECTION = 'mediums';
+const LOCAL_STORAGE_KEY = 'schoolsync-data';
 
 /**
- * Hook para gerenciar os dados dos médiuns.
+ * Hook para gerenciar os dados dos médiuns usando o localStorage.
  * @returns Um objeto contendo a lista de médiuns, estado de carregamento e funções para manipular os dados.
  */
 export function useSchoolData() {
@@ -34,65 +25,42 @@ export function useSchoolData() {
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
-  // Efeito para escutar por atualizações em tempo real do Firebase.
+  // Efeito para carregar os dados do localStorage na inicialização.
   useEffect(() => {
-    // Verifica se a configuração do Firebase é válida antes de tentar conectar.
-    if (!db || !db.app.options.projectId || db.app.options.projectId === 'YOUR_PROJECT_ID') {
-      console.error("CONFIGURAÇÃO DO FIREBASE INVÁLIDA! Verifique o arquivo src/lib/firebase.ts. O aplicativo não se conectará à nuvem.");
-      setIsLoaded(true);
-      return () => {}; // Retorna uma função de desinscrição vazia.
-    }
-
-    const mediumsCollection = collection(db, MEDIUMS_COLLECTION);
-    const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
-
-    // onSnapshot escuta por mudanças e retorna uma função para parar de escutar.
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const mediumsData = querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-      })) as Medium[];
-      setMediums(mediumsData);
-      setIsLoaded(true);
-    }, (error) => {
-      // Este bloco captura erros de permissão ou conexão.
-      console.error("----------- ERRO DE CONEXÃO DO FIREBASE -----------");
-      console.error("Ocorreu um erro ao escutar as atualizações em tempo real. Por favor, verifique sua conexão e as configurações do projeto Firebase.");
-      console.error("CAUSAS PROVÁVEIS:");
-      console.error("1. O BANCO DE DADOS NÃO FOI CRIADO: Vá ao Console do Firebase > Firestore Database e clique em 'Criar banco de dados'.");
-      console.error("2. A API DO FIRESTORE ESTÁ DESATIVADA: Ative-a no seu projeto Google Cloud: https://console.cloud.google.com/apis/library/firestore.googleapis.com");
-      console.error("3. REGRAS DE SEGURANÇA: Suas regras no Firestore devem permitir leitura (ex: `allow read, write: if true;` para testes).");
-      console.error("Objeto de erro completo:", error);
-      console.error("----------------------------------------------------");
-      setIsLoaded(true); // Permite que a UI seja renderizada, mesmo que vazia.
-      toast({
-        title: "Erro de Conexão",
-        description: "Não foi possível conectar ao banco de dados. Verifique o console para mais detalhes.",
-        variant: "destructive",
-        duration: 10000,
-      });
-    });
-
-    // Função de limpeza que é chamada quando o componente é desmontado.
-    return () => unsubscribe();
-  }, [toast]); // Adicionado toast como dependência
-
-  const updateMediumInFirestore = async (mediumId: string, updatedData: object) => {
-    // Esta função não precisa mais de um fallback local, pois o onSnapshot cuidará da atualização da UI.
     try {
-      const mediumRef = doc(db, MEDIUMS_COLLECTION, mediumId);
-      await updateDoc(mediumRef, updatedData);
+      const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedData) {
+        setMediums(JSON.parse(storedData));
+      }
     } catch (error) {
-      console.error("Erro ao atualizar médium no Firestore: ", error);
-      toast({ title: "Erro de Sincronização", description: "Ocorreu um erro ao salvar as alterações na nuvem.", variant: "destructive" });
+      console.error("Erro ao carregar dados do localStorage:", error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os dados salvos localmente.",
+        variant: "destructive",
+      });
     }
-  };
+    setIsLoaded(true);
+  }, [toast]);
+
+  // Efeito para salvar os dados no localStorage sempre que o estado `mediums` mudar.
+  useEffect(() => {
+    if (!isLoaded) return; // Não salvar durante a carga inicial para evitar sobrescrever.
+    try {
+      // Ordena os médiuns por data de criação antes de salvar
+      const sortedMediums = [...mediums].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sortedMediums));
+    } catch (error) {
+      console.error("Erro ao salvar dados no localStorage:", error);
+    }
+  }, [mediums, isLoaded]);
 
   /**
-   * Adiciona um novo médium ao banco de dados. A UI será atualizada automaticamente pelo onSnapshot.
+   * Adiciona um novo médium ao estado.
    */
-  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number }[]) => {
-    const newMediumData = {
+  const addMedium = useCallback((name: string, entities: { name: string; limit: number }[]) => {
+    const newMedium: Medium = {
+      id: `medium-${Date.now()}`,
       name,
       isPresent: true,
       entities: entities.map((entity, index) => ({
@@ -102,127 +70,113 @@ export function useSchoolData() {
         isAvailable: true,
         consulenteLimit: entity.limit,
       })),
-      createdAt: Timestamp.fromDate(new Date()),
+      createdAt: new Date().toISOString(),
     };
 
-    // A UI não será mais atualizada localmente. O sucesso depende exclusivamente do Firebase.
-    try {
-      await addDoc(collection(db, MEDIUMS_COLLECTION), newMediumData);
-      // O onSnapshot cuidará de atualizar a UI.
-    } catch (error) {
-      console.error("Erro ao adicionar médium na nuvem: ", error);
-      toast({ title: "Erro ao Cadastrar", description: "Não foi possível salvar o novo médium na nuvem. Verifique sua conexão e as configurações do Firebase.", variant: "destructive" });
-    }
-  }, [toast]);
+    setMediums(currentMediums => [...currentMediums, newMedium]);
+  }, []);
 
   /**
-   * Remove um médium do banco de dados. A UI será atualizada automaticamente pelo onSnapshot.
+   * Remove um médium do estado.
    */
-  const removeMedium = useCallback(async (mediumId: string) => {
-    // A UI não será mais atualizada localmente.
-    try {
-      await deleteDoc(doc(db, MEDIUMS_COLLECTION, mediumId));
-      // O onSnapshot cuidará de atualizar a UI.
-    } catch (error) {
-      console.error("Erro ao remover médium na nuvem: ", error);
-      toast({ title: "Erro ao Remover", description: "Não foi possível remover o médium da nuvem.", variant: "destructive" });
-    }
-  }, [toast]);
+  const removeMedium = useCallback((mediumId: string) => {
+    setMediums(currentMediums => currentMediums.filter(m => m.id !== mediumId));
+  }, []);
 
   /**
-   * Adiciona um novo consulente a uma entidade. A UI será atualizada automaticamente.
+   * Adiciona um novo consulente a uma entidade.
    */
-  const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string) => {
-    const mediumToUpdate = mediums.find(m => m.id === mediumId);
-    if (!mediumToUpdate) return;
-
+  const addConsulente = useCallback((consulenteName: string, mediumId: string, entityId: string) => {
     const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: consulenteName };
 
-    const updatedEntities = mediumToUpdate.entities.map(entity =>
-      entity.id === entityId
-        ? { ...entity, consulentes: [...(entity.consulentes || []), newConsulente] }
-        : entity
-    );
-    await updateMediumInFirestore(mediumId, { entities: updatedEntities });
-  }, [mediums]);
+    setMediums(currentMediums => currentMediums.map(medium => {
+      if (medium.id !== mediumId) return medium;
+
+      const updatedEntities = medium.entities.map(entity =>
+        entity.id === entityId
+          ? { ...entity, consulentes: [...(entity.consulentes || []), newConsulente] }
+          : entity
+      );
+      return { ...medium, entities: updatedEntities };
+    }));
+  }, []);
 
   /**
-   * Remove um consulente de uma entidade. A UI será atualizada automaticamente.
+   * Remove um consulente de uma entidade.
    */
-  const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string) => {
-    const mediumToUpdate = mediums.find(m => m.id === mediumId);
-    if (!mediumToUpdate) return;
+  const removeConsulente = useCallback((mediumId: string, entityId: string, consulenteId: string) => {
+    setMediums(currentMediums => currentMediums.map(medium => {
+      if (medium.id !== mediumId) return medium;
 
-    const updatedEntities = mediumToUpdate.entities.map(entity =>
-      entity.id === entityId
-        ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
-        : entity
-    );
-    await updateMediumInFirestore(mediumId, { entities: updatedEntities });
-  }, [mediums]);
+      const updatedEntities = medium.entities.map(entity =>
+        entity.id === entityId
+          ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
+          : entity
+      );
+      return { ...medium, entities: updatedEntities };
+    }));
+  }, []);
 
   /**
-   * Alterna o estado de presença de um médium. A UI será atualizada automaticamente.
+   * Alterna o estado de presença de um médium.
    */
-  const toggleMediumPresence = useCallback(async (mediumId: string) => {
-    const medium = mediums.find(m => m.id === mediumId);
-    if (!medium) return;
+  const toggleMediumPresence = useCallback((mediumId: string) => {
+    setMediums(currentMediums => currentMediums.map(medium => {
+      if (medium.id !== mediumId) return medium;
 
-    const newIsPresent = !medium.isPresent;
-    const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
-    let updatedEntities = medium.entities;
+      const newIsPresent = !medium.isPresent;
+      const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
+      let updatedEntities = medium.entities;
     
-    // Se o médium está ficando ausente, remove todos os consulentes.
-    if (!newIsPresent) {
-      updatedEntities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
-    }
-
-    await updateMediumInFirestore(mediumId, { isPresent: newIsPresent, entities: updatedEntities });
-
-    const newStatus = newIsPresent ? 'presente' : 'ausente';
-    let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
-    if (!newIsPresent && hadConsulentes) {
-      description += " Todos os consulentes agendados foram removidos.";
-    }
-    toast({ title: "Presença Alterada", description });
-  }, [mediums, toast]);
-
-  /**
-   * Alterna a disponibilidade de uma entidade. A UI será atualizada automaticamente.
-   */
-  const toggleEntityAvailability = useCallback(async (mediumId: string, entityId: string) => {
-    const mediumToUpdate = mediums.find(m => m.id === mediumId);
-    if (!mediumToUpdate) return;
-
-    const entityToUpdate = mediumToUpdate.entities.find(e => e.id === entityId);
-    if (!entityToUpdate) return;
-
-    const hadConsulentes = (entityToUpdate.consulentes?.length || 0) > 0;
-    const newIsAvailable = !entityToUpdate.isAvailable;
-
-    const updatedEntities = mediumToUpdate.entities.map(entity => {
-      if (entity.id === entityId) {
-        // Se a entidade está ficando indisponível, remove seus consulentes.
-        return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
+      if (!newIsPresent) {
+        updatedEntities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
       }
-      return entity;
-    });
 
-    await updateMediumInFirestore(mediumId, { entities: updatedEntities });
+      const newStatus = newIsPresent ? 'presente' : 'ausente';
+      let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
+      if (!newIsPresent && hadConsulentes) {
+        description += " Todos os consulentes agendados foram removidos.";
+      }
+      toast({ title: "Presença Alterada", description });
 
-    const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
-    let description = `A entidade ${entityToUpdate.name} foi marcada como ${newStatus}.`;
-    if (!newIsAvailable && hadConsulentes) {
-      description += " Todos os consulentes agendados foram removidos.";
-    }
-    toast({ title: "Disponibilidade Alterada", description });
-  }, [mediums, toast]);
+      return { ...medium, isPresent: newIsPresent, entities: updatedEntities };
+    }));
+  }, [toast]);
 
   /**
-   * Atualiza os dados de um médium (nome e entidades). A UI será atualizada automaticamente.
+   * Alterna a disponibilidade de uma entidade.
    */
-  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
-    await updateMediumInFirestore(mediumId, updatedData);
+  const toggleEntityAvailability = useCallback((mediumId: string, entityId: string) => {
+    setMediums(currentMediums => currentMediums.map(medium => {
+      if (medium.id !== mediumId) return medium;
+      
+      const updatedEntities = medium.entities.map(entity => {
+        if (entity.id !== entityId) return entity;
+        
+        const hadConsulentes = (entity.consulentes?.length || 0) > 0;
+        const newIsAvailable = !entity.isAvailable;
+
+        const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
+        let description = `A entidade ${entity.name} foi marcada como ${newStatus}.`;
+        if (!newIsAvailable && hadConsulentes) {
+          description += " Todos os consulentes agendados foram removidos.";
+        }
+        toast({ title: "Disponibilidade Alterada", description });
+
+        return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
+      });
+
+      return { ...medium, entities: updatedEntities };
+    }));
+  }, [toast]);
+
+  /**
+   * Atualiza os dados de um médium (nome e entidades).
+   */
+  const updateMedium = useCallback((mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
+    setMediums(currentMediums => currentMediums.map(medium => 
+      medium.id === mediumId ? { ...medium, ...updatedData } : medium
+    ));
   }, []);
 
   return {

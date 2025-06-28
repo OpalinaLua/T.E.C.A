@@ -4,8 +4,6 @@
  * que são usadas em toda a aplicação para garantir a consistência dos dados.
  */
 
-import type { Timestamp } from 'firebase/firestore';
-
 /**
  * @interface Consulente
  * Representa um consulente (aluno/paciente) agendado para um atendimento.
@@ -38,5 +36,5 @@ export interface Medium {
   name: string;
   entities: Entity[];
   isPresent: boolean;
-  createdAt: Timestamp; // Usado pelo Firebase para ordenação
+  createdAt: string; // Usado para ordenação local
 }
