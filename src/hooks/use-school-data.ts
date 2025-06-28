@@ -1,23 +1,28 @@
 /**
  * @fileoverview Hook personalizado para gerenciar os dados da escola.
- * Este hook encapsula a lógica de estado, usando o localStorage do navegador
- * para persistir os dados localmente. Isso permite que o aplicativo funcione
- * offline e mantenha os dados entre as sessões no mesmo navegador.
- * 
- * ATENÇÃO: Os dados NÃO são salvos na nuvem e não serão sincronizados
- * entre diferentes dispositivos ou navegadores. A integração com o Firebase
- * foi desativada temporariamente para resolver erros de conexão.
+ * Este hook encapsula a lógica de estado, comunicando-se em tempo real
+ * com o banco de dados Firebase Firestore para carregar, salvar e
+ * sincronizar os dados entre dispositivos.
  */
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Medium, Entity, Consulente } from '@/lib/types';
 import { useToast } from './use-toast';
-
-const LOCAL_STORAGE_KEY = 'schoolsync-data';
+import { db } from '@/lib/firebase';
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  doc,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy
+} from 'firebase/firestore';
 
 /**
- * Hook para gerenciar os dados dos médiuns usando o localStorage.
+ * Hook para gerenciar os dados dos médiuns usando o Firebase Firestore.
  * @returns Um objeto contendo a lista de médiuns, estado de carregamento e funções para manipular os dados.
  */
 export function useSchoolData() {
@@ -25,137 +30,188 @@ export function useSchoolData() {
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
-  // Efeito para carregar os dados do localStorage na inicialização.
+  // Efeito para carregar e escutar os dados do Firestore na inicialização.
   useEffect(() => {
-    try {
-      const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedData) {
-        setMediums(JSON.parse(storedData));
-      }
-    } catch (error) {
-      console.error("Erro ao carregar dados do localStorage:", error);
+    setIsLoaded(false);
+    const mediumsCollection = collection(db, 'mediums');
+    const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const mediumsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Medium[];
+      setMediums(mediumsData);
+      setIsLoaded(true);
+    }, (error) => {
+      console.error("----------- ERRO DE CONEXÃO DO FIREBASE -----------", error);
       toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os dados salvos localmente.",
+        title: "Erro de Conexão",
+        description: "Não foi possível conectar ao banco de dados. Verifique a configuração do seu projeto Firebase.",
         variant: "destructive",
+        duration: Infinity,
       });
-    }
-    setIsLoaded(true);
+      setIsLoaded(true);
+    });
+
+    return () => unsubscribe();
   }, [toast]);
 
-  // Efeito para salvar os dados no localStorage sempre que o estado `mediums` mudar.
-  useEffect(() => {
-    if (!isLoaded) return; // Não salvar durante a carga inicial para evitar sobrescrever.
-    try {
-      // Ordena os médiuns por data de criação antes de salvar
-      const sortedMediums = [...mediums].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sortedMediums));
-    } catch (error) {
-      console.error("Erro ao salvar dados no localStorage:", error);
+  /**
+   * Adiciona um novo médium à coleção no Firestore.
+   */
+  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number }[]) => {
+    if (!name.trim() || entities.length === 0) {
+        toast({ title: "Erro", description: "Nome e entidades são obrigatórios.", variant: "destructive" });
+        return;
     }
-  }, [mediums, isLoaded]);
+    try {
+      const newMedium: Omit<Medium, 'id'> = {
+        name,
+        isPresent: true,
+        entities: entities.map((entity, index) => ({
+          id: `entity-${Date.now()}-${index}`,
+          name: entity.name,
+          consulentes: [],
+          isAvailable: true,
+          consulenteLimit: entity.limit,
+        })),
+        createdAt: new Date().toISOString(),
+      };
+      await addDoc(collection(db, 'mediums'), newMedium);
+      toast({
+        title: "Sucesso",
+        description: `Médium ${name.trim()} foi cadastrado(a).`,
+      });
+    } catch (error) {
+      console.error("Erro ao adicionar médium:", error);
+      toast({ title: "Erro ao Salvar", description: "Não foi possível cadastrar o médium.", variant: "destructive" });
+    }
+  }, [toast]);
 
   /**
-   * Adiciona um novo médium ao estado.
+   * Remove um médium da coleção no Firestore.
    */
-  const addMedium = useCallback((name: string, entities: { name: string; limit: number }[]) => {
-    const newMedium: Medium = {
-      id: `medium-${Date.now()}`,
-      name,
-      isPresent: true,
-      entities: entities.map((entity, index) => ({
-        id: `entity-${Date.now()}-${index}`,
-        name: entity.name,
-        consulentes: [],
-        isAvailable: true,
-        consulenteLimit: entity.limit,
-      })),
-      createdAt: new Date().toISOString(),
-    };
-
-    setMediums(currentMediums => [...currentMediums, newMedium]);
-  }, []);
+  const removeMedium = useCallback(async (mediumId: string) => {
+    try {
+      const mediumDocRef = doc(db, 'mediums', mediumId);
+      await deleteDoc(mediumDocRef);
+      toast({
+          title: "Médium Removido",
+          description: `O médium foi removido com sucesso.`,
+      })
+    } catch (error) {
+      console.error("Erro ao remover médium:", error);
+      toast({ title: "Erro ao Remover", description: "Não foi possível remover o médium.", variant: "destructive" });
+    }
+  }, [toast]);
 
   /**
-   * Remove um médium do estado.
+   * Adiciona um novo consulente a uma entidade de um médium específico.
    */
-  const removeMedium = useCallback((mediumId: string) => {
-    setMediums(currentMediums => currentMediums.filter(m => m.id !== mediumId));
-  }, []);
+  const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string) => {
+    const medium = mediums.find(m => m.id === mediumId);
+    if (!medium) return;
 
-  /**
-   * Adiciona um novo consulente a uma entidade.
-   */
-  const addConsulente = useCallback((consulenteName: string, mediumId: string, entityId: string) => {
     const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: consulenteName };
+    
+    const updatedEntities = medium.entities.map(entity => {
+      if (entity.id === entityId) {
+        // Garante que a lista de consulentes exista antes de adicionar
+        const consulentes = entity.consulentes || [];
+        return { ...entity, consulentes: [...consulentes, newConsulente] };
+      }
+      return entity;
+    });
 
-    setMediums(currentMediums => currentMediums.map(medium => {
-      if (medium.id !== mediumId) return medium;
-
-      const updatedEntities = medium.entities.map(entity =>
-        entity.id === entityId
-          ? { ...entity, consulentes: [...(entity.consulentes || []), newConsulente] }
-          : entity
-      );
-      return { ...medium, entities: updatedEntities };
-    }));
-  }, []);
+    try {
+        const mediumDocRef = doc(db, 'mediums', mediumId);
+        await updateDoc(mediumDocRef, { entities: updatedEntities });
+        toast({
+            title: "Sucesso",
+            description: `Consulente ${consulenteName.trim()} foi agendado(a).`,
+        });
+    } catch(error) {
+        console.error("Erro ao adicionar consulente:", error);
+        toast({ title: "Erro ao Agendar", description: "Não foi possível agendar o consulente.", variant: "destructive" });
+    }
+  }, [mediums, toast]);
 
   /**
-   * Remove um consulente de uma entidade.
+   * Remove um consulente de uma entidade de um médium.
    */
-  const removeConsulente = useCallback((mediumId: string, entityId: string, consulenteId: string) => {
-    setMediums(currentMediums => currentMediums.map(medium => {
-      if (medium.id !== mediumId) return medium;
+  const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string) => {
+    const medium = mediums.find(m => m.id === mediumId);
+    if (!medium) return;
 
-      const updatedEntities = medium.entities.map(entity =>
-        entity.id === entityId
-          ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
-          : entity
-      );
-      return { ...medium, entities: updatedEntities };
-    }));
-  }, []);
+    const updatedEntities = medium.entities.map(entity =>
+      entity.id === entityId
+        ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
+        : entity
+    );
+
+    try {
+        const mediumDocRef = doc(db, 'mediums', mediumId);
+        await updateDoc(mediumDocRef, { entities: updatedEntities });
+        toast({
+            title: "Consulente Removido",
+            description: `O consulente foi removido(a).`,
+        })
+    } catch(error) {
+        console.error("Erro ao remover consulente:", error);
+        toast({ title: "Erro ao Remover", description: "Não foi possível remover o consulente.", variant: "destructive" });
+    }
+  }, [mediums, toast]);
 
   /**
    * Alterna o estado de presença de um médium.
+   * Se o médium for marcado como ausente, todos os seus consulentes são removidos.
    */
-  const toggleMediumPresence = useCallback((mediumId: string) => {
-    setMediums(currentMediums => currentMediums.map(medium => {
-      if (medium.id !== mediumId) return medium;
+  const toggleMediumPresence = useCallback(async (mediumId: string) => {
+    const medium = mediums.find(m => m.id === mediumId);
+    if (!medium) return;
 
-      const newIsPresent = !medium.isPresent;
-      const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
-      let updatedEntities = medium.entities;
+    const newIsPresent = !medium.isPresent;
+    const updateData: Partial<Medium> = { isPresent: newIsPresent };
     
-      if (!newIsPresent) {
-        updatedEntities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
-      }
+    const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
+    
+    // Se o médium está ficando ausente, limpa todos os consulentes.
+    if (!newIsPresent) {
+      updateData.entities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
+    }
 
-      const newStatus = newIsPresent ? 'presente' : 'ausente';
-      let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
-      if (!newIsPresent && hadConsulentes) {
-        description += " Todos os consulentes agendados foram removidos.";
-      }
-      toast({ title: "Presença Alterada", description });
-
-      return { ...medium, isPresent: newIsPresent, entities: updatedEntities };
-    }));
-  }, [toast]);
+    try {
+        const mediumDocRef = doc(db, 'mediums', mediumId);
+        await updateDoc(mediumDocRef, updateData as any);
+        const newStatus = newIsPresent ? 'presente' : 'ausente';
+        let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
+        if (!newIsPresent && hadConsulentes) {
+          description += " Todos os consulentes agendados foram removidos.";
+        }
+        toast({ title: "Presença Alterada", description });
+    } catch(error) {
+        console.error("Erro ao alterar presença:", error);
+        toast({ title: "Erro ao Atualizar", description: "Não foi possível alterar a presença do médium.", variant: "destructive" });
+    }
+  }, [mediums, toast]);
 
   /**
    * Alterna a disponibilidade de uma entidade.
+   * Se a entidade ficar indisponível, seus consulentes são removidos.
    */
-  const toggleEntityAvailability = useCallback((mediumId: string, entityId: string) => {
-    setMediums(currentMediums => currentMediums.map(medium => {
-      if (medium.id !== mediumId) return medium;
-      
-      const updatedEntities = medium.entities.map(entity => {
+  const toggleEntityAvailability = useCallback(async (mediumId: string, entityId: string) => {
+    const medium = mediums.find(m => m.id === mediumId);
+    if (!medium) return;
+
+    let entityName = '';
+    const updatedEntities = medium.entities.map(entity => {
         if (entity.id !== entityId) return entity;
         
+        entityName = entity.name;
         const hadConsulentes = (entity.consulentes?.length || 0) > 0;
         const newIsAvailable = !entity.isAvailable;
-
+        
         const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
         let description = `A entidade ${entity.name} foi marcada como ${newStatus}.`;
         if (!newIsAvailable && hadConsulentes) {
@@ -165,19 +221,32 @@ export function useSchoolData() {
 
         return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
       });
-
-      return { ...medium, entities: updatedEntities };
-    }));
-  }, [toast]);
+    
+    try {
+        const mediumDocRef = doc(db, 'mediums', mediumId);
+        await updateDoc(mediumDocRef, { entities: updatedEntities });
+    } catch(error) {
+        console.error("Erro ao alterar disponibilidade:", error);
+        toast({ title: "Erro ao Atualizar", description: `Não foi possível alterar a disponibilidade de ${entityName}.`, variant: "destructive" });
+    }
+  }, [mediums, toast]);
 
   /**
-   * Atualiza os dados de um médium (nome e entidades).
+   * Atualiza os dados de um médium (nome e entidades) no Firestore.
    */
-  const updateMedium = useCallback((mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
-    setMediums(currentMediums => currentMediums.map(medium => 
-      medium.id === mediumId ? { ...medium, ...updatedData } : medium
-    ));
-  }, []);
+  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
+    try {
+      const mediumDocRef = doc(db, 'mediums', mediumId);
+      await updateDoc(mediumDocRef, updatedData);
+      toast({
+        title: "Médium Atualizado",
+        description: `Os dados de ${updatedData.name || 'médium'} foram atualizados.`,
+      });
+    } catch(error) {
+        console.error("Erro ao atualizar médium:", error);
+        toast({ title: "Erro ao Atualizar", description: "Não foi possível salvar as alterações.", variant: "destructive" });
+    }
+  }, [toast]);
 
   return {
     mediums,
