@@ -20,7 +20,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  writeBatch,
+  getDoc,
 } from 'firebase/firestore';
 
 /**
@@ -93,6 +93,10 @@ export function useSchoolData() {
         createdAt: serverTimestamp(),
       };
       await addDoc(collection(db, 'mediums'), newMedium);
+      toast({
+        title: "Sucesso",
+        description: `Médium ${name.trim()} foi cadastrado(a).`,
+      });
     } catch (error) {
       console.error("Erro ao adicionar médium:", error);
       toast({ title: "Erro ao Salvar", description: "Não foi possível cadastrar o médium.", variant: "destructive" });
@@ -136,6 +140,10 @@ export function useSchoolData() {
     try {
         const mediumDocRef = doc(db, 'mediums', mediumId);
         await updateDoc(mediumDocRef, { entities: updatedEntities });
+        toast({
+          title: "Sucesso",
+          description: `Consulente ${consulenteName.trim()} foi agendado(a).`,
+        });
     } catch(error) {
         console.error("Erro ao adicionar consulente:", error);
         toast({ title: "Erro ao Agendar", description: "Não foi possível agendar o consulente.", variant: "destructive" });
@@ -143,30 +151,38 @@ export function useSchoolData() {
   }, [mediums, toast]);
 
   /**
-   * Remove um consulente de uma entidade de um médium.
+   * Remove um consulente de uma entidade de um médium. Busca os dados mais recentes antes de atualizar.
    */
   const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => {
-    const medium = mediums.find(m => m.id === mediumId);
-    if (!medium) return;
-
-    const updatedEntities = medium.entities.map(entity =>
-      entity.id === entityId
-        ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
-        : entity
-    );
-
+    const mediumDocRef = doc(db, 'mediums', mediumId);
+    
     try {
-        const mediumDocRef = doc(db, 'mediums', mediumId);
-        await updateDoc(mediumDocRef, { entities: updatedEntities });
-        toast({
-            title: "Consulente Removido",
-            description: `${consulenteName} foi removido(a).`,
-        })
+      const docSnap = await getDoc(mediumDocRef);
+
+      if (!docSnap.exists()) {
+        throw new Error("Médium não encontrado no banco de dados.");
+      }
+
+      const currentMedium = docSnap.data() as Omit<Medium, 'id'>;
+
+      const updatedEntities = currentMedium.entities.map(entity =>
+        entity.id === entityId
+          ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
+          : entity
+      );
+
+      await updateDoc(mediumDocRef, { entities: updatedEntities });
+      
+      toast({
+          title: "Consulente Removido",
+          description: `${consulenteName} foi removido(a).`,
+      });
+
     } catch(error) {
         console.error("Erro ao remover consulente:", error);
         toast({ title: "Erro ao Remover", description: `Não foi possível remover ${consulenteName}.`, variant: "destructive" });
     }
-  }, [mediums, toast]);
+  }, [toast]);
 
   /**
    * Alterna o estado de presença de um médium.
