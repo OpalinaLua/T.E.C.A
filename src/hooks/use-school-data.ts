@@ -16,6 +16,7 @@ import {
   query,
   orderBy,
   onSnapshot,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Medium, Entity, Consulente } from '@/lib/types';
@@ -37,7 +38,7 @@ export function useSchoolData() {
   useEffect(() => {
     // Verifica se a configuração do Firebase é válida antes de tentar conectar.
     if (!db || !db.app.options.projectId || db.app.options.projectId === 'YOUR_PROJECT_ID') {
-      console.warn("Configuração do Firebase não encontrada ou está com valores de exemplo. Rodando em modo offline. Os dados não serão salvos.");
+      console.error("CONFIGURAÇÃO DO FIREBASE INVÁLIDA! Verifique o arquivo src/lib/firebase.ts. O aplicativo não se conectará à nuvem.");
       setIsLoaded(true);
       return () => {}; // Retorna uma função de desinscrição vazia.
     }
@@ -57,26 +58,33 @@ export function useSchoolData() {
       // Este bloco captura erros de permissão ou conexão.
       console.error("----------- ERRO DE CONEXÃO DO FIREBASE -----------");
       console.error("Ocorreu um erro ao escutar as atualizações em tempo real. Por favor, verifique sua conexão e as configurações do projeto Firebase.");
-      console.error("1. Garanta que você CLICOU em 'Criar banco de dados' no Console do Firebase para o Firestore.");
-      console.error("2. Garanta que a API 'Cloud Firestore API' está ATIVADA no seu projeto Google Cloud: https://console.cloud.google.com/apis/library/firestore.googleapis.com");
-      console.error("3. Garanta que suas Regras de Segurança do Firestore permitem leitura (pelo menos no modo de teste). Ex: `allow read, write: if true;`");
+      console.error("CAUSAS PROVÁVEIS:");
+      console.error("1. O BANCO DE DADOS NÃO FOI CRIADO: Vá ao Console do Firebase > Firestore Database e clique em 'Criar banco de dados'.");
+      console.error("2. A API DO FIRESTORE ESTÁ DESATIVADA: Ative-a no seu projeto Google Cloud: https://console.cloud.google.com/apis/library/firestore.googleapis.com");
+      console.error("3. REGRAS DE SEGURANÇA: Suas regras no Firestore devem permitir leitura (ex: `allow read, write: if true;` para testes).");
       console.error("Objeto de erro completo:", error);
       console.error("----------------------------------------------------");
       setIsLoaded(true); // Permite que a UI seja renderizada, mesmo que vazia.
+      toast({
+        title: "Erro de Conexão",
+        description: "Não foi possível conectar ao banco de dados. Verifique o console para mais detalhes.",
+        variant: "destructive",
+        duration: 10000,
+      });
     });
 
     // Função de limpeza que é chamada quando o componente é desmontado.
     return () => unsubscribe();
-  }, []); // O array vazio garante que o efeito rode apenas uma vez.
+  }, [toast]); // Adicionado toast como dependência
 
   const updateMediumInFirestore = async (mediumId: string, updatedData: object) => {
-    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
-      try {
-        await updateDoc(doc(db, MEDIUMS_COLLECTION, mediumId), updatedData);
-      } catch (error) {
-        console.error("Erro ao atualizar médium no Firestore: ", error);
-        toast({ title: "Erro", description: "Ocorreu um erro ao salvar as alterações.", variant: "destructive" });
-      }
+    // Esta função não precisa mais de um fallback local, pois o onSnapshot cuidará da atualização da UI.
+    try {
+      const mediumRef = doc(db, MEDIUMS_COLLECTION, mediumId);
+      await updateDoc(mediumRef, updatedData);
+    } catch (error) {
+      console.error("Erro ao atualizar médium no Firestore: ", error);
+      toast({ title: "Erro de Sincronização", description: "Ocorreu um erro ao salvar as alterações na nuvem.", variant: "destructive" });
     }
   };
 
@@ -94,35 +102,30 @@ export function useSchoolData() {
         isAvailable: true,
         consulenteLimit: entity.limit,
       })),
-      createdAt: new Date(),
+      createdAt: Timestamp.fromDate(new Date()),
     };
 
-    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
-      try {
-        await addDoc(collection(db, MEDIUMS_COLLECTION), newMediumData);
-      } catch (error) {
-        console.error("Erro ao adicionar médium: ", error);
-        toast({ title: "Erro", description: "Não foi possível cadastrar o médium.", variant: "destructive" });
-      }
-    } else {
-      // Modo offline: simula a adição localmente.
-      setMediums(prev => [...prev, { ...newMediumData, id: `local-${Date.now()}` } as Medium]);
+    // A UI não será mais atualizada localmente. O sucesso depende exclusivamente do Firebase.
+    try {
+      await addDoc(collection(db, MEDIUMS_COLLECTION), newMediumData);
+      // O onSnapshot cuidará de atualizar a UI.
+    } catch (error) {
+      console.error("Erro ao adicionar médium na nuvem: ", error);
+      toast({ title: "Erro ao Cadastrar", description: "Não foi possível salvar o novo médium na nuvem. Verifique sua conexão e as configurações do Firebase.", variant: "destructive" });
     }
   }, [toast]);
 
   /**
-   * Remove um médium do banco de dados. A UI será atualizada automaticamente.
+   * Remove um médium do banco de dados. A UI será atualizada automaticamente pelo onSnapshot.
    */
   const removeMedium = useCallback(async (mediumId: string) => {
-    if (db && db.app.options.projectId && db.app.options.projectId !== 'YOUR_PROJECT_ID') {
-      try {
-        await deleteDoc(doc(db, MEDIUMS_COLLECTION, mediumId));
-      } catch (error) {
-        console.error("Erro ao remover médium: ", error);
-        toast({ title: "Erro", description: "Não foi possível remover o médium.", variant: "destructive" });
-      }
-    } else {
-      setMediums(prev => prev.filter(m => m.id !== mediumId));
+    // A UI não será mais atualizada localmente.
+    try {
+      await deleteDoc(doc(db, MEDIUMS_COLLECTION, mediumId));
+      // O onSnapshot cuidará de atualizar a UI.
+    } catch (error) {
+      console.error("Erro ao remover médium na nuvem: ", error);
+      toast({ title: "Erro ao Remover", description: "Não foi possível remover o médium da nuvem.", variant: "destructive" });
     }
   }, [toast]);
 
@@ -168,6 +171,8 @@ export function useSchoolData() {
     const newIsPresent = !medium.isPresent;
     const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
     let updatedEntities = medium.entities;
+    
+    // Se o médium está ficando ausente, remove todos os consulentes.
     if (!newIsPresent) {
       updatedEntities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
     }
@@ -193,9 +198,11 @@ export function useSchoolData() {
     if (!entityToUpdate) return;
 
     const hadConsulentes = (entityToUpdate.consulentes?.length || 0) > 0;
+    const newIsAvailable = !entityToUpdate.isAvailable;
+
     const updatedEntities = mediumToUpdate.entities.map(entity => {
       if (entity.id === entityId) {
-        const newIsAvailable = !entity.isAvailable;
+        // Se a entidade está ficando indisponível, remove seus consulentes.
         return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
       }
       return entity;
@@ -203,16 +210,16 @@ export function useSchoolData() {
 
     await updateMediumInFirestore(mediumId, { entities: updatedEntities });
 
-    const newStatus = !entityToUpdate.isAvailable ? 'disponível' : 'indisponível';
+    const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
     let description = `A entidade ${entityToUpdate.name} foi marcada como ${newStatus}.`;
-    if (entityToUpdate.isAvailable && hadConsulentes) {
+    if (!newIsAvailable && hadConsulentes) {
       description += " Todos os consulentes agendados foram removidos.";
     }
     toast({ title: "Disponibilidade Alterada", description });
   }, [mediums, toast]);
 
   /**
-   * Atualiza os dados de um médium. A UI será atualizada automaticamente.
+   * Atualiza os dados de um médium (nome e entidades). A UI será atualizada automaticamente.
    */
   const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
     await updateMediumInFirestore(mediumId, updatedData);
