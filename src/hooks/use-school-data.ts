@@ -18,7 +18,9 @@ import {
   deleteDoc,
   updateDoc,
   query,
-  orderBy
+  orderBy,
+  serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 
 /**
@@ -33,6 +35,18 @@ export function useSchoolData() {
   // Efeito para carregar e escutar os dados do Firestore na inicialização.
   useEffect(() => {
     setIsLoaded(false);
+    if (!db) {
+      console.error("A conexão com o Firebase (db) não está disponível.");
+      toast({
+        title: "Erro de Configuração",
+        description: "A conexão com o banco de dados não foi estabelecida. Verifique o arquivo de configuração do Firebase.",
+        variant: "destructive",
+        duration: Infinity,
+      });
+      setIsLoaded(true);
+      return;
+    }
+    
     const mediumsCollection = collection(db, 'mediums');
     const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
@@ -47,7 +61,7 @@ export function useSchoolData() {
       console.error("----------- ERRO DE CONEXÃO DO FIREBASE -----------", error);
       toast({
         title: "Erro de Conexão",
-        description: "Não foi possível conectar ao banco de dados. Verifique a configuração do seu projeto Firebase.",
+        description: "Não foi possível conectar ao banco de dados. Verifique a configuração do seu projeto Firebase e as regras de segurança.",
         variant: "destructive",
         duration: Infinity,
       });
@@ -66,7 +80,7 @@ export function useSchoolData() {
         return;
     }
     try {
-      const newMedium: Omit<Medium, 'id'> = {
+      const newMedium = {
         name,
         isPresent: true,
         entities: entities.map((entity, index) => ({
@@ -76,7 +90,7 @@ export function useSchoolData() {
           isAvailable: true,
           consulenteLimit: entity.limit,
         })),
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
       };
       await addDoc(collection(db, 'mediums'), newMedium);
       toast({
@@ -117,7 +131,6 @@ export function useSchoolData() {
     
     const updatedEntities = medium.entities.map(entity => {
       if (entity.id === entityId) {
-        // Garante que a lista de consulentes exista antes de adicionar
         const consulentes = entity.consulentes || [];
         return { ...entity, consulentes: [...consulentes, newConsulente] };
       }
@@ -176,7 +189,6 @@ export function useSchoolData() {
     
     const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
     
-    // Se o médium está ficando ausente, limpa todos os consulentes.
     if (!newIsPresent) {
       updateData.entities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
     }
