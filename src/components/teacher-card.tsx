@@ -185,7 +185,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   <span className="sr-only">Editar Médium</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Editar Médium</DialogTitle>
                 </DialogHeader>
