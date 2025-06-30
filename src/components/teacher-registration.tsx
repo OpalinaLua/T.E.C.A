@@ -38,7 +38,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
    */
   const handleAddEntity = () => {
     const limit = parseInt(currentEntityLimit, 10);
-    if (currentEntityName.trim() && !isNaN(limit) && limit > 0) {
+    if (currentEntityName.trim() && !isNaN(limit) && limit >= 0) {
       if (entities.some(e => e.name === currentEntityName.trim())) {
           toast({
               title: "Entidade Duplicada",
@@ -53,7 +53,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
     } else {
         toast({
             title: "Dados Inválidos",
-            description: "Por favor, forneça um nome e um limite válido (maior que zero) para a entidade.",
+            description: "Por favor, forneça um nome e um limite válido (número igual ou maior que zero) para a entidade.",
             variant: "destructive",
         })
     }
@@ -133,7 +133,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
                   <Input
                       id="entity-limit"
                       type="number"
-                      min="1"
+                      min="0"
                       placeholder="10"
                       value={currentEntityLimit}
                       onChange={(e) => setCurrentEntityLimit(e.target.value)}
