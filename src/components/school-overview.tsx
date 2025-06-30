@@ -1,6 +1,6 @@
 "use client";
 
-import type { Medium } from '@/lib/types';
+import type { Medium, Category } from '@/lib/types';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { LogIn } from 'lucide-react';
@@ -14,11 +14,14 @@ interface SchoolOverviewProps {
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   updateMedium: (mediumId: string, data: { name?: string; entities?: any[] }) => void;
+  selectedCategories: Category[];
 }
 
-export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium, selectedCategories }: SchoolOverviewProps) {
   const presentMediums = mediums.filter(m => m.isPresent);
   const absentMediums = mediums.filter(m => !m.isPresent);
+
+  const noCategoriesSelected = selectedCategories.length === 0;
 
   return (
     <div className="space-y-8">
@@ -35,6 +38,7 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
                 toggleMediumPresence={toggleMediumPresence}
                 toggleEntityAvailability={toggleEntityAvailability}
                 updateMedium={updateMedium}
+                selectedCategories={selectedCategories}
               />
             ))}
           </div>

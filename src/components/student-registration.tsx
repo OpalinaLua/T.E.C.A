@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import type { Medium } from '@/lib/types';
+import type { Medium, Category } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +17,10 @@ import { useToast } from '@/hooks/use-toast';
 interface ConsulenteRegistrationProps {
   mediums: Medium[];
   addConsulente: (consulenteName: string, mediumId: string, entityId: string) => void;
+  selectedCategories: Category[];
 }
 
-export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteRegistrationProps) {
+export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories }: ConsulenteRegistrationProps) {
   // Estados do componente.
   const [name, setName] = useState('');
   const [selectedMediumId, setSelectedMediumId] = useState('');
@@ -27,17 +28,34 @@ export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteReg
   const { toast } = useToast();
 
   // Memoiza a lista de médiuns disponíveis para evitar recálculos desnecessários.
-  // Um médium está disponível se estiver presente e tiver pelo menos uma entidade disponível para agendamento.
-  const availableMediums = useMemo(() => mediums.filter(t => 
-    t.isPresent && t.entities && t.entities.some(s => s.isAvailable && s.consulenteLimit > 0 && s.consulentes.length < s.consulenteLimit)
-  ), [mediums]);
+  // Um médium está disponível se estiver presente e tiver pelo menos uma entidade disponível para agendamento
+  // que pertença às categorias selecionadas para a gira.
+  const availableMediums = useMemo(() => {
+    if (selectedCategories.length === 0) return [];
+    return mediums.filter(t => 
+      t.isPresent && t.entities && t.entities.some(s => 
+        selectedCategories.includes(s.category) &&
+        s.isAvailable && 
+        s.consulenteLimit > 0 && 
+        s.consulentes.length < s.consulenteLimit
+      )
+    );
+  }, [mediums, selectedCategories]);
   
   // Memoiza a lista de entidades disponíveis para o médium selecionado.
+  // Uma entidade está disponível se pertencer à categoria da gira, `isAvailable` for true, e houver vagas.
   const availableEntities = useMemo(() => {
-    const medium = availableMediums.find(t => t.id === selectedMediumId);
-    // Uma entidade está disponível se `isAvailable` for true, o limite de consulentes for maior que zero, e o número de consulentes agendados for menor que o limite.
-    return medium ? medium.entities.filter(s => s.isAvailable && s.consulenteLimit > 0 && s.consulentes.length < s.consulenteLimit) : [];
-  }, [availableMediums, selectedMediumId]);
+    if (!selectedMediumId) return [];
+    const medium = mediums.find(t => t.id === selectedMediumId);
+    if (!medium) return [];
+
+    return medium.entities.filter(s => 
+      selectedCategories.includes(s.category) &&
+      s.isAvailable && 
+      s.consulenteLimit > 0 && 
+      s.consulentes.length < s.consulenteLimit
+    );
+  }, [mediums, selectedMediumId, selectedCategories]);
 
   /**
    * Manipula a mudança de seleção do médium, resetando a entidade selecionada.
@@ -71,6 +89,12 @@ export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteReg
         });
     }
   };
+  
+  const getButtonText = () => {
+    if (selectedCategories.length === 0) return "Selecione uma Gira";
+    if (availableMediums.length === 0) return "Nenhum Médium Disponível";
+    return "Agendar Consulente";
+  }
 
   return (
     <Card className="w-full">
@@ -88,11 +112,12 @@ export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteReg
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              disabled={selectedCategories.length === 0}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Médium</label>
-            <Select onValueChange={handleMediumChange} value={selectedMediumId}>
+            <Select onValueChange={handleMediumChange} value={selectedMediumId} disabled={availableMediums.length === 0}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um(a) médium" />
               </SelectTrigger>
@@ -120,8 +145,8 @@ export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteReg
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={availableMediums.length === 0}>
-            {availableMediums.length > 0 ? 'Agendar Consulente' : 'Nenhum Médium Disponível'}
+          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={selectedCategories.length === 0 || availableMediums.length === 0}>
+            {getButtonText()}
           </Button>
         </CardFooter>
       </form>

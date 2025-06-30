@@ -6,8 +6,9 @@
  */
 "use client";
 
-import { useState } from 'react';
-import type { Medium, Entity } from '@/lib/types';
+import { useMemo, useState } from 'react';
+import type { Medium, Entity, Category } from '@/lib/types';
+import { spiritualCategories } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { UserX, Eye, EyeOff, LogOut, LogIn, Trash2, Pencil, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 // Interface para as props do componente.
 interface MediumCardProps {
@@ -46,14 +48,20 @@ interface MediumCardProps {
   toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
+  selectedCategories: Category[];
 }
 
-export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium }: MediumCardProps) {
+export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium, selectedCategories }: MediumCardProps) {
   // Estados do componente para controle do diálogo de edição.
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedName, setEditedName] = useState(medium.name);
   const [editedEntities, setEditedEntities] = useState<Entity[]>(JSON.parse(JSON.stringify(medium.entities))); // Cópia profunda para edição
+
+  const activeEntitiesForGira = useMemo(() => {
+    if (selectedCategories.length === 0) return [];
+    return medium.entities.filter(e => selectedCategories.includes(e.category));
+  }, [medium.entities, selectedCategories]);
 
   /**
    * Manipula a remoção do médium.
@@ -73,6 +81,12 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
   const handleEntityNameChange = (entityId: string, newName: string) => {
     setEditedEntities(currentEntities => 
       currentEntities.map(e => e.id === entityId ? { ...e, name: newName } : e)
+    );
+  };
+
+  const handleEntityCategoryChange = (entityId: string, newCategory: Category) => {
+    setEditedEntities(currentEntities =>
+      currentEntities.map(e => e.id === entityId ? { ...e, category: newCategory } : e)
     );
   };
   
@@ -102,6 +116,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
           {
               id: `entity-${Date.now()}`,
               name: "Nova Entidade",
+              category: "Exu", // Categoria padrão
               consulentes: [],
               isAvailable: true,
               consulenteLimit: 10, // Limite padrão para novas entidades
@@ -186,7 +201,15 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                     <div className="col-span-3 space-y-2">
                       {editedEntities.map((entity) => (
                         <div key={entity.id} className="flex items-center gap-2">
-                          <Input placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
+                          <Input placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} className='flex-1'/>
+                          <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
+                            <SelectTrigger className="w-[130px] shrink-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {spiritualCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
                           <Input placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} className="w-20 shrink-0" />
                           <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="shrink-0">
                             <X className="h-4 w-4" />
@@ -260,13 +283,22 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
       
       {/* Conteúdo do Card com a lista de entidades e consulentes */}
       <CardContent className="flex-grow space-y-4">
-        {medium.entities && medium.entities.map((entity, index) => (
+        {selectedCategories.length === 0 && (
+          <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades disponíveis.</p>
+        )}
+        {selectedCategories.length > 0 && activeEntitiesForGira.length === 0 && (
+           <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium pertence às categorias selecionadas.</p>
+        )}
+        {activeEntitiesForGira.map((entity, index) => (
           <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
-              <h3 className={cn("font-semibold text-lg", (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through")}>
-                {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
-              </h3>
+              <div>
+                <h3 className={cn("font-semibold text-lg", (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through")}>
+                  {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
+                </h3>
+                <Badge variant="outline">{entity.category}</Badge>
+              </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation() }}>

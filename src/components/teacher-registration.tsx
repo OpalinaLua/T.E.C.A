@@ -13,16 +13,19 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
+import { spiritualCategories, type Category } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 // Interface para as props do componente.
 interface MediumRegistrationProps {
-  addMedium: (name: string, entities: { name: string; limit: number }[]) => void;
+  addMedium: (name: string, entities: { name: string; limit: number, category: Category }[]) => void;
 }
 
 // Interface para representar a estrutura de uma entidade sendo adicionada.
 interface EntityInput {
     name: string;
     limit: number;
+    category: Category;
 }
 
 export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
@@ -30,6 +33,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
   const [name, setName] = useState('');
   const [currentEntityName, setCurrentEntityName] = useState('');
   const [currentEntityLimit, setCurrentEntityLimit] = useState('10'); // Limite padrão
+  const [currentEntityCategory, setCurrentEntityCategory] = useState<Category | ''>('');
   const [entities, setEntities] = useState<EntityInput[]>([]);
   const { toast } = useToast();
 
@@ -38,7 +42,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
    */
   const handleAddEntity = () => {
     const limit = parseInt(currentEntityLimit, 10);
-    if (currentEntityName.trim() && !isNaN(limit) && limit >= 0) {
+    if (currentEntityName.trim() && !isNaN(limit) && limit >= 0 && currentEntityCategory) {
       if (entities.some(e => e.name === currentEntityName.trim())) {
           toast({
               title: "Entidade Duplicada",
@@ -47,13 +51,14 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
           });
           return;
       }
-      setEntities([...entities, { name: currentEntityName.trim(), limit }]);
+      setEntities([...entities, { name: currentEntityName.trim(), limit, category: currentEntityCategory }]);
       setCurrentEntityName('');
       setCurrentEntityLimit('10'); // Reseta o limite para o padrão
+      setCurrentEntityCategory('');
     } else {
         toast({
             title: "Dados Inválidos",
-            description: "Por favor, forneça um nome e um limite válido (número igual ou maior que zero) para a entidade.",
+            description: "Por favor, forneça nome, categoria e um limite válido (número igual ou maior que zero) para a entidade.",
             variant: "destructive",
         })
     }
@@ -128,6 +133,19 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
                   }}
                 />
               </div>
+              <div className='w-[130px] space-y-1.5'>
+                <Label htmlFor="entity-category" className="text-xs text-muted-foreground">Categoria</Label>
+                <Select value={currentEntityCategory} onValueChange={(v) => setCurrentEntityCategory(v as Category)}>
+                  <SelectTrigger id="entity-category">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {spiritualCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                   <Label htmlFor="entity-limit" className="text-xs text-muted-foreground">Limite</Label>
                   <Input
@@ -155,7 +173,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
           <div className="flex flex-wrap gap-2">
             {entities.map((entity, index) => (
               <Badge key={index} variant="secondary" className="flex items-center gap-1.5 text-sm py-1">
-                {entity.name} ({entity.limit})
+                {entity.name} ({entity.category}, {entity.limit})
                 <button type="button" onClick={() => handleRemoveEntity(entity)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
                   <X className="h-3 w-3" />
                   <span className="sr-only">Remover {entity.name}</span>

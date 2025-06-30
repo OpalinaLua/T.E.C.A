@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Medium, Entity, Consulente } from '@/lib/types';
+import type { Medium, Entity, Consulente, Category } from '@/lib/types';
 import { useToast } from './use-toast';
 import { db } from '@/lib/firebase';
 import {
@@ -74,7 +74,7 @@ export function useSchoolData() {
   /**
    * Adiciona um novo médium à coleção no Firestore.
    */
-  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number }[]) => {
+  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number; category: Category }[]) => {
     if (!name.trim() || entities.length === 0) {
         toast({ title: "Erro", description: "Nome e entidades são obrigatórios.", variant: "destructive" });
         return;
@@ -86,6 +86,7 @@ export function useSchoolData() {
         entities: entities.map((entity, index) => ({
           id: `entity-${Date.now()}-${index}`,
           name: entity.name,
+          category: entity.category,
           consulentes: [],
           isAvailable: true,
           consulenteLimit: entity.limit,
