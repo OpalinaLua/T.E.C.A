@@ -29,14 +29,14 @@ export function ConsulenteRegistration({ mediums, addConsulente }: ConsulenteReg
   // Memoiza a lista de médiuns disponíveis para evitar recálculos desnecessários.
   // Um médium está disponível se estiver presente e tiver pelo menos uma entidade disponível para agendamento.
   const availableMediums = useMemo(() => mediums.filter(t => 
-    t.isPresent && t.entities && t.entities.some(s => s.isAvailable && s.consulentes.length < s.consulenteLimit)
+    t.isPresent && t.entities && t.entities.some(s => s.isAvailable && s.consulenteLimit > 0 && s.consulentes.length < s.consulenteLimit)
   ), [mediums]);
   
   // Memoiza a lista de entidades disponíveis para o médium selecionado.
   const availableEntities = useMemo(() => {
     const medium = availableMediums.find(t => t.id === selectedMediumId);
-    // Uma entidade está disponível se `isAvailable` for true e o número de consulentes for menor que o limite.
-    return medium ? medium.entities.filter(s => s.isAvailable && s.consulentes.length < s.consulenteLimit) : [];
+    // Uma entidade está disponível se `isAvailable` for true, o limite de consulentes for maior que zero, e o número de consulentes agendados for menor que o limite.
+    return medium ? medium.entities.filter(s => s.isAvailable && s.consulenteLimit > 0 && s.consulentes.length < s.consulenteLimit) : [];
   }, [availableMediums, selectedMediumId]);
 
   /**

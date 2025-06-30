@@ -261,10 +261,10 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
       {/* Conteúdo do Card com a lista de entidades e consulentes */}
       <CardContent className="flex-grow space-y-4">
         {medium.entities && medium.entities.map((entity, index) => (
-          <div key={entity.id} className={cn(!entity.isAvailable && "opacity-60")}>
+          <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
-              <h3 className={cn("font-semibold text-lg", !entity.isAvailable && "line-through")}>
+              <h3 className={cn("font-semibold text-lg", (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through")}>
                 {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
               </h3>
               <AlertDialog>
