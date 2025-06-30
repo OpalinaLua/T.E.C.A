@@ -133,7 +133,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
                   }}
                 />
               </div>
-              <div className='w-[130px] space-y-1.5'>
+              <div className='w-[120px] space-y-1.5'>
                 <Label htmlFor="entity-category" className="text-xs text-muted-foreground">Categoria</Label>
                 <Select value={currentEntityCategory} onValueChange={(v) => setCurrentEntityCategory(v as Category)}>
                   <SelectTrigger id="entity-category">

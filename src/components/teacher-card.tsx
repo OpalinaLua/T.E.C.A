@@ -203,7 +203,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                         <div key={entity.id} className="flex items-center gap-2">
                           <Input placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} className='flex-1'/>
                           <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
-                            <SelectTrigger className="w-[130px] shrink-0">
+                            <SelectTrigger className="w-[120px] shrink-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
