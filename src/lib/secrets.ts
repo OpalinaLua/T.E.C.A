@@ -5,5 +5,6 @@
  * como uma alternativa ao uso de variáveis de ambiente em planos gratuitos.
  */
 
+export const ADMIN_EMAIL = "admin@example.com"; // E-mail do administrador para login com Google
 export const ADMIN_PASSWORD = "2406";
 export const CLEAR_HISTORY_PASSWORD = "040820";

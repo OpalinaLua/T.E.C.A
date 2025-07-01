@@ -5,6 +5,7 @@
  */
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Configuração do Firebase. Substitua pelos dados do seu projeto se necessário.
 const firebaseConfig = {
@@ -20,7 +21,8 @@ const firebaseConfig = {
 // Inicializa o Firebase, evitando a reinicialização se já houver uma instância.
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Exporta a instância do Firestore para ser usada na aplicação.
+// Exporta as instâncias dos serviços Firebase para serem usadas na aplicação.
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { db };
+export { db, auth };
