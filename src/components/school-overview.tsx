@@ -5,6 +5,7 @@ import type { Medium, Category } from '@/lib/types';
 import { MediumCard } from './teacher-card';
 import { Input } from './ui/input';
 import { Search } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SchoolOverviewProps {
   mediums: Medium[];
@@ -18,14 +19,19 @@ interface SchoolOverviewProps {
 
 export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium, selectedCategories }: SchoolOverviewProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('present');
 
-  const presentMediums = useMemo(() => mediums.filter(m => m.isPresent), [mediums]);
+  const listSource = useMemo(() => {
+    return activeTab === 'present'
+      ? mediums.filter(m => m.isPresent)
+      : mediums;
+  }, [mediums, activeTab]);
 
   const filteredMediums = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return presentMediums;
+    if (!query) return listSource;
 
-    return presentMediums.filter(medium => {
+    return listSource.filter(medium => {
       // Check medium name
       if (medium.name.toLowerCase().includes(query)) {
         return true;
@@ -39,24 +45,27 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
       );
       return entityMatch;
     });
-  }, [presentMediums, searchQuery, selectedCategories]);
+  }, [listSource, searchQuery, selectedCategories]);
 
   return (
     <div className="space-y-8">
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h2 className="text-3xl font-bold font-headline">Médiuns Presentes</h2>
-          {presentMediums.length > 0 && (
-            <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar médium, entidade..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-full sm:w-80"
-                />
-            </div>
-          )}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+                <TabsTrigger value="present">Médiuns Presentes</TabsTrigger>
+                <TabsTrigger value="all">Todos os Médiuns</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                  placeholder="Buscar médium, entidade..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-full sm:w-80"
+              />
+          </div>
         </div>
 
         {filteredMediums.length > 0 ? (
@@ -76,15 +85,19 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
           </div>
         ) : (
           <div className="text-center py-10 px-4 border-2 border-dashed rounded-lg">
-            {presentMediums.length === 0 ? (
-                <>
-                    <h3 className="text-lg font-medium text-muted-foreground">Nenhum médium está marcado como presente.</h3>
-                    <p className="text-sm text-muted-foreground mt-2">Volte ao Passo 2 para marcar a presença dos médiuns.</p>
-                </>
-            ) : (
-                <>
+            {searchQuery ? (
+                 <>
                     <h3 className="text-lg font-medium text-muted-foreground">Nenhum resultado encontrado</h3>
                     <p className="text-sm text-muted-foreground mt-2">Sua busca por "{searchQuery}" não encontrou nenhum resultado.</p>
+                </>
+            ) : (
+                 <>
+                    <h3 className="text-lg font-medium text-muted-foreground">
+                        {activeTab === 'present' ? 'Nenhum médium presente' : 'Nenhum médium cadastrado'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        {activeTab === 'present' ? 'Vá para a aba "Todos os Médiuns" para marcar a presença.' : 'Use o formulário para adicionar um novo médium.'}
+                    </p>
                 </>
             )}
           </div>
