@@ -82,11 +82,21 @@ export default function Home() {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login com Google:", error);
+
+      let description = "Não foi possível autenticar com o Google. Tente novamente.";
+      if (error.code === 'auth/popup-closed-by-user') {
+        description = "A janela de login foi fechada antes da conclusão.";
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        description = "Múltiplas tentativas de login. Por favor, tente novamente.";
+      } else if (error.code === 'auth/configuration-not-found') {
+        description = "Erro de configuração. Verifique se o login com Google está ATIVADO no painel do Firebase."
+      }
+
       toast({
         title: "Erro de Login",
-        description: "Não foi possível autenticar com o Google. Tente novamente.",
+        description,
         variant: "destructive",
       });
     }
