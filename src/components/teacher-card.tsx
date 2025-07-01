@@ -23,19 +23,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Eye, EyeOff, LogOut, LogIn } from 'lucide-react';
+import { UserX, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Interface para as props do componente.
 interface MediumCardProps {
   medium: Medium;
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
-  toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   selectedCategories: Category[];
 }
 
-export function MediumCard({ medium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, selectedCategories }: MediumCardProps) {
+export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories }: MediumCardProps) {
   
   const activeEntitiesForGira = useMemo(() => {
     if (selectedCategories.length === 0) return [];
@@ -61,32 +60,6 @@ export function MediumCard({ medium, removeConsulente, toggleMediumPresence, tog
               {medium.isPresent ? 'Presente' : 'Ausente'}
             </Badge>
           </CardDescription>
-        </div>
-        <div className="flex items-center">
-            {/* Ações de Presença */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  {medium.isPresent ? <LogOut className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-                  <span className="sr-only">Alternar Presença</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Isso marcará o(a) médium como {medium.isPresent ? 'ausente' : 'presente'}.
-                    {medium.isPresent && (medium.entities.some(e => e.consulentes?.length > 0)) && ' Ao fazer isso, todos os consulentes agendados para este médium serão removidos.'}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => toggleMediumPresence(medium.id)}>
-                    Continuar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
         </div>
       </CardHeader>
       

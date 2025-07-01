@@ -10,12 +10,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface SchoolOverviewProps {
   mediums: Medium[];
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
-  toggleMediumPresence: (mediumId: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   selectedCategories: Category[];
 }
 
-export function SchoolOverview({ mediums, removeConsulente, toggleMediumPresence, toggleEntityAvailability, selectedCategories }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailability, selectedCategories }: SchoolOverviewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('present');
 
@@ -73,7 +72,6 @@ export function SchoolOverview({ mediums, removeConsulente, toggleMediumPresence
                 key={medium.id}
                 medium={medium}
                 removeConsulente={removeConsulente}
-                toggleMediumPresence={toggleMediumPresence}
                 toggleEntityAvailability={toggleEntityAvailability}
                 selectedCategories={selectedCategories}
               />

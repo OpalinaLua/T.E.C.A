@@ -41,12 +41,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { ScrollArea } from './ui/scroll-area';
 import { LoginHistory } from './login-history';
 import { CategorySelection } from './category-selection';
+import { Switch } from './ui/switch';
+import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 
 interface MediumManagementProps {
   mediums: Medium[];
   addMedium: (name: string, entities: { name: string; limit: number; category: Category }[]) => Promise<void>;
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
   removeMedium: (mediumId: string) => void;
+  toggleMediumPresence: (mediumId: string) => void;
   clearLoginHistory: () => Promise<void>;
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
@@ -207,7 +211,7 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
     );
 }
 
-export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange }: MediumManagementProps) {
+export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange }: MediumManagementProps) {
     const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] = useState(false);
     const [clearHistoryPassword, setClearHistoryPassword] = useState('');
     const { toast } = useToast();
@@ -257,14 +261,27 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
             <Card>
                 <CardHeader>
                     <CardTitle>Médiuns Cadastrados</CardTitle>
-                    <CardDescription>Gerencie os médiuns do sistema. Edite ou remova médiuns existentes.</CardDescription>
+                    <CardDescription>Gerencie os médiuns do sistema. Edite, remova ou altere a presença dos médiuns.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ScrollArea className="h-72">
                         <div className="space-y-2 pr-4">
                             {mediums.map(medium => (
                                 <div key={medium.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors">
-                                    <span className="font-medium">{medium.name}</span>
+                                    <div className="flex items-center gap-3">
+                                      <Switch
+                                        id={`presence-${medium.id}`}
+                                        checked={medium.isPresent}
+                                        onCheckedChange={() => toggleMediumPresence(medium.id)}
+                                        aria-label={`Marcar presença para ${medium.name}`}
+                                      />
+                                      <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
+                                        {medium.name}
+                                        <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+                                            {medium.isPresent ? 'Presente' : 'Ausente'}
+                                        </Badge>
+                                      </Label>
+                                    </div>
                                     <div className="flex items-center gap-1">
                                         <EditMedium medium={medium} updateMedium={updateMedium} />
                                         <AlertDialog>

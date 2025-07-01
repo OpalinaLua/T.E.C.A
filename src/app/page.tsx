@@ -183,6 +183,7 @@ export default function Home() {
                         addMedium={addMedium}
                         updateMedium={updateMedium}
                         removeMedium={removeMedium}
+                        toggleMediumPresence={toggleMediumPresence}
                         clearLoginHistory={clearLoginHistory}
                         selectedCategories={selectedCategories}
                         onSelectionChange={handleCategoryChange}
@@ -203,7 +204,6 @@ export default function Home() {
             <SchoolOverview
               mediums={mediums}
               removeConsulente={removeConsulente}
-              toggleMediumPresence={toggleMediumPresence}
               toggleEntityAvailability={toggleEntityAvailability}
               selectedCategories={selectedCategories}
             />
