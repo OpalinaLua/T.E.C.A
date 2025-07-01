@@ -5,7 +5,6 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConsulenteRegistration } from '@/components/student-registration';
-import { CategorySelection } from "@/components/category-selection";
 import type { Category } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -130,26 +129,13 @@ export default function Home() {
       </header>
       
       <div className="max-w-7xl mx-auto space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl sm:text-2xl font-bold font-headline">Seleção da Gira</CardTitle>
-            <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CategorySelection
-              selectedCategories={selectedCategories}
-              onSelectionChange={handleCategoryChange}
-            />
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
             <Dialog open={isManagementOpen} onOpenChange={handleDialogChange}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="w-full">
                   <Shield className="mr-2 h-4 w-4" />
-                  Gerenciar Médiuns
+                  Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-3xl">
@@ -158,7 +144,7 @@ export default function Home() {
                     <DialogHeader>
                       <DialogTitle>Acesso Restrito</DialogTitle>
                       <DialogDescription>
-                        Para gerenciar médiuns, por favor, identifique-se e insira a senha de administrador.
+                        Para gerenciar médiuns e a gira, por favor, identifique-se e insira a senha de administrador.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -198,7 +184,9 @@ export default function Home() {
                         updateMedium={updateMedium}
                         removeMedium={removeMedium}
                         clearLoginHistory={clearLoginHistory}
-                        onSuccess={() => handleDialogChange(false)}
+                        selectedCategories={selectedCategories}
+                        onSelectionChange={handleCategoryChange}
+                        onSuccess={() => { /* No need to close dialog anymore */ }}
                       />
                   </div>
                 )}

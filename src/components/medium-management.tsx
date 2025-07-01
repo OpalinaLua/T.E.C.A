@@ -40,6 +40,7 @@ import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { LoginHistory } from './login-history';
+import { CategorySelection } from './category-selection';
 
 interface MediumManagementProps {
   mediums: Medium[];
@@ -47,6 +48,8 @@ interface MediumManagementProps {
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
   removeMedium: (mediumId: string) => void;
   clearLoginHistory: () => Promise<void>;
+  selectedCategories: Category[];
+  onSelectionChange: (category: Category) => void;
   onSuccess?: () => void;
 }
 
@@ -204,7 +207,7 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
     );
 }
 
-export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, clearLoginHistory, onSuccess }: MediumManagementProps) {
+export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange }: MediumManagementProps) {
     const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] = useState(false);
     const [clearHistoryPassword, setClearHistoryPassword] = useState('');
     const { toast } = useToast();
@@ -238,6 +241,19 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
 
     return (
         <div className="space-y-8">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl sm:text-2xl font-bold font-headline">Seleção da Gira</CardTitle>
+                    <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <CategorySelection
+                    selectedCategories={selectedCategories}
+                    onSelectionChange={onSelectionChange}
+                    />
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Médiuns Cadastrados</CardTitle>
