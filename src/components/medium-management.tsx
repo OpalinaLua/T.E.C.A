@@ -210,7 +210,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
     const { toast } = useToast();
 
     const handleClearHistory = async () => {
-        if (clearHistoryPassword === '040620') {
+        if (clearHistoryPassword === '040820') {
             try {
                 await clearLoginHistory();
                 setIsClearHistoryDialogOpen(false); // Close dialog on success
