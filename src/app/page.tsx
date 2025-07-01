@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -91,7 +92,7 @@ export default function Home() {
       } else if (error.code === 'auth/cancelled-popup-request') {
         description = "Múltiplas tentativas de login. Por favor, tente novamente.";
       } else if (error.code === 'auth/configuration-not-found') {
-        description = "Erro de configuração. Verifique se o login com Google está ATIVADO no painel do Firebase."
+        description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
       }
 
       toast({
