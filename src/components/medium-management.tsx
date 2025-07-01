@@ -45,7 +45,7 @@ import { CategorySelection } from './category-selection';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { ADMIN_EMAIL } from '@/lib/secrets';
+import { ADMIN_EMAILS } from '@/lib/secrets';
 import { auth } from '@/lib/firebase';
 
 interface MediumManagementProps {
@@ -217,10 +217,10 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
 
 export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
     const { toast } = useToast();
+    const user = auth.currentUser;
 
     const handleConfirmClearHistory = async () => {
-        const user = auth.currentUser;
-        if (user && user.email === ADMIN_EMAIL) {
+        if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
             try {
                 await clearLoginHistory();
             } catch (error) {
@@ -229,7 +229,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
         } else {
             toast({
                 title: "Acesso Negado",
-                description: "Você não tem permissão para executar esta ação. Apenas o administrador pode limpar o histórico.",
+                description: "Você não tem permissão para executar esta ação. Apenas administradores podem limpar o histórico.",
                 variant: "destructive",
             });
         }
@@ -329,27 +329,29 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                     <AccordionContent>
                         <div className="space-y-4">
                             <LoginHistory />
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" className="w-full">
-                                        Limpar Histórico de Acesso
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas o administrador pode realizar esta ação.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
-                                            Confirmar e Limpar
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                             {user && user.email && ADMIN_EMAILS.includes(user.email) && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" className="w-full">
+                                            Limpar Histórico de Acesso
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas administradores podem realizar esta ação.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
+                                                Confirmar e Limpar
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                             )}
                         </div>
                     </AccordionContent>
                 </AccordionItem>

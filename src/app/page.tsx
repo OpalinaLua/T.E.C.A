@@ -21,7 +21,7 @@ import { Shield } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { ADMIN_EMAIL } from "@/lib/secrets";
+import { ADMIN_EMAILS } from "@/lib/secrets";
 
 
 // --- Main Page Component ---
@@ -59,7 +59,7 @@ export default function Home() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
   
-      if (user.email === ADMIN_EMAIL) {
+      if (user.email && ADMIN_EMAILS.includes(user.email)) {
         await logLoginEvent(user.email);
         setIsAuthenticated(true);
       } else {
