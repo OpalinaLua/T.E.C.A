@@ -93,7 +93,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
   const handleEntityLimitChange = (entityId: string, newLimit: string) => {
     const limit = parseInt(newLimit, 10);
     setEditedEntities(currentEntities => 
-        currentEntities.map(e => e.id === entityId ? { ...e, consulenteLimit: isNaN(limit) || limit < 0 ? 0 : limit } : e)
+        currentEntities.map(e => e.id === entityId ? { ...e, consulenteLimit: isNaN(limit) ? 0 : limit } : e)
     );
   };
 
@@ -166,7 +166,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
       {/* Cabeçalho do Card com nome, status e botões de ação */}
       <CardHeader className="flex-row items-start justify-between">
         <div>
-          <CardTitle className="font-headline text-2xl">{medium.name}</CardTitle>
+          <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
           <CardDescription>
             <Badge variant="outline" className={medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}>
               {medium.isPresent ? 'Presente' : 'Ausente'}
@@ -190,17 +190,17 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   <DialogTitle>Editar Médium</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
+                  <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-center sm:gap-x-4">
+                    <Label htmlFor="name" className="text-left sm:text-right">
                       Nome
                     </Label>
-                    <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-3" />
+                    <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-1 sm:col-span-3" />
                   </div>
-                  <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2">Entidades</Label>
-                    <div className="col-span-3 space-y-4">
+                  <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-start sm:gap-x-4">
+                    <Label className="text-left sm:text-right sm:pt-2">Entidades</Label>
+                    <div className="col-span-1 sm:col-span-3 space-y-4">
                       {editedEntities.map((entity) => (
-                        <div key={entity.id} className="space-y-2 rounded-md border p-3 relative">
+                        <div key={entity.id} className="space-y-3 rounded-md border p-3 relative">
                            <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="absolute top-1 right-1 h-6 w-6 shrink-0">
                             <X className="h-4 w-4" />
                             <span className="sr-only">Remover Entidade</span>
@@ -209,8 +209,8 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                             <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
                             <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
                           </div>
-                          <div className="flex items-end gap-2">
-                            <div className="flex-grow space-y-1.5">
+                          <div className="flex flex-col gap-2">
+                            <div className="space-y-1.5">
                               <Label htmlFor={`entity-category-${entity.id}`}>Categoria</Label>
                               <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
                                 <SelectTrigger id={`entity-category-${entity.id}`}>
@@ -221,7 +221,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="w-24 space-y-1.5">
+                            <div className="space-y-1.5">
                               <Label htmlFor={`entity-limit-${entity.id}`}>Limite</Label>
                               <Input id={`entity-limit-${entity.id}`} placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} />
                             </div>

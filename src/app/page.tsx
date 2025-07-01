@@ -61,10 +61,10 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <header className="max-w-7xl mx-auto mb-8">
-        <h1 className="text-5xl font-bold font-headline text-primary">
+        <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
           T.E.C.A
         </h1>
-        <p className="text-muted-foreground mt-2 text-lg">
+        <p className="text-muted-foreground mt-2 text-base sm:text-lg">
           Uma forma simples para consulência.
         </p>
       </header>
@@ -72,7 +72,7 @@ export default function Home() {
       <div className="max-w-7xl mx-auto space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold font-headline">Seleção da Gira</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold font-headline">Seleção da Gira</CardTitle>
             <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
           </CardHeader>
           <CardContent>

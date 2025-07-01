@@ -99,7 +99,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Agendamento de Consulente</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl">Agendamento de Consulente</CardTitle>
         <CardDescription>Agende um consulente com um médium e entidade disponíveis.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
