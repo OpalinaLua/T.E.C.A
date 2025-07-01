@@ -9,7 +9,6 @@
 export const ADMIN_EMAILS = [
     "luamdarabello@gmail.com",
     "castilholuisfelipi@gmail.com",
-    "phwpjvfpgames@gmail.com",
     // "outro.admin@email.com", // Exemplo de como adicionar outro e-mail
 ];
 

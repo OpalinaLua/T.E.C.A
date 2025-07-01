@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
-import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ADMIN_EMAILS } from "@/lib/secrets";
 
@@ -44,7 +44,7 @@ export default function Home() {
 
   const { toast } = useToast();
   const [isManagementOpen, setIsManagementOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
 
   const handleCategoryChange = (category: Category) => {
     const newCategories = selectedCategories.includes(category)
@@ -61,7 +61,7 @@ export default function Home() {
   
       if (user.email && ADMIN_EMAILS.includes(user.email)) {
         await logLoginEvent(user.email);
-        setIsAuthenticated(true);
+        setAuthenticatedUser(user);
       } else {
         await signOut(auth);
         toast({
@@ -97,7 +97,7 @@ export default function Home() {
     setIsManagementOpen(open);
     if (!open) {
       // Reset state when dialog closes
-      setIsAuthenticated(false);
+      setAuthenticatedUser(null);
        if (auth.currentUser) {
         signOut(auth);
       }
@@ -149,8 +149,8 @@ export default function Home() {
                   Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
-              <DialogContent className={isAuthenticated ? "sm:max-w-3xl" : "sm:max-w-md"}>
-                {!isAuthenticated ? (
+              <DialogContent className={authenticatedUser ? "sm:max-w-3xl" : "sm:max-w-md"}>
+                {!authenticatedUser ? (
                   <>
                     <DialogHeader>
                       <DialogTitle>Acesso Restrito</DialogTitle>
@@ -168,6 +168,7 @@ export default function Home() {
                 ) : (
                   <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6 pt-2">
                      <MediumManagement
+                        user={authenticatedUser}
                         mediums={mediums}
                         addMedium={addMedium}
                         updateMedium={updateMedium}

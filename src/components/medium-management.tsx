@@ -46,9 +46,10 @@ import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { SUPER_ADMINS } from '@/lib/secrets';
-import { auth } from '@/lib/firebase';
+import type { User } from 'firebase/auth';
 
 interface MediumManagementProps {
+  user: User;
   mediums: Medium[];
   addMedium: (name: string, entities: { name: string; limit: number; category: Category }[]) => Promise<void>;
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
@@ -215,9 +216,8 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
     );
 }
 
-export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+export function MediumManagement({ user, mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
     const { toast } = useToast();
-    const user = auth.currentUser;
 
     const handleConfirmClearHistory = async () => {
         if (user && user.email && SUPER_ADMINS.includes(user.email)) {
