@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
+import { ADMIN_PASSWORD } from "@/lib/secrets";
 
 
 // --- Main Page Component ---
@@ -64,7 +65,7 @@ export default function Home() {
       return;
     }
 
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+    if (password === ADMIN_PASSWORD) {
       try {
         await logLoginEvent(userName);
         setIsAuthenticated(true);

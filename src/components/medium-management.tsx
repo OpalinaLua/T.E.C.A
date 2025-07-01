@@ -44,6 +44,7 @@ import { CategorySelection } from './category-selection';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { CLEAR_HISTORY_PASSWORD } from '@/lib/secrets';
 
 interface MediumManagementProps {
   mediums: Medium[];
@@ -217,7 +218,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
     const { toast } = useToast();
 
     const handleClearHistory = async () => {
-        if (clearHistoryPassword === process.env.NEXT_PUBLIC_CLEAR_HISTORY_PASSWORD) {
+        if (clearHistoryPassword === CLEAR_HISTORY_PASSWORD) {
             try {
                 await clearLoginHistory();
                 setIsClearHistoryDialogOpen(false); // Close dialog on success
