@@ -58,6 +58,7 @@ interface MediumManagementProps {
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
   onSuccess?: () => void;
+  onClose: () => void;
 }
 
 // Internal component to handle the state for editing a single medium
@@ -214,7 +215,7 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
     );
 }
 
-export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange }: MediumManagementProps) {
+export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
     const { toast } = useToast();
 
     const handleConfirmClearHistory = async () => {
@@ -233,6 +234,14 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
             });
         }
     };
+
+    const handleSaveChanges = () => {
+        toast({
+            title: "Alterações Salvas",
+            description: "Suas alterações na gira e na presença dos médiuns foram salvas com sucesso.",
+        });
+        onClose();
+    }
 
     return (
         <div className="space-y-8">
@@ -345,6 +354,10 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
+
+            <div className="flex justify-end pt-4">
+                <Button onClick={handleSaveChanges}>Salvar Alterações</Button>
+            </div>
         </div>
     );
 }

@@ -177,6 +177,7 @@ export default function Home() {
                         selectedCategories={selectedCategories}
                         onSelectionChange={handleCategoryChange}
                         onSuccess={() => { /* No need to close dialog anymore */ }}
+                        onClose={() => handleDialogChange(false)}
                       />
                   </div>
                 )}
