@@ -21,6 +21,8 @@ import {
   orderBy,
   serverTimestamp,
   getDoc,
+  getDocs,
+  writeBatch,
 } from 'firebase/firestore';
 
 /**
@@ -285,6 +287,33 @@ export function useSchoolData() {
     }
   }, [toast]);
 
+  /**
+   * Limpa todo o histórico de login do Firestore.
+   */
+  const clearLoginHistory = useCallback(async () => {
+    try {
+      const historyCollectionRef = collection(db, 'loginHistory');
+      const snapshot = await getDocs(historyCollectionRef);
+      
+      if (snapshot.empty) {
+        toast({ title: "Histórico Vazio", description: "Não há registros de acesso para limpar." });
+        return;
+      }
+
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      toast({ title: "Sucesso", description: "O histórico de acesso foi limpo." });
+    } catch (error) {
+      console.error("Erro ao limpar histórico:", error);
+      toast({ title: "Erro ao Limpar", description: "Não foi possível limpar o histórico de acesso.", variant: "destructive" });
+      throw error;
+    }
+  }, [toast]);
+
   return {
     mediums,
     isLoaded,
@@ -296,5 +325,6 @@ export function useSchoolData() {
     toggleEntityAvailability,
     updateMedium,
     logLoginEvent,
+    clearLoginHistory,
   };
 }

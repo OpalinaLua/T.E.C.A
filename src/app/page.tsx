@@ -37,6 +37,7 @@ export default function Home() {
     toggleEntityAvailability,
     updateMedium,
     logLoginEvent,
+    clearLoginHistory,
   } = useSchoolData();
 
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
@@ -196,6 +197,7 @@ export default function Home() {
                         addMedium={addMedium}
                         updateMedium={updateMedium}
                         removeMedium={removeMedium}
+                        clearLoginHistory={clearLoginHistory}
                         onSuccess={() => handleDialogChange(false)}
                       />
                   </div>

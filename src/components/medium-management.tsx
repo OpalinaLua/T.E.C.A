@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -45,6 +46,7 @@ interface MediumManagementProps {
   addMedium: (name: string, entities: { name: string; limit: number; category: Category }[]) => Promise<void>;
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
   removeMedium: (mediumId: string) => void;
+  clearLoginHistory: () => Promise<void>;
   onSuccess?: () => void;
 }
 
@@ -202,7 +204,38 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
     );
 }
 
-export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, onSuccess }: MediumManagementProps) {
+export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, clearLoginHistory, onSuccess }: MediumManagementProps) {
+    const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] = useState(false);
+    const [clearHistoryPassword, setClearHistoryPassword] = useState('');
+    const { toast } = useToast();
+
+    const handleClearHistory = async () => {
+        if (clearHistoryPassword === '040620') {
+            try {
+                await clearLoginHistory();
+                setIsClearHistoryDialogOpen(false); // Close dialog on success
+            } catch (error) {
+                // Toast is handled in the hook
+            } finally {
+                setClearHistoryPassword('');
+            }
+        } else {
+            toast({
+                title: "Senha Incorreta",
+                description: "A senha para limpar o histórico está incorreta.",
+                variant: "destructive",
+            });
+            setClearHistoryPassword('');
+        }
+    };
+
+    const handleClearDialogChange = (open: boolean) => {
+        setIsClearHistoryDialogOpen(open);
+        if (!open) {
+            setClearHistoryPassword('');
+        }
+    }
+
     return (
         <div className="space-y-8">
             <Card>
@@ -264,7 +297,44 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                 <AccordionItem value="login-history">
                     <AccordionTrigger className="text-xl font-bold font-headline">Histórico de Acesso</AccordionTrigger>
                     <AccordionContent>
-                        <LoginHistory />
+                        <div className="space-y-4">
+                            <LoginHistory />
+                            <Dialog open={isClearHistoryDialogOpen} onOpenChange={handleClearDialogChange}>
+                                <DialogTrigger asChild>
+                                    <Button variant="destructive" className="w-full">
+                                        Limpar Histórico de Acesso
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Confirmação Necessária</DialogTitle>
+                                        <DialogDescription>
+                                            Esta ação é irreversível e apagará TODO o histórico de acessos. Para confirmar, por favor, insira a senha de limpeza.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-2 py-4">
+                                        <Label htmlFor="clear-history-password">Senha de Limpeza</Label>
+                                        <Input
+                                            id="clear-history-password"
+                                            type="password"
+                                            placeholder="Senha"
+                                            value={clearHistoryPassword}
+                                            onChange={(e) => setClearHistoryPassword(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleClearHistory();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => handleClearDialogChange(false)}>Cancelar</Button>
+                                        <Button onClick={handleClearHistory} variant="destructive">Confirmar e Limpar</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
