@@ -205,8 +205,6 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
 export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, onSuccess }: MediumManagementProps) {
     return (
         <div className="space-y-8">
-            <LoginHistory />
-            
             <Card>
                 <CardHeader>
                     <CardTitle>Médiuns Cadastrados</CardTitle>
@@ -261,6 +259,8 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
+            
+            <LoginHistory />
         </div>
     );
 }
