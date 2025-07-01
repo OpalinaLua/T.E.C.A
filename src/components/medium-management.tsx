@@ -324,9 +324,6 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                         <MediumRegistration addMedium={addMedium} onSuccess={onSuccess} />
                     </AccordionContent>
                 </AccordionItem>
-            </Accordion>
-            
-            <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="login-history">
                     <AccordionTrigger className="text-xl font-bold font-headline">Histórico de Acesso</AccordionTrigger>
                     <AccordionContent>
