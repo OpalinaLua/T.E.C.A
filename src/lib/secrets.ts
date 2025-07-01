@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Armazena segredos e chaves da aplicação.
  * ATENÇÃO: Estes valores são incluídos no código final enviado ao navegador.
@@ -6,5 +7,3 @@
  */
 
 export const ADMIN_EMAIL = "luamdarabello@gmail.com"; // E-mail do administrador para login com Google
-export const ADMIN_PASSWORD = "2406";
-export const CLEAR_HISTORY_PASSWORD = "040820";

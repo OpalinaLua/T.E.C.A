@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -44,7 +45,8 @@ import { CategorySelection } from './category-selection';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { CLEAR_HISTORY_PASSWORD } from '@/lib/secrets';
+import { ADMIN_EMAIL } from '@/lib/secrets';
+import { auth } from '@/lib/firebase';
 
 interface MediumManagementProps {
   mediums: Medium[];
@@ -213,36 +215,24 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
 }
 
 export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange }: MediumManagementProps) {
-    const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] = useState(false);
-    const [clearHistoryPassword, setClearHistoryPassword] = useState('');
     const { toast } = useToast();
 
-    const handleClearHistory = async () => {
-        if (clearHistoryPassword === CLEAR_HISTORY_PASSWORD) {
+    const handleConfirmClearHistory = async () => {
+        const user = auth.currentUser;
+        if (user && user.email === ADMIN_EMAIL) {
             try {
                 await clearLoginHistory();
-                setIsClearHistoryDialogOpen(false); // Close dialog on success
             } catch (error) {
-                // Toast is handled in the hook
-            } finally {
-                setClearHistoryPassword('');
+                // Toast for error is handled in the useSchoolData hook
             }
         } else {
             toast({
-                title: "Senha Incorreta",
-                description: "A senha para limpar o histórico está incorreta.",
+                title: "Acesso Negado",
+                description: "Você não tem permissão para executar esta ação. Apenas o administrador pode limpar o histórico.",
                 variant: "destructive",
             });
-            setClearHistoryPassword('');
         }
     };
-
-    const handleClearDialogChange = (open: boolean) => {
-        setIsClearHistoryDialogOpen(open);
-        if (!open) {
-            setClearHistoryPassword('');
-        }
-    }
 
     return (
         <div className="space-y-8">
@@ -330,41 +320,27 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                     <AccordionContent>
                         <div className="space-y-4">
                             <LoginHistory />
-                            <Dialog open={isClearHistoryDialogOpen} onOpenChange={handleClearDialogChange}>
-                                <DialogTrigger asChild>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
                                     <Button variant="destructive" className="w-full">
                                         Limpar Histórico de Acesso
                                     </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Confirmação Necessária</DialogTitle>
-                                        <DialogDescription>
-                                            Esta ação é irreversível e apagará TODO o histórico de acessos. Para confirmar, por favor, insira a senha de limpeza.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-2 py-4">
-                                        <Label htmlFor="clear-history-password">Senha de Limpeza</Label>
-                                        <Input
-                                            id="clear-history-password"
-                                            type="password"
-                                            placeholder="Senha"
-                                            value={clearHistoryPassword}
-                                            onChange={(e) => setClearHistoryPassword(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleClearHistory();
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => handleClearDialogChange(false)}>Cancelar</Button>
-                                        <Button onClick={handleClearHistory} variant="destructive">Confirmar e Limpar</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas o administrador pode realizar esta ação.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
+                                            Confirmar e Limpar
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
