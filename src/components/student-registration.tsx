@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 // Interface para as props do componente.
 interface ConsulenteRegistrationProps {
   mediums: Medium[];
-  addConsulente: (consulenteName: string, mediumId: string, entityId: string) => void;
+  addConsulente: (consulenteName: string, mediumId: string, entityId: string) => Promise<void>;
   selectedCategories: Category[];
 }
 
@@ -25,6 +25,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
   const [name, setName] = useState('');
   const [selectedMediumId, setSelectedMediumId] = useState('');
   const [selectedEntityId, setSelectedEntityId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   // Memoiza a lista de médiuns disponíveis para evitar recálculos desnecessários.
@@ -69,21 +70,25 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
   /**
    * Submete o formulário de agendamento.
    */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && selectedMediumId && selectedEntityId) {
-      addConsulente(name.trim(), selectedMediumId, selectedEntityId);
-      // Limpa o formulário após o sucesso.
-      setName('');
-      setSelectedMediumId('');
-      setSelectedEntityId('');
-      toast({
-        title: "Sucesso",
-        description: `Consulente ${name.trim()} foi agendado(a).`,
-      });
-    } else {
+    if (name.trim() && selectedMediumId && selectedEntityId && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await addConsulente(name.trim(), selectedMediumId, selectedEntityId);
+        // Limpa o formulário apenas em caso de sucesso.
+        setName('');
+        setSelectedMediumId('');
+        setSelectedEntityId('');
+      } catch (error) {
+        // O erro já é exibido pelo hook, então não precisamos fazer nada aqui.
+        console.error("Falha ao agendar consulente:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else if (!isSubmitting) {
         toast({
-            title: "Erro",
+            title: "Erro de Validação",
             description: "Por favor, preencha todos os campos para agendar um consulente.",
             variant: "destructive",
         });
@@ -93,6 +98,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
   const getButtonText = () => {
     if (selectedCategories.length === 0) return "Selecione uma Gira";
     if (availableMediums.length === 0) return "Nenhum Médium Disponível";
+    if (isSubmitting) return "Agendando...";
     return "Agendar Consulente";
   }
 
@@ -112,12 +118,12 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              disabled={selectedCategories.length === 0}
+              disabled={selectedCategories.length === 0 || isSubmitting}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Médium</label>
-            <Select onValueChange={handleMediumChange} value={selectedMediumId} disabled={availableMediums.length === 0}>
+            <Select onValueChange={handleMediumChange} value={selectedMediumId} disabled={availableMediums.length === 0 || isSubmitting}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um(a) médium" />
               </SelectTrigger>
@@ -130,7 +136,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Entidade</label>
-            <Select onValueChange={setSelectedEntityId} value={selectedEntityId} disabled={!selectedMediumId}>
+            <Select onValueChange={setSelectedEntityId} value={selectedEntityId} disabled={!selectedMediumId || isSubmitting}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma entidade" />
               </SelectTrigger>
@@ -145,7 +151,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={selectedCategories.length === 0 || availableMediums.length === 0}>
+          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={selectedCategories.length === 0 || availableMediums.length === 0 || isSubmitting}>
             {getButtonText()}
           </Button>
         </CardFooter>

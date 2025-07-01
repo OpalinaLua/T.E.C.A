@@ -124,20 +124,54 @@ export function useSchoolData() {
   }, [toast]);
 
   /**
-   * Adiciona um novo consulente a uma entidade de um médium específico.
+   * Adiciona um novo consulente a uma entidade de um médium específico. Lança erro em caso de falha.
    */
-  const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string) => {
+  const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string): Promise<void> => {
     const medium = mediums.find(m => m.id === mediumId);
-    if (!medium) return;
+    if (!medium) {
+      const msg = "Médium não encontrado.";
+      toast({ title: "Erro Interno", description: msg, variant: "destructive" });
+      throw new Error(msg);
+    }
 
-    const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: consulenteName };
+    const entity = medium.entities.find(e => e.id === entityId);
+    if (!entity) {
+      const msg = "Entidade não encontrada.";
+      toast({ title: "Erro Interno", description: msg, variant: "destructive" });
+      throw new Error(msg);
+    }
     
-    const updatedEntities = medium.entities.map(entity => {
-      if (entity.id === entityId) {
-        const consulentes = entity.consulentes || [];
-        return { ...entity, consulentes: [...consulentes, newConsulente] };
+    const targetCategory = entity.category;
+    const trimmedConsulenteName = consulenteName.trim();
+    const lowerCaseConsulenteName = trimmedConsulenteName.toLowerCase();
+
+    // Verifica se o consulente já está agendado em uma entidade da mesma categoria.
+    for (const m of mediums) {
+      for (const e of m.entities) {
+        if (e.category === targetCategory) {
+          const alreadyExists = e.consulentes.some(c => c.name.trim().toLowerCase() === lowerCaseConsulenteName);
+          if (alreadyExists) {
+            const errorMessage = `${trimmedConsulenteName} já está agendado(a) na categoria "${targetCategory}". Um consulente só pode ser agendado em uma entidade por categoria.`;
+            toast({
+              title: "Agendamento Duplicado",
+              description: errorMessage,
+              variant: "destructive",
+              duration: 5000,
+            });
+            throw new Error(errorMessage);
+          }
+        }
       }
-      return entity;
+    }
+    
+    const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: trimmedConsulenteName };
+    
+    const updatedEntities = medium.entities.map(e => {
+      if (e.id === entityId) {
+        const consulentes = e.consulentes || [];
+        return { ...e, consulentes: [...consulentes, newConsulente] };
+      }
+      return e;
     });
 
     try {
@@ -145,11 +179,12 @@ export function useSchoolData() {
         await updateDoc(mediumDocRef, { entities: updatedEntities });
         toast({
           title: "Sucesso",
-          description: `Consulente ${consulenteName.trim()} foi agendado(a).`,
+          description: `Consulente ${trimmedConsulenteName} foi agendado(a).`,
         });
     } catch(error) {
         console.error("Erro ao adicionar consulente:", error);
         toast({ title: "Erro ao Agendar", description: "Não foi possível agendar o consulente.", variant: "destructive" });
+        throw error; // Propaga o erro para ser tratado pelo chamador
     }
   }, [mediums, toast]);
 
