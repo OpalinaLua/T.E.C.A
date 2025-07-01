@@ -260,7 +260,14 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                 </AccordionItem>
             </Accordion>
             
-            <LoginHistory />
+            <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="login-history">
+                    <AccordionTrigger className="text-xl font-bold font-headline">Histórico de Acesso</AccordionTrigger>
+                    <AccordionContent>
+                        <LoginHistory />
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
         </div>
     );
 }

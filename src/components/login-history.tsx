@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "./ui/scroll-area";
 import { Skeleton } from "./ui/skeleton";
 import { format } from 'date-fns';
@@ -26,50 +25,42 @@ export function LoginHistory() {
   };
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Histórico de Acesso</CardTitle>
-        <CardDescription>Últimos acessos à área de gerenciamento.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-60">
-          {isLoading ? (
-            <div className="space-y-4 pr-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-2">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-4 w-1/2" />
-                </div>
-              ))}
+    <ScrollArea className="h-60 border rounded-lg p-4">
+        {isLoading ? (
+        <div className="space-y-4 pr-4">
+            {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-1/2" />
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead className="text-right">Data do Acesso</TableHead>
+            ))}
+        </div>
+        ) : (
+        <Table>
+            <TableHeader>
+            <TableRow>
+                <TableHead>Usuário</TableHead>
+                <TableHead className="text-right">Data do Acesso</TableHead>
+            </TableRow>
+            </TableHeader>
+            <TableBody>
+            {history.length > 0 ? (
+                history.map((entry) => (
+                <TableRow key={entry.id}>
+                    <TableCell className="font-medium">{entry.userName}</TableCell>
+                    <TableCell className="text-right">{formatDate(entry.timestamp)}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.length > 0 ? (
-                  history.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">{entry.userName}</TableCell>
-                      <TableCell className="text-right">{formatDate(entry.timestamp)}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center italic text-muted-foreground">
-                      Nenhum registro de acesso encontrado.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </ScrollArea>
-      </CardContent>
-    </Card>
+                ))
+            ) : (
+                <TableRow>
+                <TableCell colSpan={2} className="text-center italic text-muted-foreground">
+                    Nenhum registro de acesso encontrado.
+                </TableCell>
+                </TableRow>
+            )}
+            </TableBody>
+        </Table>
+        )}
+    </ScrollArea>
   );
 }
