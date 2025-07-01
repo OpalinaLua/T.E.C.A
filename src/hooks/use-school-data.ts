@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Hook personalizado para gerenciar os dados da escola.
  * Este hook encapsula a lógica de estado, comunicando-se em tempo real
@@ -305,20 +306,20 @@ export function useSchoolData() {
   /**
    * Registra um evento de login no Firestore.
    */
-  const logLoginEvent = useCallback(async (userName: string) => {
-    if (!userName.trim()) {
-      toast({ title: "Erro de Auditoria", description: "O nome de usuário é obrigatório.", variant: "destructive" });
-      throw new Error("Username is required");
+  const logLoginEvent = useCallback(async (email: string | null) => {
+    if (!email) {
+      toast({ title: "Erro de Auditoria", description: "O e-mail do usuário é inválido para registro.", variant: "destructive" });
+      throw new Error("Email is required for logging");
     }
     try {
       await addDoc(collection(db, 'loginHistory'), {
-        userName: userName.trim(),
+        email: email,
         timestamp: serverTimestamp(),
       });
     } catch (error) {
       console.error("Erro ao registrar login:", error);
       toast({ title: "Erro de Auditoria", description: "Não foi possível registrar o evento de login.", variant: "destructive" });
-      throw error; // Lança o erro para ser tratado pelo chamador
+      throw error;
     }
   }, [toast]);
 

@@ -7,7 +7,6 @@ import { SchoolOverview } from '@/components/school-overview';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConsulenteRegistration } from '@/components/student-registration';
 import type { Category } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
@@ -46,7 +43,6 @@ export default function Home() {
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const { toast } = useToast();
   const [isManagementOpen, setIsManagementOpen] = useState(false);
-  const [userName, setUserName] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleCategoryChange = (category: Category) => {
@@ -58,22 +54,13 @@ export default function Home() {
   };
 
   const handleGoogleLogin = async () => {
-    if (userName.trim() === '') {
-      toast({
-        title: "Identificação Necessária",
-        description: "Por favor, insira seu nome para o registro de acesso.",
-        variant: "destructive",
-      });
-      return;
-    }
-  
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
   
       if (user.email === ADMIN_EMAIL) {
-        await logLoginEvent(userName); // Loga o nome que o usuário digitou
+        await logLoginEvent(user.email);
         setIsAuthenticated(true);
       } else {
         await signOut(auth);
@@ -110,7 +97,6 @@ export default function Home() {
     setIsManagementOpen(open);
     if (!open) {
       // Reset state when dialog closes
-      setUserName('');
       setIsAuthenticated(false);
        if (auth.currentUser) {
         signOut(auth);
@@ -163,26 +149,17 @@ export default function Home() {
                   Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-3xl">
+              <DialogContent className={isAuthenticated ? "sm:max-w-3xl" : "sm:max-w-md"}>
                 {!isAuthenticated ? (
                   <>
                     <DialogHeader>
                       <DialogTitle>Acesso Restrito</DialogTitle>
                       <DialogDescription>
-                        Para gerenciar médiuns e a gira, por favor, identifique-se e faça login com uma conta Google autorizada.
+                        Para gerenciar médiuns e a gira, por favor, faça login com uma conta Google autorizada.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                       <div className="space-y-2">
-                        <Label htmlFor="userName">Seu Nome (para registro)</Label>
-                        <Input
-                          id="userName"
-                          placeholder="Digite seu nome"
-                          value={userName}
-                          onChange={(e) => setUserName(e.target.value)}
-                        />
-                      </div>
-                      <Button type="button" onClick={handleGoogleLogin} className="w-full mt-2">
+                    <div className="py-4">
+                      <Button type="button" onClick={handleGoogleLogin} className="w-full">
                         <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.5l-62.7 62.7C337 97.4 297.9 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 431 248 431c97.2 0 130.2-72.2 132.9-110.5H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.6z"></path></svg>
                         Login com Google
                       </Button>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useLoginHistory } from "@/hooks/use-login-history";
@@ -39,7 +40,7 @@ export function LoginHistory() {
         <Table>
             <TableHeader>
             <TableRow>
-                <TableHead>Usuário</TableHead>
+                <TableHead>E-mail</TableHead>
                 <TableHead className="text-right">Data do Acesso</TableHead>
             </TableRow>
             </TableHeader>
@@ -47,7 +48,7 @@ export function LoginHistory() {
             {history.length > 0 ? (
                 history.map((entry) => (
                 <TableRow key={entry.id}>
-                    <TableCell className="font-medium">{entry.userName}</TableCell>
+                    <TableCell className="font-medium">{entry.email}</TableCell>
                     <TableCell className="text-right">{formatDate(entry.timestamp)}</TableCell>
                 </TableRow>
                 ))

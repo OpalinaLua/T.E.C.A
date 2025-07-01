@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Define os tipos de dados centrais para a aplicação.
  * Este arquivo exporta as interfaces para Consulente, Entidade e Médium,
@@ -68,7 +69,7 @@ export interface Medium {
  */
 export interface LoginEntry {
   id: string;
-  userName: string;
+  email: string;
   timestamp: {
     seconds: number;
     nanoseconds: number;
