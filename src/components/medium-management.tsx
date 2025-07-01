@@ -45,7 +45,7 @@ import { CategorySelection } from './category-selection';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { ADMIN_EMAILS } from '@/lib/secrets';
+import { SUPER_ADMINS } from '@/lib/secrets';
 import { auth } from '@/lib/firebase';
 
 interface MediumManagementProps {
@@ -220,7 +220,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
     const user = auth.currentUser;
 
     const handleConfirmClearHistory = async () => {
-        if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
+        if (user && user.email && SUPER_ADMINS.includes(user.email)) {
             try {
                 await clearLoginHistory();
             } catch (error) {
@@ -229,7 +229,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
         } else {
             toast({
                 title: "Acesso Negado",
-                description: "Você não tem permissão para executar esta ação. Apenas administradores podem limpar o histórico.",
+                description: "Você não tem permissão para executar esta ação. Apenas super administradores podem limpar o histórico.",
                 variant: "destructive",
             });
         }
@@ -329,7 +329,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                     <AccordionContent>
                         <div className="space-y-4">
                             <LoginHistory />
-                             {user && user.email && ADMIN_EMAILS.includes(user.email) && (
+                             {user && user.email && SUPER_ADMINS.includes(user.email) && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="destructive" className="w-full">
@@ -340,7 +340,7 @@ export function MediumManagement({ mediums, addMedium, updateMedium, removeMediu
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas administradores podem realizar esta ação.
+                                                Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas super administradores podem realizar esta ação.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
