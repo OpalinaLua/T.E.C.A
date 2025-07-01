@@ -24,6 +24,7 @@ import {
   getDoc,
   getDocs,
   writeBatch,
+  setDoc,
 } from 'firebase/firestore';
 
 /**
@@ -32,12 +33,21 @@ import {
  */
 export function useSchoolData() {
   const [mediums, setMediums] = useState<Medium[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
   // Efeito para carregar e escutar os dados do Firestore na inicialização.
   useEffect(() => {
-    setIsLoaded(false);
+    let mediumsLoaded = false;
+    let categoriesLoaded = false;
+    
+    const updateLoadingState = () => {
+      if (mediumsLoaded && categoriesLoaded) {
+        setIsLoaded(true);
+      }
+    };
+
     if (!db) {
       console.error("A conexão com o Firebase (db) não está disponível.");
       toast({
@@ -50,28 +60,72 @@ export function useSchoolData() {
       return;
     }
     
+    // Listener para Médiuns
     const mediumsCollection = collection(db, 'mediums');
     const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeMediums = onSnapshot(q, (snapshot) => {
       const mediumsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Medium[];
       setMediums(mediumsData);
-      setIsLoaded(true);
+      mediumsLoaded = true;
+      updateLoadingState();
     }, (error) => {
-      console.error("----------- ERRO DE CONEXÃO DO FIREBASE -----------", error);
+      console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Médiuns) -----------", error);
       toast({
         title: "Erro de Conexão",
-        description: "Não foi possível conectar ao banco de dados. Verifique a configuração do seu projeto Firebase e as regras de segurança.",
+        description: "Não foi possível conectar ao banco de dados para buscar os médiuns.",
         variant: "destructive",
         duration: Infinity,
       });
-      setIsLoaded(true);
+      mediumsLoaded = true;
+      updateLoadingState();
     });
 
-    return () => unsubscribe();
+    // Listener para Categorias da Gira
+    const giraDocRef = doc(db, 'appState', 'gira');
+    const unsubscribeCategories = onSnapshot(giraDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSelectedCategories(docSnap.data().categories || []);
+      } else {
+        setSelectedCategories([]);
+      }
+      categoriesLoaded = true;
+      updateLoadingState();
+    }, (error) => {
+      console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Gira) -----------", error);
+      toast({
+        title: "Erro de Conexão",
+        description: "Não foi possível carregar as configurações da gira.",
+        variant: "destructive",
+      });
+      categoriesLoaded = true;
+      updateLoadingState();
+    });
+
+    return () => {
+      unsubscribeMediums();
+      unsubscribeCategories();
+    };
+  }, [toast]);
+  
+  /**
+   * Atualiza as categorias selecionadas para a gira no Firestore.
+   */
+  const updateSelectedCategories = useCallback(async (categories: Category[]) => {
+    try {
+      const giraDocRef = doc(db, 'appState', 'gira');
+      await setDoc(giraDocRef, { categories: categories });
+    } catch (error) {
+      console.error("Erro ao atualizar a seleção da gira:", error);
+      toast({
+        title: "Erro ao Salvar",
+        description: "Não foi possível salvar a seleção da gira.",
+        variant: "destructive",
+      });
+    }
   }, [toast]);
 
   /**
@@ -362,5 +416,7 @@ export function useSchoolData() {
     updateMedium,
     logLoginEvent,
     clearLoginHistory,
+    selectedCategories,
+    updateSelectedCategories,
   };
 }

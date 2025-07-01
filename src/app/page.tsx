@@ -38,19 +38,19 @@ export default function Home() {
     updateMedium,
     logLoginEvent,
     clearLoginHistory,
+    selectedCategories,
+    updateSelectedCategories,
   } = useSchoolData();
 
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const { toast } = useToast();
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleCategoryChange = (category: Category) => {
-    setSelectedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+    const newCategories = selectedCategories.includes(category)
+      ? selectedCategories.filter(c => c !== category)
+      : [...selectedCategories, category];
+    updateSelectedCategories(newCategories);
   };
 
   const handleGoogleLogin = async () => {
