@@ -65,7 +65,7 @@ export default function Home() {
       return;
     }
 
-    if (password === '2406') {
+    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       try {
         await logLoginEvent(userName);
         setIsAuthenticated(true);
