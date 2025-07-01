@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MediumRegistration } from '@/components/teacher-registration';
 import { ConsulenteRegistration } from '@/components/student-registration';
 import { CategorySelection } from "@/components/category-selection";
 import type { Category } from "@/lib/types";
@@ -21,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Shield } from 'lucide-react';
+import { MediumManagement } from "@/components/medium-management";
 
 
 // --- Main Page Component ---
@@ -131,7 +131,7 @@ export default function Home() {
                   Gerenciar Médiuns
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
+              <DialogContent className="sm:max-w-3xl">
                 {!isAuthenticated ? (
                   <>
                     <DialogHeader>
@@ -159,8 +159,11 @@ export default function Home() {
                   </>
                 ) : (
                   <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6 pt-2">
-                     <MediumRegistration 
+                     <MediumManagement
+                        mediums={mediums}
                         addMedium={addMedium}
+                        updateMedium={updateMedium}
+                        removeMedium={removeMedium}
                         onSuccess={() => handleDialogChange(false)}
                       />
                   </div>
@@ -177,11 +180,9 @@ export default function Home() {
           <div className="lg:col-span-2">
             <SchoolOverview
               mediums={mediums}
-              removeMedium={removeMedium}
               removeConsulente={removeConsulente}
               toggleMediumPresence={toggleMediumPresence}
               toggleEntityAvailability={toggleEntityAvailability}
-              updateMedium={updateMedium}
               selectedCategories={selectedCategories}
             />
           </div>
