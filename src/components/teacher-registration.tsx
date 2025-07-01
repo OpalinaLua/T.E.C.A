@@ -115,14 +115,15 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
               required
             />
           </div>
+          
           <div className="space-y-2">
-            <Label>Entidades</Label>
-            <div className="flex items-end gap-2">
-              <div className="flex-grow space-y-1.5">
-                <Label htmlFor="entity-name" className="text-xs text-muted-foreground">Nome da Entidade</Label>
+            <Label>Adicionar Entidades</Label>
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="entity-name" className="text-sm">Nome da Entidade</Label>
                 <Input
                   id="entity-name"
-                  placeholder="ex: Pombagira"
+                  placeholder="ex: Pombagira da Calunga"
                   value={currentEntityName}
                   onChange={(e) => setCurrentEntityName(e.target.value)}
                   onKeyDown={(e) => {
@@ -133,53 +134,63 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
                   }}
                 />
               </div>
-              <div className='w-[150px] space-y-1.5'>
-                <Label htmlFor="entity-category" className="text-xs text-muted-foreground">Categoria</Label>
-                <Select value={currentEntityCategory} onValueChange={(v) => setCurrentEntityCategory(v as Category)}>
-                  <SelectTrigger id="entity-category">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {spiritualCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-end gap-2">
+                <div className='flex-grow space-y-1.5'>
+                  <Label htmlFor="entity-category" className="text-sm">Categoria</Label>
+                  <Select value={currentEntityCategory} onValueChange={(v) => setCurrentEntityCategory(v as Category)}>
+                    <SelectTrigger id="entity-category">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {spiritualCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                    <Label htmlFor="entity-limit" className="text-sm">Limite</Label>
+                    <Input
+                        id="entity-limit"
+                        type="number"
+                        min="0"
+                        placeholder="10"
+                        value={currentEntityLimit}
+                        onChange={(e) => setCurrentEntityLimit(e.target.value)}
+                        className="w-24"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddEntity();
+                            }
+                        }}
+                    />
+                </div>
+                <Button type="button" onClick={handleAddEntity} variant="outline" size="icon" className="shrink-0">
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Adicionar Entidade</span>
+                </Button>
               </div>
-              <div className="space-y-1.5">
-                  <Label htmlFor="entity-limit" className="text-xs text-muted-foreground">Limite</Label>
-                  <Input
-                      id="entity-limit"
-                      type="number"
-                      min="0"
-                      placeholder="10"
-                      value={currentEntityLimit}
-                      onChange={(e) => setCurrentEntityLimit(e.target.value)}
-                      className="w-20"
-                      onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddEntity();
-                          }
-                      }}
-                  />
-              </div>
-              <Button type="button" onClick={handleAddEntity} variant="outline" size="icon" className="shrink-0">
-                <Plus className="h-4 w-4" />
-                <span className="sr-only">Adicionar Entidade</span>
-              </Button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {entities.map((entity, index) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1.5 text-sm py-1">
-                {entity.name} ({entity.category}, {entity.limit})
-                <button type="button" onClick={() => handleRemoveEntity(entity)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
-                  <X className="h-3 w-3" />
-                  <span className="sr-only">Remover {entity.name}</span>
-                </button>
-              </Badge>
-            ))}
+
+          <div className="space-y-2">
+            <Label>Entidades Adicionadas</Label>
+             {entities.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                    {entities.map((entity, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1.5 text-sm py-1">
+                        {entity.name} ({entity.category}, {entity.limit})
+                        <button type="button" onClick={() => handleRemoveEntity(entity)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                        <X className="h-3 w-3" />
+                        <span className="sr-only">Remover {entity.name}</span>
+                        </button>
+                    </Badge>
+                    ))}
+                </div>
+             ) : (
+                <p className="text-sm text-muted-foreground italic">Nenhuma entidade adicionada ainda.</p>
+             )}
           </div>
         </CardContent>
         <CardFooter>

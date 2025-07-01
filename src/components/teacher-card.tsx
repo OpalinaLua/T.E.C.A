@@ -198,22 +198,34 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   </div>
                   <div className="grid grid-cols-4 items-start gap-4">
                     <Label className="text-right pt-2">Entidades</Label>
-                    <div className="col-span-3 space-y-2">
+                    <div className="col-span-3 space-y-4">
                       {editedEntities.map((entity) => (
-                        <div key={entity.id} className="flex items-center gap-2">
-                          <Input placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} className='flex-1'/>
-                          <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
-                            <SelectTrigger className="w-[150px] shrink-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {spiritualCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Input placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} className="w-20 shrink-0" />
-                          <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="shrink-0">
+                        <div key={entity.id} className="space-y-2 rounded-md border p-3 relative">
+                           <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="absolute top-1 right-1 h-6 w-6 shrink-0">
                             <X className="h-4 w-4" />
+                            <span className="sr-only">Remover Entidade</span>
                           </Button>
+                          <div className='pr-8 space-y-1.5'>
+                            <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
+                            <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <div className="flex-grow space-y-1.5">
+                              <Label htmlFor={`entity-category-${entity.id}`}>Categoria</Label>
+                              <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
+                                <SelectTrigger id={`entity-category-${entity.id}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {spiritualCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="w-24 space-y-1.5">
+                              <Label htmlFor={`entity-limit-${entity.id}`}>Limite</Label>
+                              <Input id={`entity-limit-${entity.id}`} placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} />
+                            </div>
+                          </div>
                         </div>
                       ))}
                       <Button variant="outline" size="sm" onClick={handleAddEntityToEdit} className="w-full">
