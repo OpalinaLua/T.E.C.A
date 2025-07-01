@@ -9,6 +9,19 @@ import { ConsulenteRegistration } from '@/components/student-registration';
 import { CategorySelection } from "@/components/category-selection";
 import type { Category } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { Shield } from 'lucide-react';
+
 
 // --- Main Page Component ---
 export default function Home() {
@@ -25,6 +38,10 @@ export default function Home() {
   } = useSchoolData();
 
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const { toast } = useToast();
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleCategoryChange = (category: Category) => {
     setSelectedCategories(prev =>
@@ -32,6 +49,28 @@ export default function Home() {
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
+  };
+
+  const handlePasswordCheck = () => {
+    if (password === '2406') {
+      setIsAuthenticated(true);
+    } else {
+      toast({
+        title: "Senha Incorreta",
+        description: "A senha para acessar a área de gerenciamento está incorreta.",
+        variant: "destructive",
+      });
+      setPassword('');
+    }
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    setIsManagementOpen(open);
+    if (!open) {
+      // Reset state when dialog closes
+      setPassword('');
+      setIsAuthenticated(false);
+    }
   };
   
   if (!isLoaded) {
@@ -85,7 +124,50 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
-            <MediumRegistration addMedium={addMedium} />
+            <Dialog open={isManagementOpen} onOpenChange={handleDialogChange}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Gerenciar Médiuns
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                {!isAuthenticated ? (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle>Acesso Restrito</DialogTitle>
+                      <DialogDescription>
+                        Para cadastrar ou gerenciar médiuns, por favor, insira a senha de administrador.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center space-x-2 py-4">
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Senha"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handlePasswordCheck();
+                            }
+                        }}
+                      />
+                      <Button type="button" onClick={handlePasswordCheck}>Entrar</Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6 pt-2">
+                     <MediumRegistration 
+                        addMedium={addMedium}
+                        onSuccess={() => handleDialogChange(false)}
+                      />
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
             <ConsulenteRegistration
               mediums={mediums}
               addConsulente={addConsulente}

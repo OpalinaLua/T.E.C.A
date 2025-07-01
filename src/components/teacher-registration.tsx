@@ -18,7 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 // Interface para as props do componente.
 interface MediumRegistrationProps {
-  addMedium: (name: string, entities: { name: string; limit: number, category: Category }[]) => void;
+  addMedium: (name: string, entities: { name: string; limit: number, category: Category }[]) => Promise<void>;
+  onSuccess?: () => void;
 }
 
 // Interface para representar a estrutura de uma entidade sendo adicionada.
@@ -28,7 +29,7 @@ interface EntityInput {
     category: Category;
 }
 
-export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
+export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationProps) {
   // Estados do componente
   const [name, setName] = useState('');
   const [currentEntityName, setCurrentEntityName] = useState('');
@@ -36,6 +37,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
   const [currentEntityCategory, setCurrentEntityCategory] = useState<Category | ''>('');
   const [entities, setEntities] = useState<EntityInput[]>([]);
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   /**
    * Adiciona uma nova entidade à lista de entidades a serem cadastradas com o médium.
@@ -75,19 +77,27 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
   /**
    * Submete o formulário, cadastrando o novo médium.
    */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && entities.length > 0) {
-      addMedium(name.trim(), entities);
-      // Limpa o formulário após o sucesso
-      setName('');
-      setEntities([]);
-      setCurrentEntityName('');
-      setCurrentEntityLimit('10');
-      toast({
-        title: "Sucesso",
-        description: `Médium ${name.trim()} foi cadastrado(a).`,
-      });
+      setIsSubmitting(true);
+      try {
+        await addMedium(name.trim(), entities);
+        // Limpa o formulário após o sucesso
+        setName('');
+        setEntities([]);
+        setCurrentEntityName('');
+        setCurrentEntityLimit('10');
+        toast({
+          title: "Sucesso",
+          description: `Médium ${name.trim()} foi cadastrado(a).`,
+        });
+        onSuccess?.();
+      } catch (error) {
+          // O hook useSchoolData já lida com o toast de erro.
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
         toast({
             title: "Erro",
@@ -98,13 +108,13 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="w-full border-0 shadow-none">
+      <CardHeader className="px-0">
         <CardTitle className="text-xl sm:text-2xl">Cadastro de Médium</CardTitle>
         <CardDescription>Adicione um novo médium, suas entidades e o limite de consulentes por entidade.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-0">
           <div className="space-y-2">
             <Label htmlFor="medium-name">Nome do Médium</Label>
             <Input
@@ -134,8 +144,8 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
                   }}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <div className='space-y-1.5'>
+              <div className="flex flex-col sm:flex-row items-end gap-2">
+                <div className="w-full space-y-1.5">
                     <Label htmlFor="entity-category" className="text-sm">Categoria</Label>
                     <Select value={currentEntityCategory} onValueChange={(v) => setCurrentEntityCategory(v as Category)}>
                         <SelectTrigger id="entity-category">
@@ -148,7 +158,7 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="flex items-end gap-2">
+                <div className="w-full sm:w-auto flex items-end gap-2">
                     <div className="flex-grow space-y-1.5">
                         <Label htmlFor="entity-limit" className="text-sm">Limite</Label>
                         <Input
@@ -194,8 +204,10 @@ export function MediumRegistration({ addMedium }: MediumRegistrationProps) {
              )}
           </div>
         </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Cadastrar Médium</Button>
+        <CardFooter className="px-0">
+          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isSubmitting}>
+             {isSubmitting ? "Cadastrando..." : "Cadastrar Médium"}
+          </Button>
         </CardFooter>
       </form>
     </Card>
