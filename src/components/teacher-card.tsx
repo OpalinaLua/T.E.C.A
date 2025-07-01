@@ -119,7 +119,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
               category: "Exu", // Categoria padrão
               consulentes: [],
               isAvailable: true,
-              consulenteLimit: 10, // Limite padrão para novas entidades
+              consulenteLimit: 5, // Limite padrão para novas entidades
           }
       ])
   }
@@ -210,7 +210,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                             <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2">
-                             <div className="w-full sm:w-2/3 space-y-1.5">
+                             <div className="w-full space-y-1.5">
                               <Label htmlFor={`entity-category-${entity.id}`}>Categoria</Label>
                               <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
                                 <SelectTrigger id={`entity-category-${entity.id}`}>
@@ -221,7 +221,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="w-full sm:w-1/3 space-y-1.5">
+                            <div className="w-full space-y-1.5">
                               <Label htmlFor={`entity-limit-${entity.id}`}>Limite</Label>
                               <Input id={`entity-limit-${entity.id}`} placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} />
                             </div>

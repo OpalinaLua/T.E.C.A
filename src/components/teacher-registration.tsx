@@ -33,7 +33,7 @@ export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationP
   // Estados do componente
   const [name, setName] = useState('');
   const [currentEntityName, setCurrentEntityName] = useState('');
-  const [currentEntityLimit, setCurrentEntityLimit] = useState('10'); // Limite padrão
+  const [currentEntityLimit, setCurrentEntityLimit] = useState('5'); // Limite padrão
   const [currentEntityCategory, setCurrentEntityCategory] = useState<Category | ''>('');
   const [entities, setEntities] = useState<EntityInput[]>([]);
   const { toast } = useToast();
@@ -55,7 +55,7 @@ export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationP
       }
       setEntities([...entities, { name: currentEntityName.trim(), limit, category: currentEntityCategory }]);
       setCurrentEntityName('');
-      setCurrentEntityLimit('10'); // Reseta o limite para o padrão
+      setCurrentEntityLimit('5'); // Reseta o limite para o padrão
       setCurrentEntityCategory('');
     } else {
         toast({
@@ -87,7 +87,7 @@ export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationP
         setName('');
         setEntities([]);
         setCurrentEntityName('');
-        setCurrentEntityLimit('10');
+        setCurrentEntityLimit('5');
         toast({
           title: "Sucesso",
           description: `Médium ${name.trim()} foi cadastrado(a).`,
@@ -145,7 +145,7 @@ export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationP
                 />
               </div>
               <div className="flex flex-col sm:flex-row items-end gap-2">
-                <div className="w-full sm:w-2/3 space-y-1.5">
+                <div className="w-full space-y-1.5">
                     <Label htmlFor="entity-category" className="text-sm">Categoria</Label>
                     <Select value={currentEntityCategory} onValueChange={(v) => setCurrentEntityCategory(v as Category)}>
                         <SelectTrigger id="entity-category">
@@ -158,14 +158,14 @@ export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationP
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="w-full sm:w-1/3 flex items-end gap-2">
+                <div className="w-full flex items-end gap-2">
                     <div className="flex-grow space-y-1.5">
                         <Label htmlFor="entity-limit" className="text-sm">Limite</Label>
                         <Input
                             id="entity-limit"
                             type="number"
                             min="0"
-                            placeholder="10"
+                            placeholder="5"
                             value={currentEntityLimit}
                             onChange={(e) => setCurrentEntityLimit(e.target.value)}
                             onKeyDown={(e) => {
