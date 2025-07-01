@@ -264,6 +264,26 @@ export function useSchoolData() {
         toast({ title: "Erro ao Atualizar", description: "Não foi possível salvar as alterações.", variant: "destructive" });
     }
   }, [toast]);
+  
+  /**
+   * Registra um evento de login no Firestore.
+   */
+  const logLoginEvent = useCallback(async (userName: string) => {
+    if (!userName.trim()) {
+      toast({ title: "Erro de Auditoria", description: "O nome de usuário é obrigatório.", variant: "destructive" });
+      throw new Error("Username is required");
+    }
+    try {
+      await addDoc(collection(db, 'loginHistory'), {
+        userName: userName.trim(),
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Erro ao registrar login:", error);
+      toast({ title: "Erro de Auditoria", description: "Não foi possível registrar o evento de login.", variant: "destructive" });
+      throw error; // Lança o erro para ser tratado pelo chamador
+    }
+  }, [toast]);
 
   return {
     mediums,
@@ -275,5 +295,6 @@ export function useSchoolData() {
     toggleMediumPresence,
     toggleEntityAvailability,
     updateMedium,
+    logLoginEvent,
   };
 }

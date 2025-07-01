@@ -61,3 +61,16 @@ export interface Medium {
   isPresent: boolean;
   createdAt: string; // Usado para ordenação local
 }
+
+/**
+ * @interface LoginEntry
+ * Representa um registro de login na área administrativa.
+ */
+export interface LoginEntry {
+  id: string;
+  userName: string;
+  timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  };
+}

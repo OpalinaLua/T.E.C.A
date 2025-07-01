@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
+import { LoginHistory } from './login-history';
 
 interface MediumManagementProps {
   mediums: Medium[];
@@ -151,8 +152,8 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
                 </Label>
                 <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-1 sm:col-span-3" />
                 </div>
-                <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-start sm:gap-x-4">
-                <Label className="text-left sm:text-right sm:pt-2">Entidades</Label>
+                <div className="grid grid-cols-1 gap-y-2 sm:items-start sm:gap-x-4">
+                <Label className="text-left sm:pt-2">Entidades</Label>
                 <div className="col-span-1 sm:col-span-3 space-y-4">
                     {editedEntities.map((entity) => (
                     <div key={entity.id} className="space-y-3 rounded-md border p-3 relative">
@@ -204,6 +205,8 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
 export function MediumManagement({ mediums, addMedium, updateMedium, removeMedium, onSuccess }: MediumManagementProps) {
     return (
         <div className="space-y-8">
+            <LoginHistory />
+            
             <Card>
                 <CardHeader>
                     <CardTitle>Médiuns Cadastrados</CardTitle>

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
@@ -35,12 +36,14 @@ export default function Home() {
     toggleMediumPresence,
     toggleEntityAvailability,
     updateMedium,
+    logLoginEvent,
   } = useSchoolData();
 
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const { toast } = useToast();
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [password, setPassword] = useState('');
+  const [userName, setUserName] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleCategoryChange = (category: Category) => {
@@ -51,9 +54,24 @@ export default function Home() {
     );
   };
 
-  const handlePasswordCheck = () => {
+  const handlePasswordCheck = async () => {
+    if (userName.trim() === '') {
+      toast({
+        title: "Identificação Necessária",
+        description: "Por favor, insira seu nome para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (password === '2406') {
-      setIsAuthenticated(true);
+      try {
+        await logLoginEvent(userName);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // O hook useSchoolData já exibe um toast de erro.
+        // Apenas evitamos o login se o registro falhar.
+      }
     } else {
       toast({
         title: "Senha Incorreta",
@@ -64,11 +82,13 @@ export default function Home() {
     }
   };
 
+
   const handleDialogChange = (open: boolean) => {
     setIsManagementOpen(open);
     if (!open) {
       // Reset state when dialog closes
       setPassword('');
+      setUserName('');
       setIsAuthenticated(false);
     }
   };
@@ -137,24 +157,36 @@ export default function Home() {
                     <DialogHeader>
                       <DialogTitle>Acesso Restrito</DialogTitle>
                       <DialogDescription>
-                        Para cadastrar ou gerenciar médiuns, por favor, insira a senha de administrador.
+                        Para gerenciar médiuns, por favor, identifique-se e insira a senha de administrador.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="flex items-center space-x-2 py-4">
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Senha"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handlePasswordCheck();
-                            }
-                        }}
-                      />
-                      <Button type="button" onClick={handlePasswordCheck}>Entrar</Button>
+                    <div className="grid gap-4 py-4">
+                       <div className="space-y-2">
+                        <Label htmlFor="userName">Seu Nome</Label>
+                        <Input
+                          id="userName"
+                          placeholder="Digite seu nome"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Senha</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Senha"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handlePasswordCheck();
+                              }
+                          }}
+                        />
+                      </div>
+                      <Button type="button" onClick={handlePasswordCheck} className="w-full mt-2">Entrar</Button>
                     </div>
                   </>
                 ) : (
