@@ -10,6 +10,8 @@ export const ADMIN_EMAILS = [
     "luamdarabello@gmail.com",
     "castilholuisfelipi@gmail.com",
     "andersonbarrroso2000@gmail.com",
+    "andrianidasilvapereira520@gmail.com",
+    "douglas-diniz1@outlook.com",
     // "outro.admin@email.com", // Exemplo de como adicionar outro e-mail
 ];
 
