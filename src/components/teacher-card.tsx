@@ -185,7 +185,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                   <span className="sr-only">Editar Médium</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-xl">
+              <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Editar Médium</DialogTitle>
                 </DialogHeader>
@@ -209,8 +209,8 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                             <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
                             <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
                           </div>
-                          <div className="flex flex-col gap-2">
-                            <div className="space-y-1.5">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                             <div className="w-full sm:w-2/3 space-y-1.5">
                               <Label htmlFor={`entity-category-${entity.id}`}>Categoria</Label>
                               <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
                                 <SelectTrigger id={`entity-category-${entity.id}`}>
@@ -221,7 +221,7 @@ export function MediumCard({ medium, removeMedium, removeConsulente, toggleMediu
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="w-full sm:w-1/3 space-y-1.5">
                               <Label htmlFor={`entity-limit-${entity.id}`}>Limite</Label>
                               <Input id={`entity-limit-${entity.id}`} placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} />
                             </div>
