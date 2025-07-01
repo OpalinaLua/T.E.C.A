@@ -1,11 +1,7 @@
 "use client";
 
 import type { Medium, Category } from '@/lib/types';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { LogIn } from 'lucide-react';
 import { MediumCard } from './teacher-card';
-
 
 interface SchoolOverviewProps {
   mediums: Medium[];
@@ -19,9 +15,6 @@ interface SchoolOverviewProps {
 
 export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggleMediumPresence, toggleEntityAvailability, updateMedium, selectedCategories }: SchoolOverviewProps) {
   const presentMediums = mediums.filter(m => m.isPresent);
-  const absentMediums = mediums.filter(m => !m.isPresent);
-
-  const noCategoriesSelected = selectedCategories.length === 0;
 
   return (
     <div className="space-y-8">
@@ -44,31 +37,11 @@ export function SchoolOverview({ mediums, removeMedium, removeConsulente, toggle
           </div>
         ) : (
           <div className="text-center py-10 px-4 border-2 border-dashed rounded-lg">
-            <h3 className="text-lg font-medium text-muted-foreground">Nenhum médium está marcado como presente no momento.</h3>
+            <h3 className="text-lg font-medium text-muted-foreground">Nenhum médium está marcado como presente.</h3>
+            <p className="text-sm text-muted-foreground mt-2">Volte ao Passo 2 para marcar a presença dos médiuns.</p>
           </div>
         )}
       </div>
-
-      {absentMediums.length > 0 && (
-        <div>
-          <h2 className="text-3xl font-bold font-headline mb-4">Médiuns Ausentes</h2>
-          <Card>
-            <CardContent className="p-4">
-              <ul className="space-y-2">
-                {absentMediums.map(medium => (
-                  <li key={medium.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 group">
-                    <span className="text-secondary-foreground">{medium.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => toggleMediumPresence(medium.id)}>
-                      <LogIn className="mr-2 h-4 w-4" />
-                      Marcar como Presente
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
