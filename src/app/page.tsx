@@ -56,44 +56,49 @@ export default function Home() {
 
   const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+    
+    // Pequeno atraso para garantir que o estado de carregamento seja renderizado antes do popup do Google bloquear a thread
+    setTimeout(async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+    
+        if (user.email && ADMIN_EMAILS.includes(user.email)) {
+          await logLoginEvent(user.email);
+          setAuthenticatedUser(user);
+        } else {
+          await signOut(auth);
+          toast({
+            title: "Acesso Negado",
+            description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+            variant: "destructive",
+          });
+          setIsLoggingIn(false);
+        }
+      } catch (error: any) {
+        console.error("Erro no login com Google:", error);
   
-      if (user.email && ADMIN_EMAILS.includes(user.email)) {
-        await logLoginEvent(user.email);
-        setAuthenticatedUser(user);
-      } else {
-        await signOut(auth);
+        let description = "Não foi possível autenticar com o Google. Tente novamente.";
+        if (error.code === 'auth/popup-closed-by-user') {
+          description = "A janela de login foi fechada antes da conclusão.";
+        } else if (error.code === 'auth/cancelled-popup-request') {
+          description = "Múltiplas tentativas de login. Por favor, tente novamente.";
+        } else if (error.code === 'auth/configuration-not-found') {
+          description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
+        } else if (error.code === 'auth/unauthorized-domain') {
+          description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
+        }
+  
         toast({
-          title: "Acesso Negado",
-          description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+          title: "Erro de Login",
+          description,
           variant: "destructive",
         });
+        setIsLoggingIn(false);
       }
-    } catch (error: any) {
-      console.error("Erro no login com Google:", error);
-
-      let description = "Não foi possível autenticar com o Google. Tente novamente.";
-      if (error.code === 'auth/popup-closed-by-user') {
-        description = "A janela de login foi fechada antes da conclusão.";
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        description = "Múltiplas tentativas de login. Por favor, tente novamente.";
-      } else if (error.code === 'auth/configuration-not-found') {
-        description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
-      } else if (error.code === 'auth/unauthorized-domain') {
-        description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
-      }
-
-      toast({
-        title: "Erro de Login",
-        description,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoggingIn(false);
-    }
+      // O 'finally' não é usado aqui pois o 'setIsLoggingIn(false)' é chamado nos caminhos de erro e sucesso dentro do setTimeout
+    }, 50);
   };
 
 
@@ -102,7 +107,7 @@ export default function Home() {
     if (!open) {
       // Reset state when dialog closes
       setAuthenticatedUser(null);
-      setIsLoggingIn(false);
+      setIsLoggingIn(false); // Garante que o estado de login seja resetado se o diálogo for fechado
        if (auth.currentUser) {
         signOut(auth);
       }
