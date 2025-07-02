@@ -139,7 +139,7 @@ export default function Home() {
                   Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
-              <DialogContent className={authenticatedUser ? "sm:max-w-3xl" : "sm:max-w-md"}>
+              <DialogContent className={authenticatedUser ? "sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto" : "sm:max-w-md"}>
                 {!authenticatedUser ? (
                   <>
                     <DialogHeader>
@@ -163,8 +163,14 @@ export default function Home() {
                     </div>
                   </>
                 ) : (
-                  <div className="max-h-[80vh] overflow-y-auto -mx-6 px-6 pt-2">
-                     <MediumManagement
+                  <>
+                    <DialogHeader>
+                      <DialogTitle>Gerenciar Médiuns e Gira</DialogTitle>
+                      <DialogDescription>
+                        Gerencie a gira, médiuns e consulte o histórico de acesso.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <MediumManagement
                         user={authenticatedUser}
                         mediums={mediums}
                         addMedium={addMedium}
@@ -177,7 +183,7 @@ export default function Home() {
                         onSuccess={() => { /* No need to close dialog anymore */ }}
                         onClose={() => handleDialogChange(false)}
                       />
-                  </div>
+                  </>
                 )}
               </DialogContent>
             </Dialog>
