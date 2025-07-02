@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
-import { Skeleton } from '@/components/ui/skeleton';
+import { LoadingScreen } from "@/components/loading-screen";
 import { ConsulenteRegistration } from '@/components/student-registration';
 import type { Category } from "@/lib/types";
 import {
@@ -105,27 +105,7 @@ export default function Home() {
   };
   
   if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <Skeleton className="h-16 w-1/3" />
-          <Skeleton className="h-32 w-full" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div className="lg:col-span-1 space-y-8">
-              <Skeleton className="h-96 w-full" />
-              <Skeleton className="h-96 w-full" />
-            </div>
-            <div className="lg:col-span-2 space-y-8">
-              <Skeleton className="h-12 w-full mb-4" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
