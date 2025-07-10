@@ -1,15 +1,16 @@
 "use client";
 
-import { spiritualCategories, type Category } from "@/lib/types";
+import type { Category } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 interface CategorySelectionProps {
+  spiritualCategories: Category[];
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
 }
 
-export function CategorySelection({ selectedCategories, onSelectionChange }: CategorySelectionProps) {
+export function CategorySelection({ spiritualCategories, selectedCategories, onSelectionChange }: CategorySelectionProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       {spiritualCategories.map((category) => (

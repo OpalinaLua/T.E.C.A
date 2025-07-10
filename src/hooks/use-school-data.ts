@@ -25,7 +25,12 @@ import {
   getDocs,
   writeBatch,
   setDoc,
+  arrayUnion,
+  arrayRemove,
+  runTransaction
 } from 'firebase/firestore';
+
+const CATEGORIES_DOC_PATH = 'appState/spiritualCategories';
 
 /**
  * Hook para gerenciar os dados dos médiuns usando o Firebase Firestore.
@@ -34,16 +39,18 @@ import {
 export function useSchoolData() {
   const [mediums, setMediums] = useState<Medium[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [spiritualCategories, setSpiritualCategories] = useState<Category[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
   // Efeito para carregar e escutar os dados do Firestore na inicialização.
   useEffect(() => {
     let mediumsLoaded = false;
-    let categoriesLoaded = false;
+    let selectedCategoriesLoaded = false;
+    let spiritualCategoriesLoaded = false;
     
     const updateLoadingState = () => {
-      if (mediumsLoaded && categoriesLoaded) {
+      if (mediumsLoaded && selectedCategoriesLoaded && spiritualCategoriesLoaded) {
         setIsLoaded(true);
       }
     };
@@ -84,15 +91,15 @@ export function useSchoolData() {
       updateLoadingState();
     });
 
-    // Listener para Categorias da Gira
+    // Listener para Categorias da Gira (selecionadas)
     const giraDocRef = doc(db, 'appState', 'gira');
-    const unsubscribeCategories = onSnapshot(giraDocRef, (docSnap) => {
+    const unsubscribeGira = onSnapshot(giraDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setSelectedCategories(docSnap.data().categories || []);
       } else {
         setSelectedCategories([]);
       }
-      categoriesLoaded = true;
+      selectedCategoriesLoaded = true;
       updateLoadingState();
     }, (error) => {
       console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Gira) -----------", error);
@@ -101,12 +108,40 @@ export function useSchoolData() {
         description: "Não foi possível carregar as configurações da gira.",
         variant: "destructive",
       });
-      categoriesLoaded = true;
+      selectedCategoriesLoaded = true;
+      updateLoadingState();
+    });
+
+    // Listener para Categorias Espirituais (disponíveis)
+    const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
+    const unsubscribeCategories = onSnapshot(categoriesDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Garante que é um array e ordena alfabeticamente
+        const categories = Array.isArray(data.list) ? data.list.sort() : [];
+        setSpiritualCategories(categories);
+      } else {
+        // Se não existir, cria o documento com uma lista padrão
+        const defaultCategories = ["Exu", "Pombogira", "Malandros", "Pretos-Velhos", "Caboclos", "Boiadeiros", "Marinheiros", "Erês"];
+        setDoc(categoriesDocRef, { list: defaultCategories.sort() });
+        setSpiritualCategories(defaultCategories);
+      }
+      spiritualCategoriesLoaded = true;
+      updateLoadingState();
+    }, (error) => {
+      console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Categorias Espirituais) -----------", error);
+      toast({
+        title: "Erro de Conexão",
+        description: "Não foi possível carregar a lista de categorias da gira.",
+        variant: "destructive",
+      });
+      spiritualCategoriesLoaded = true;
       updateLoadingState();
     });
 
     return () => {
       unsubscribeMediums();
+      unsubscribeGira();
       unsubscribeCategories();
     };
   }, [toast]);
@@ -404,8 +439,66 @@ export function useSchoolData() {
     }
   }, [toast]);
 
+  /**
+   * Adiciona uma nova categoria espiritual à lista no Firestore.
+   */
+  const addSpiritualCategory = useCallback(async (category: string) => {
+    if (!category || category.trim() === '') {
+        toast({ title: 'Erro', description: 'O nome da categoria não pode ser vazio.', variant: 'destructive' });
+        return;
+    }
+    const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
+    try {
+        await updateDoc(categoriesDocRef, {
+            list: arrayUnion(category.trim())
+        });
+        toast({ title: 'Sucesso', description: `Categoria "${category.trim()}" adicionada.` });
+    } catch (error) {
+        console.error('Erro ao adicionar categoria:', error);
+        toast({ title: 'Erro', description: 'Não foi possível adicionar a categoria.', variant: 'destructive' });
+    }
+  }, [toast]);
+
+  /**
+   * Remove uma categoria espiritual.
+   * Esta operação é transacional para garantir a consistência dos dados:
+   * 1. Remove a categoria da lista de categorias disponíveis.
+   * 2. Remove a categoria da lista de categorias selecionadas para a gira atual.
+   * 3. Percorre todos os médiuns e remove a categoria de qualquer entidade associada.
+   */
+  const removeSpiritualCategory = useCallback(async (category: string) => {
+    try {
+        await runTransaction(db, async (transaction) => {
+            // 1. Remover da lista de categorias disponíveis
+            const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
+            transaction.update(categoriesDocRef, { list: arrayRemove(category) });
+
+            // 2. Remover da seleção da gira atual
+            const giraDocRef = doc(db, 'appState', 'gira');
+            transaction.update(giraDocRef, { categories: arrayRemove(category) });
+
+            // 3. Remover de todas as entidades dos médiuns
+            const mediumsCollectionRef = collection(db, 'mediums');
+            const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
+            
+            mediumsSnapshot.forEach(mediumDoc => {
+                const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
+                const updatedEntities = mediumData.entities.map(entity => 
+                    entity.category === category ? { ...entity, category: 'Sem Categoria' as Category } : entity
+                );
+                transaction.update(mediumDoc.ref, { entities: updatedEntities });
+            });
+        });
+        toast({ title: 'Sucesso', description: `Categoria "${category}" removida.` });
+    } catch (error) {
+        console.error('Erro ao remover categoria:', error);
+        toast({ title: 'Erro na Transação', description: 'Não foi possível remover a categoria de forma consistente.', variant: 'destructive' });
+    }
+}, [toast]);
+
   return {
     mediums,
+    spiritualCategories,
     isLoaded,
     addMedium,
     removeMedium,
@@ -416,6 +509,8 @@ export function useSchoolData() {
     updateMedium,
     logLoginEvent,
     clearLoginHistory,
+    addSpiritualCategory,
+    removeSpiritualCategory,
     selectedCategories,
     updateSelectedCategories,
   };

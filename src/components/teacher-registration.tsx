@@ -13,12 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
-import { spiritualCategories, type Category } from '@/lib/types';
+import type { Category } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 // Interface para as props do componente.
 interface MediumRegistrationProps {
   addMedium: (name: string, entities: { name: string; limit: number, category: Category }[]) => Promise<void>;
+  spiritualCategories: Category[];
   onSuccess?: () => void;
 }
 
@@ -29,7 +30,7 @@ interface EntityInput {
     category: Category;
 }
 
-export function MediumRegistration({ addMedium, onSuccess }: MediumRegistrationProps) {
+export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }: MediumRegistrationProps) {
   // Estados do componente
   const [name, setName] = useState('');
   const [currentEntityName, setCurrentEntityName] = useState('');

@@ -28,6 +28,7 @@ import { ADMIN_EMAILS } from "@/lib/secrets";
 export default function Home() {
   const {
     mediums,
+    spiritualCategories,
     isLoaded,
     addMedium,
     removeMedium,
@@ -38,6 +39,8 @@ export default function Home() {
     updateMedium,
     logLoginEvent,
     clearLoginHistory,
+    addSpiritualCategory,
+    removeSpiritualCategory,
     selectedCategories,
     updateSelectedCategories,
   } = useSchoolData();
@@ -173,11 +176,14 @@ export default function Home() {
                     <MediumManagement
                         user={authenticatedUser}
                         mediums={mediums}
+                        spiritualCategories={spiritualCategories}
                         addMedium={addMedium}
                         updateMedium={updateMedium}
                         removeMedium={removeMedium}
                         toggleMediumPresence={toggleMediumPresence}
                         clearLoginHistory={clearLoginHistory}
+                        addSpiritualCategory={addSpiritualCategory}
+                        removeSpiritualCategory={removeSpiritualCategory}
                         selectedCategories={selectedCategories}
                         onSelectionChange={handleCategoryChange}
                         onSuccess={() => { /* No need to close dialog anymore */ }}
@@ -192,6 +198,7 @@ export default function Home() {
               mediums={mediums}
               addConsulente={addConsulente}
               selectedCategories={selectedCategories}
+              spiritualCategories={spiritualCategories}
             />
           </aside>
           <div className="lg:col-span-2">

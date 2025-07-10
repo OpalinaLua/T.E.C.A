@@ -18,9 +18,10 @@ interface ConsulenteRegistrationProps {
   mediums: Medium[];
   addConsulente: (consulenteName: string, mediumId: string, entityId: string) => Promise<void>;
   selectedCategories: Category[];
+  spiritualCategories: Category[];
 }
 
-export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories }: ConsulenteRegistrationProps) {
+export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories, spiritualCategories }: ConsulenteRegistrationProps) {
   // Estados do componente.
   const [name, setName] = useState('');
   const [selectedMediumId, setSelectedMediumId] = useState('');

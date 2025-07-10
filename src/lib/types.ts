@@ -6,25 +6,11 @@
  */
 
 /**
- * @const spiritualCategories
- * Define as categorias espirituais que podem ser usadas na aplicação.
- */
-export const spiritualCategories = [
-  "Exu",
-  "Pombogira",
-  "Malandros",
-  "Pretos-Velhos",
-  "Caboclos",
-  "Boiadeiros",
-  "Marinheiros",
-  "Erês",
-] as const;
-
-/**
  * @type Category
- * Representa um tipo de categoria espiritual a partir da lista `spiritualCategories`.
+ * Representa um tipo de categoria espiritual. O valor é uma string,
+ * e a lista de categorias válidas é gerenciada no Firestore.
  */
-export type Category = typeof spiritualCategories[number];
+export type Category = string;
 
 
 /**

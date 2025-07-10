@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import type { Medium, Entity, Category } from '@/lib/types';
-import { spiritualCategories } from '@/lib/types';
 import {
   Accordion,
   AccordionContent,
@@ -51,11 +50,14 @@ import type { User } from 'firebase/auth';
 interface MediumManagementProps {
   user: User;
   mediums: Medium[];
+  spiritualCategories: Category[];
   addMedium: (name: string, entities: { name: string; limit: number; category: Category }[]) => Promise<void>;
   updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
   removeMedium: (mediumId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   clearLoginHistory: () => Promise<void>;
+  addSpiritualCategory: (category: string) => Promise<void>;
+  removeSpiritualCategory: (category: string) => Promise<void>;
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
   onSuccess?: () => void;
@@ -63,7 +65,7 @@ interface MediumManagementProps {
 }
 
 // Internal component to handle the state for editing a single medium
-function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: MediumManagementProps['updateMedium'] }) {
+function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Medium; updateMedium: MediumManagementProps['updateMedium'], spiritualCategories: Category[] }) {
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedName, setEditedName] = useState(medium.name);
@@ -216,11 +218,80 @@ function EditMedium({ medium, updateMedium }: { medium: Medium; updateMedium: Me
     );
 }
 
-export function MediumManagement({ user, mediums, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, onSuccess, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory }: Pick<MediumManagementProps, 'spiritualCategories' | 'addSpiritualCategory' | 'removeSpiritualCategory'>) {
     const { toast } = useToast();
+    const [newCategory, setNewCategory] = useState('');
+
+    const handleAddCategory = () => {
+        const trimmedCategory = newCategory.trim();
+        if (trimmedCategory === '') {
+            toast({ title: 'Erro', description: 'O nome da categoria não pode ser vazio.', variant: 'destructive' });
+            return;
+        }
+        addSpiritualCategory(trimmedCategory);
+        setNewCategory('');
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex gap-2">
+                <Input
+                    placeholder="Nome da nova categoria"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCategory();
+                        }
+                    }}
+                />
+                <Button onClick={handleAddCategory}>Adicionar</Button>
+            </div>
+            <div className="space-y-2">
+                <Label>Categorias Atuais</Label>
+                <ScrollArea className="h-40 border rounded-lg p-2">
+                    <div className="space-y-2">
+                    {spiritualCategories.map(cat => (
+                        <div key={cat} className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
+                            <span className="font-medium">{cat}</span>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Remover a categoria "{cat}" também a removerá de todas as entidades associadas. Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => removeSpiritualCategory(cat)} variant="destructive">
+                                            Excluir
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    ))}
+                    {spiritualCategories.length === 0 && <p className="text-sm text-center italic text-muted-foreground p-4">Nenhuma categoria cadastrada.</p>}
+                    </div>
+                </ScrollArea>
+            </div>
+        </div>
+    );
+}
+
+export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, onSuccess, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+    const { toast } = useToast();
+    const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
 
     const handleConfirmClearHistory = async () => {
-        if (user && user.email && SUPER_ADMINS.includes(user.email)) {
+        if (isSuperAdmin) {
             try {
                 await clearLoginHistory();
             } catch (error) {
@@ -252,6 +323,7 @@ export function MediumManagement({ user, mediums, addMedium, updateMedium, remov
                 </CardHeader>
                 <CardContent>
                     <CategorySelection
+                    spiritualCategories={spiritualCategories}
                     selectedCategories={selectedCategories}
                     onSelectionChange={onSelectionChange}
                     />
@@ -283,7 +355,7 @@ export function MediumManagement({ user, mediums, addMedium, updateMedium, remov
                                       </Label>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <EditMedium medium={medium} updateMedium={updateMedium} />
+                                        <EditMedium medium={medium} updateMedium={updateMedium} spiritualCategories={spiritualCategories} />
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
@@ -321,15 +393,23 @@ export function MediumManagement({ user, mediums, addMedium, updateMedium, remov
                 <AccordionItem value="add-medium">
                     <AccordionTrigger className="text-xl font-bold font-headline">Adicionar Novo Médium</AccordionTrigger>
                     <AccordionContent>
-                        <MediumRegistration addMedium={addMedium} onSuccess={onSuccess} />
+                        <MediumRegistration addMedium={addMedium} spiritualCategories={spiritualCategories} onSuccess={onSuccess} />
                     </AccordionContent>
                 </AccordionItem>
+                {isSuperAdmin && (
+                    <AccordionItem value="manage-categories">
+                        <AccordionTrigger className="text-xl font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
+                        <AccordionContent>
+                            <CategoryManagement spiritualCategories={spiritualCategories} addSpiritualCategory={addSpiritualCategory} removeSpiritualCategory={removeSpiritualCategory} />
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
                 <AccordionItem value="login-history">
                     <AccordionTrigger className="text-xl font-bold font-headline">Histórico de Acesso</AccordionTrigger>
                     <AccordionContent>
                         <div className="space-y-4">
                             <LoginHistory />
-                             {user && user.email && SUPER_ADMINS.includes(user.email) && (
+                             {isSuperAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="destructive" className="w-full">
