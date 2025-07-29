@@ -22,6 +22,7 @@ import { auth } from "@/lib/firebase";
 import { ADMIN_EMAILS } from "@/lib/secrets";
 import { useRouter, useSearchParams } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
 
 // --- Main Page Component ---
 export default function Home() {
