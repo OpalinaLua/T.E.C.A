@@ -156,12 +156,12 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
                   key={entity.id} 
                   className={cn(
                     "flex items-center justify-between p-2 rounded-md bg-secondary/30",
-                    !entity.isAvailable && "opacity-50"
+                    (!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-50"
                   )}
                 >
                   <p className={cn(
                     "text-secondary-foreground",
-                    !entity.isAvailable && "line-through"
+                    (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through"
                   )}>
                     {entity.name}
                   </p>
