@@ -312,11 +312,13 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         <div className="flex flex-col h-full">
             <div className="flex-grow">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+                    <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
                         <TabsTrigger value="mediums" className="flex-col sm:flex-row gap-2 py-2"><Users />Médiuns</TabsTrigger>
                         <TabsTrigger value="register" className="flex-col sm:flex-row gap-2 py-2"><BookUser />Cadastrar</TabsTrigger>
-                        <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
+                        {isSuperAdmin && (
+                            <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
+                        )}
                     </TabsList>
                     
                     <div className="pt-6">
@@ -399,22 +401,20 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                             <MediumRegistration addMedium={addMedium} spiritualCategories={spiritualCategories} />
                         </TabsContent>
 
-                        <TabsContent value="advanced">
-                             <Accordion type="single" collapsible className="w-full">
-                                {isSuperAdmin && (
+                        {isSuperAdmin && (
+                            <TabsContent value="advanced">
+                                 <Accordion type="single" collapsible className="w-full">
                                     <AccordionItem value="manage-categories">
                                         <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
                                         <AccordionContent>
                                             <CategoryManagement spiritualCategories={spiritualCategories} addSpiritualCategory={addSpiritualCategory} removeSpiritualCategory={removeSpiritualCategory} />
                                         </AccordionContent>
                                     </AccordionItem>
-                                )}
-                                <AccordionItem value="login-history">
-                                    <AccordionTrigger className="text-lg font-bold font-headline">Histórico de Acesso</AccordionTrigger>
-                                    <AccordionContent>
-                                        <div className="space-y-4">
-                                            <LoginHistory />
-                                             {isSuperAdmin && (
+                                    <AccordionItem value="login-history">
+                                        <AccordionTrigger className="text-lg font-bold font-headline">Histórico de Acesso</AccordionTrigger>
+                                        <AccordionContent>
+                                            <div className="space-y-4">
+                                                <LoginHistory />
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <Button variant="destructive" className="w-full">
@@ -437,12 +437,12 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
-                                             )}
-                                        </div>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            </Accordion>
-                        </TabsContent>
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            </TabsContent>
+                        )}
                     </div>
                 </Tabs>
             </div>
