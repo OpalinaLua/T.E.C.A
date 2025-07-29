@@ -55,7 +55,9 @@ export default function Home() {
 
 
   useEffect(() => {
+    // This effect runs once on component mount to check for redirect results
     const handleRedirectResult = async () => {
+      setIsCheckingAuth(true);
       try {
         const result = await getRedirectResult(auth);
         if (result && result.user) {
@@ -63,7 +65,7 @@ export default function Home() {
           if (user.email && ADMIN_EMAILS.includes(user.email)) {
             await logLoginEvent(user.email);
             setAuthenticatedUser(user);
-            setIsManagementOpen(true); 
+            setIsManagementOpen(true); // Open the dialog on successful redirect login
           } else {
             await signOut(auth);
             toast({
@@ -87,9 +89,11 @@ export default function Home() {
     
     handleRedirectResult();
 
+    // This listener keeps the user state synchronized
     const unsubscribe = auth.onAuthStateChanged(user => {
+      setAuthenticatedUser(user);
       if (!user) {
-          setAuthenticatedUser(null);
+        setIsLoggingIn(false);
       }
     });
 
@@ -109,17 +113,20 @@ export default function Home() {
     const provider = new GoogleAuthProvider();
 
     if (isMobile) {
-      await signInWithRedirect(auth, provider);
+      // For mobile, use redirect which is more reliable
+      signInWithRedirect(auth, provider);
       return; 
     }
 
     try {
+      // For desktop, use popup
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
   
       if (user.email && ADMIN_EMAILS.includes(user.email)) {
         await logLoginEvent(user.email);
         setAuthenticatedUser(user);
+        setIsManagementOpen(true); // Open dialog after successful popup login
       } else {
         await signOut(auth);
         toast({
@@ -130,18 +137,10 @@ export default function Home() {
       }
     } catch (error: any) {
       console.error("Erro no login com Google:", error);
-
       let description = "Não foi possível autenticar com o Google. Tente novamente.";
-      if (error.code === 'auth/popup-closed-by-user') {
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         description = "A janela de login foi fechada antes da conclusão.";
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        description = "Múltiplas tentativas de login. Por favor, tente novamente.";
-      } else if (error.code === 'auth/configuration-not-found') {
-        description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
-      } else if (error.code === 'auth/unauthorized-domain') {
-        description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
       }
-
       toast({
         title: "Erro de Login",
         description,
@@ -152,19 +151,18 @@ export default function Home() {
     }
   };
 
-
   const handleDialogChange = (open: boolean) => {
-    setIsManagementOpen(open);
-    if (!open && auth.currentUser) {
-      signOut(auth).then(() => {
-        setAuthenticatedUser(null);
-        setIsLoggingIn(false);
-      });
+    if (!open) {
+      // When the dialog is closed, ensure the user is signed out
+      if (auth.currentUser) {
+        signOut(auth);
+      }
     }
+    setIsManagementOpen(open);
   };
   
   if (!isSchoolDataLoaded || isCheckingAuth) {
-    return <LoadingScreen text={isCheckingAuth ? "Verificando autenticação..." : undefined}/>;
+    return <LoadingScreen text={isCheckingAuth ? "Verificando autenticação..." : "Carregando dados..."}/>;
   }
 
   return (
@@ -183,7 +181,7 @@ export default function Home() {
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
             <Dialog open={isManagementOpen} onOpenChange={handleDialogChange}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => setIsManagementOpen(true)}>
                   <Shield className="mr-2 h-4 w-4" />
                   Gerenciar Médiuns e Gira
                 </Button>
