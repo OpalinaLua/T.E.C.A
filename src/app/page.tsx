@@ -70,6 +70,7 @@ export default function Home() {
         if (user.email && ADMIN_EMAILS.includes(user.email)) {
           await logLoginEvent(user.email);
           setAuthenticatedUser(user);
+          setIsLoggingIn(false);
         } else {
           await signOut(auth);
           toast({
@@ -100,7 +101,6 @@ export default function Home() {
         });
         setIsLoggingIn(false);
       }
-      // O 'finally' não é usado aqui pois o 'setIsLoggingIn(false)' é chamado nos caminhos de erro e sucesso dentro do setTimeout
     }, 50);
   };
 
@@ -110,7 +110,7 @@ export default function Home() {
     if (!open) {
       // Reset state when dialog closes
       setAuthenticatedUser(null);
-      setIsLoggingIn(false); // Garante que o estado de login seja resetado se o diálogo for fechado
+      setIsLoggingIn(false);
        if (auth.currentUser) {
         signOut(auth);
       }
@@ -142,7 +142,7 @@ export default function Home() {
                   Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
-              <DialogContent className={authenticatedUser ? "sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto" : "sm:max-w-md"}>
+              <DialogContent className={authenticatedUser ? "sm:max-w-xl md:max-w-2xl lg:max-w-3xl" : "sm:max-w-md"}>
                 {!authenticatedUser ? (
                   <>
                     <DialogHeader>
@@ -167,13 +167,13 @@ export default function Home() {
                   </>
                 ) : (
                   <>
-                    <DialogHeader>
-                      <DialogTitle>Gerenciar Médiuns e Gira</DialogTitle>
-                      <DialogDescription>
-                        Gerencie a gira, médiuns e consulte o histórico de acesso.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <MediumManagement
+                     <DialogHeader>
+                        <DialogTitle>Painel de Gerenciamento</DialogTitle>
+                        <DialogDescription>
+                          Gerencie a gira, médiuns, categorias e consulte o histórico de acesso.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <MediumManagement
                         user={authenticatedUser}
                         mediums={mediums}
                         spiritualCategories={spiritualCategories}
@@ -186,7 +186,6 @@ export default function Home() {
                         removeSpiritualCategory={removeSpiritualCategory}
                         selectedCategories={selectedCategories}
                         onSelectionChange={handleCategoryChange}
-                        onSuccess={() => { /* No need to close dialog anymore */ }}
                         onClose={() => handleDialogChange(false)}
                       />
                   </>
