@@ -55,25 +55,35 @@ export default function Home() {
 
 
   useEffect(() => {
+    console.log("[AUTH_DEBUG] useEffect triggered. isMobile:", isMobile);
+
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      console.log("[AUTH_DEBUG] onAuthStateChanged callback fired. User:", user);
       if (user) {
-        // User is signed in.
+        console.log("[AUTH_DEBUG] User is already signed in via onAuthStateChanged.");
         setAuthenticatedUser(user);
         setIsCheckingAuth(false);
       } else {
-        // User is signed out.
-        // Check for redirect result on page load.
+        console.log("[AUTH_DEBUG] No user from onAuthStateChanged. Checking for redirect result...");
+        // No user is signed in, so we check for the result of a redirect login.
         try {
+          // Set loading state for login process
+          setIsLoggingIn(true); 
           const result = await getRedirectResult(auth);
+          console.log("[AUTH_DEBUG] getRedirectResult returned:", result);
+          
           if (result && result.user) {
-            // This is the return from a successful redirect login.
             const redirectedUser = result.user;
+            console.log("[AUTH_DEBUG] Redirect successful. User:", redirectedUser.email);
+            
             if (redirectedUser.email && ADMIN_EMAILS.includes(redirectedUser.email)) {
+              console.log("[AUTH_DEBUG] User is an admin. Logging event and setting state.");
               await logLoginEvent(redirectedUser.email);
               setAuthenticatedUser(redirectedUser);
-              setIsManagementOpen(true); // <--- THIS IS THE FIX
+              setIsManagementOpen(true); // <--- This should open the dialog
+              console.log("[AUTH_DEBUG] Setting authenticatedUser and isManagementOpen to true.");
             } else {
-              // User signed in, but is not an admin.
+              console.log("[AUTH_DEBUG] User is not an admin. Signing out.");
               await signOut(auth);
               toast({
                 title: "Acesso Negado",
@@ -82,26 +92,30 @@ export default function Home() {
               });
             }
           } else {
-            // No user and no redirect result, so they are logged out.
-             setAuthenticatedUser(null);
+            console.log("[AUTH_DEBUG] No redirect result found. User is logged out.");
+            setAuthenticatedUser(null);
           }
         } catch (error: any) {
-          console.error("Erro no login com redirecionamento:", error);
+          console.error("[AUTH_DEBUG] Error during getRedirectResult:", error);
           toast({
             title: "Erro de Login",
-            description: "Não foi possível autenticar com o Google. Tente novamente.",
+            description: `Código do Erro: ${error.code}. Mensagem: ${error.message}`,
             variant: "destructive",
           });
         } finally {
-            setIsCheckingAuth(false);
-            setIsLoggingIn(false);
+          console.log("[AUTH_DEBUG] Redirect check finished. Finalizing auth check.");
+          setIsCheckingAuth(false);
+          setIsLoggingIn(false);
         }
       }
     });
 
     // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [logLoginEvent, toast]);
+    return () => {
+      console.log("[AUTH_DEBUG] Unsubscribing from onAuthStateChanged.");
+      unsubscribe();
+    };
+  }, [logLoginEvent, toast, isMobile]);
 
 
   const handleCategoryChange = (category: Category) => {
@@ -116,21 +130,24 @@ export default function Home() {
     const provider = new GoogleAuthProvider();
 
     if (isMobile) {
-      // For mobile, use redirect which is more reliable
+      console.log("[AUTH_DEBUG] Mobile device detected. Using signInWithRedirect.");
       signInWithRedirect(auth, provider);
       return; 
     }
 
     try {
-      // For desktop, use popup
+      console.log("[AUTH_DEBUG] Desktop device detected. Using signInWithPopup.");
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      console.log("[AUTH_DEBUG] Popup login result:", result);
   
       if (user.email && ADMIN_EMAILS.includes(user.email)) {
+        console.log("[AUTH_DEBUG] Popup user is admin. Opening dialog.");
         await logLoginEvent(user.email);
         setAuthenticatedUser(user);
-        setIsManagementOpen(true); // Open dialog after successful popup login
+        setIsManagementOpen(true);
       } else {
+        console.log("[AUTH_DEBUG] Popup user is not admin. Signing out.");
         await signOut(auth);
         toast({
           title: "Acesso Negado",
@@ -139,7 +156,7 @@ export default function Home() {
         });
       }
     } catch (error: any) {
-      console.error("Erro no login com Google:", error);
+      console.error("[AUTH_DEBUG] Error in signInWithPopup:", error);
       let description = "Não foi possível autenticar com o Google. Tente novamente.";
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         description = "A janela de login foi fechada antes da conclusão.";
@@ -155,9 +172,10 @@ export default function Home() {
   };
 
   const handleDialogChange = (open: boolean) => {
+    console.log(`[AUTH_DEBUG] Dialog state changing to: ${open}`);
     if (!open) {
-      // When the dialog is closed, ensure the user is signed out
       if (auth.currentUser) {
+        console.log("[AUTH_DEBUG] Dialog closing, signing out user.");
         signOut(auth);
       }
     }
@@ -252,3 +270,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
