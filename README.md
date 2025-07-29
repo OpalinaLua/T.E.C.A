@@ -1,4 +1,4 @@
-# T.E.C.A - Templo Escola de Casa das almas
+# T.E.C.A - Templo Escola de Casa das Almas
 
 Bem-vindo ao repositório do **T.E.C.A**, um sistema de gerenciamento de consulência espiritual projetado para ser simples, intuitivo e eficiente. A aplicação foi desenvolvida para otimizar a organização dos atendimentos, a gestão dos médiuns e o controle das giras, tudo em tempo real e com foco na experiência móvel.
 
