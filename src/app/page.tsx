@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { LoadingScreen } from "@/components/loading-screen";
@@ -24,8 +25,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-// --- Main Page Component ---
-export default function Home() {
+function HomeClient() {
   const {
     mediums,
     spiritualCategories,
@@ -62,13 +62,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Se o usuário estiver autenticado e o parâmetro 'openManagement' estiver na URL,
-    // abra o diálogo de gerenciamento e remova o parâmetro para limpar a URL.
     if (authenticatedUser && searchParams.has('openManagement')) {
       if (ADMIN_EMAILS.includes(authenticatedUser.email || '')) {
         setIsManagementOpen(true);
       }
-      // Limpa a URL para que o diálogo não reabra ao recarregar a página.
       const newPath = window.location.pathname;
       window.history.replaceState({ ...window.history.state, as: newPath, url: newPath }, '', newPath);
     }
@@ -92,7 +89,6 @@ export default function Home() {
 
   const handleDialogChange = async (open: boolean) => {
     if (!open && auth.currentUser) {
-      // Ao fechar o diálogo, fazemos o logout
       await signOut(auth);
     }
     setIsManagementOpen(open);
@@ -175,5 +171,14 @@ export default function Home() {
         </div>
       </div>
     </main>
+  );
+}
+
+// --- Main Page Component ---
+export default function Home() {
+  return (
+    <Suspense fallback={<LoadingScreen text="Carregando página..." />}>
+      <HomeClient />
+    </Suspense>
   );
 }
