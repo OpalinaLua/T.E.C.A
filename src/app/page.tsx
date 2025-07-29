@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,10 +18,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Loader2 } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
-import { GoogleAuthProvider, signInWithPopup, signOut, type User, getRedirectResult, signInWithRedirect } from "firebase/auth";
+import { signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ADMIN_EMAILS } from "@/lib/secrets";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useRouter, useSearchParams } from 'next/navigation';
 
 
 // --- Main Page Component ---
@@ -47,58 +46,34 @@ export default function Home() {
   } = useSchoolData();
 
   const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const isMobile = useIsMobile();
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
 
   useEffect(() => {
-    // This effect runs once on component mount to check for redirect results
-    const handleRedirectResult = async () => {
-      setIsCheckingAuth(true);
-      try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-          const user = result.user;
-          if (user.email && ADMIN_EMAILS.includes(user.email)) {
-            await logLoginEvent(user.email);
-            setAuthenticatedUser(user);
-            setIsManagementOpen(true); // Open the dialog on successful redirect login
-          } else {
-            await signOut(auth);
-            toast({
-              title: "Acesso Negado",
-              description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
-              variant: "destructive",
-            });
-          }
-        }
-      } catch (error: any) {
-        console.error("Erro no login com redirecionamento:", error);
-        toast({
-          title: "Erro de Login",
-          description: "Não foi possível autenticar com o Google. Tente novamente.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    
-    handleRedirectResult();
-
-    // This listener keeps the user state synchronized
-    const unsubscribe = auth.onAuthStateChanged(user => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       setAuthenticatedUser(user);
-      if (!user) {
-        setIsLoggingIn(false);
-      }
+      setIsAuthLoading(false);
     });
-
     return () => unsubscribe();
-  }, [logLoginEvent, toast]);
+  }, []);
+
+  useEffect(() => {
+    // Se o usuário estiver autenticado e o parâmetro 'openManagement' estiver na URL,
+    // abra o diálogo de gerenciamento e remova o parâmetro para limpar a URL.
+    if (authenticatedUser && searchParams.has('openManagement')) {
+      if (ADMIN_EMAILS.includes(authenticatedUser.email || '')) {
+        setIsManagementOpen(true);
+      }
+      // Limpa a URL para que o diálogo não reabra ao recarregar a página.
+      const newPath = window.location.pathname;
+      window.history.replaceState({ ...window.history.state, as: newPath, url: newPath }, '', newPath);
+    }
+  }, [authenticatedUser, searchParams, router]);
 
 
   const handleCategoryChange = (category: Category) => {
@@ -108,61 +83,24 @@ export default function Home() {
     updateSelectedCategories(newCategories);
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoggingIn(true);
-    const provider = new GoogleAuthProvider();
-
-    if (isMobile) {
-      // For mobile, use redirect which is more reliable
-      signInWithRedirect(auth, provider);
-      return; 
-    }
-
-    try {
-      // For desktop, use popup
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-  
-      if (user.email && ADMIN_EMAILS.includes(user.email)) {
-        await logLoginEvent(user.email);
-        setAuthenticatedUser(user);
-        setIsManagementOpen(true); // Open dialog after successful popup login
-      } else {
-        await signOut(auth);
-        toast({
-          title: "Acesso Negado",
-          description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error("Erro no login com Google:", error);
-      let description = "Não foi possível autenticar com o Google. Tente novamente.";
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        description = "A janela de login foi fechada antes da conclusão.";
-      }
-      toast({
-        title: "Erro de Login",
-        description,
-        variant: "destructive",
-      });
-    } finally {
-        setIsLoggingIn(false);
+  const handleOpenManagement = () => {
+    if (authenticatedUser && ADMIN_EMAILS.includes(authenticatedUser.email || '')) {
+      setIsManagementOpen(true);
+    } else {
+      router.push('/login');
     }
   };
 
-  const handleDialogChange = (open: boolean) => {
-    if (!open) {
-      // When the dialog is closed, ensure the user is signed out
-      if (auth.currentUser) {
-        signOut(auth);
-      }
+  const handleDialogChange = async (open: boolean) => {
+    if (!open && auth.currentUser) {
+      // Ao fechar o diálogo, fazemos o logout
+      await signOut(auth);
     }
     setIsManagementOpen(open);
   };
   
-  if (!isSchoolDataLoaded || isCheckingAuth) {
-    return <LoadingScreen text={isCheckingAuth ? "Verificando autenticação..." : "Carregando dados..."}/>;
+  if (!isSchoolDataLoaded || isAuthLoading) {
+    return <LoadingScreen text="Carregando dados..."/>;
   }
 
   return (
@@ -181,7 +119,7 @@ export default function Home() {
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
             <Dialog open={isManagementOpen} onOpenChange={handleDialogChange}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full" onClick={() => setIsManagementOpen(true)}>
+                <Button variant="outline" className="w-full" onClick={handleOpenManagement}>
                   <Shield className="mr-2 h-4 w-4" />
                   Gerenciar Médiuns e Gira
                 </Button>
@@ -190,25 +128,11 @@ export default function Home() {
                  <DialogHeader className="p-6 pb-4">
                     <DialogTitle>Painel de Gerenciamento</DialogTitle>
                     <DialogDescription>
-                       {!authenticatedUser ? "Acesse para gerenciar a gira." : "Gerencie a gira, médiuns e configurações."}
+                       Gerencie a gira, médiuns e configurações.
                     </DialogDescription>
                  </DialogHeader>
                  <div className="flex-grow overflow-y-auto px-6">
-                    {!authenticatedUser ? (
-                      <div className="py-4">
-                        {isLoggingIn ? (
-                          <div className="flex items-center justify-center p-4">
-                            <Loader2 className="h-6 w-6 animate-spin mr-3" />
-                            <span className="text-muted-foreground">Autenticando...</span>
-                          </div>
-                        ) : (
-                          <Button type="button" onClick={handleGoogleLogin} className="w-full">
-                            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.5l-62.7 62.7C337 97.4 297.9 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 431 248 431c97.2 0 130.2-72.2 132.9-110.5H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.6z"></path></svg>
-                            Login com Google
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
+                    {authenticatedUser ? (
                         <MediumManagement
                           user={authenticatedUser}
                           mediums={mediums}
@@ -224,6 +148,11 @@ export default function Home() {
                           onSelectionChange={handleCategoryChange}
                           onClose={() => handleDialogChange(false)}
                         />
+                    ) : (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-6 w-6 animate-spin mr-3" />
+                        <span className="text-muted-foreground">Carregando dados do usuário...</span>
+                      </div>
                     )}
                  </div>
               </DialogContent>
