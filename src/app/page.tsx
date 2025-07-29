@@ -15,7 +15,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Shield, Loader2 } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
 import { signOut, type User } from "firebase/auth";
@@ -45,7 +44,6 @@ export default function Home() {
     updateSelectedCategories,
   } = useSchoolData();
 
-  const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
 
