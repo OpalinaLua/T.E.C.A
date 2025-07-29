@@ -30,7 +30,7 @@ export default function Home() {
   const {
     mediums,
     spiritualCategories,
-    isLoaded,
+    isLoaded: isSchoolDataLoaded,
     addMedium,
     removeMedium,
     addConsulente,
@@ -50,12 +50,12 @@ export default function Home() {
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const isMobile = useIsMobile();
 
 
   useEffect(() => {
-    const checkRedirect = async () => {
+    const handleRedirectResult = async () => {
       try {
         const result = await getRedirectResult(auth);
         if (result && result.user) {
@@ -81,10 +81,19 @@ export default function Home() {
           variant: "destructive",
         });
       } finally {
-        setIsCheckingRedirect(false);
+        setIsCheckingAuth(false);
       }
     };
-    checkRedirect();
+    
+    handleRedirectResult();
+
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (!user) {
+          setAuthenticatedUser(null);
+      }
+    });
+
+    return () => unsubscribe();
   }, [logLoginEvent, toast]);
 
 
@@ -101,64 +110,61 @@ export default function Home() {
 
     if (isMobile) {
       await signInWithRedirect(auth, provider);
-    } else {
-      setTimeout(async () => {
-        try {
-          const result = await signInWithPopup(auth, provider);
-          const user = result.user;
-      
-          if (user.email && ADMIN_EMAILS.includes(user.email)) {
-            await logLoginEvent(user.email);
-            setAuthenticatedUser(user);
-          } else {
-            await signOut(auth);
-            toast({
-              title: "Acesso Negado",
-              description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
-              variant: "destructive",
-            });
-          }
-        } catch (error: any) {
-          console.error("Erro no login com Google:", error);
-    
-          let description = "Não foi possível autenticar com o Google. Tente novamente.";
-          if (error.code === 'auth/popup-closed-by-user') {
-            description = "A janela de login foi fechada antes da conclusão.";
-          } else if (error.code === 'auth/cancelled-popup-request') {
-            description = "Múltiplas tentativas de login. Por favor, tente novamente.";
-          } else if (error.code === 'auth/configuration-not-found') {
-            description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
-          } else if (error.code === 'auth/unauthorized-domain') {
-            description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
-          }
-    
-          toast({
-            title: "Erro de Login",
-            description,
-            variant: "destructive",
-          });
-        } finally {
-            setIsLoggingIn(false);
-        }
-      }, 50);
+      return; 
+    }
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+  
+      if (user.email && ADMIN_EMAILS.includes(user.email)) {
+        await logLoginEvent(user.email);
+        setAuthenticatedUser(user);
+      } else {
+        await signOut(auth);
+        toast({
+          title: "Acesso Negado",
+          description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro no login com Google:", error);
+
+      let description = "Não foi possível autenticar com o Google. Tente novamente.";
+      if (error.code === 'auth/popup-closed-by-user') {
+        description = "A janela de login foi fechada antes da conclusão.";
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        description = "Múltiplas tentativas de login. Por favor, tente novamente.";
+      } else if (error.code === 'auth/configuration-not-found') {
+        description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
+      }
+
+      toast({
+        title: "Erro de Login",
+        description,
+        variant: "destructive",
+      });
+    } finally {
+        setIsLoggingIn(false);
     }
   };
 
 
   const handleDialogChange = (open: boolean) => {
     setIsManagementOpen(open);
-    if (!open) {
-      // Reset state when dialog closes
-      setAuthenticatedUser(null);
-      setIsLoggingIn(false);
-       if (auth.currentUser) {
-        signOut(auth);
-      }
+    if (!open && auth.currentUser) {
+      signOut(auth).then(() => {
+        setAuthenticatedUser(null);
+        setIsLoggingIn(false);
+      });
     }
   };
   
-  if (!isLoaded || isCheckingRedirect) {
-    return <LoadingScreen text={isCheckingRedirect ? "Verificando autenticação..." : undefined}/>;
+  if (!isSchoolDataLoaded || isCheckingAuth) {
+    return <LoadingScreen text={isCheckingAuth ? "Verificando autenticação..." : undefined}/>;
   }
 
   return (
