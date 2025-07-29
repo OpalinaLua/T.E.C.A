@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { LoadingScreen } from "@/components/loading-screen";
@@ -19,9 +19,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Loader2 } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
-import { GoogleAuthProvider, signInWithPopup, signOut, type User } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut, type User, getRedirectResult, signInWithRedirect } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ADMIN_EMAILS } from "@/lib/secrets";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 // --- Main Page Component ---
@@ -49,6 +50,43 @@ export default function Home() {
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
+  const isMobile = useIsMobile();
+
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          const user = result.user;
+          if (user.email && ADMIN_EMAILS.includes(user.email)) {
+            await logLoginEvent(user.email);
+            setAuthenticatedUser(user);
+            setIsManagementOpen(true); 
+          } else {
+            await signOut(auth);
+            toast({
+              title: "Acesso Negado",
+              description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (error: any) {
+        console.error("Erro no login com redirecionamento:", error);
+        toast({
+          title: "Erro de Login",
+          description: "Não foi possível autenticar com o Google. Tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsCheckingRedirect(false);
+      }
+    };
+    checkRedirect();
+  }, [logLoginEvent, toast]);
+
 
   const handleCategoryChange = (category: Category) => {
     const newCategories = selectedCategories.includes(category)
@@ -59,49 +97,51 @@ export default function Home() {
 
   const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
+    const provider = new GoogleAuthProvider();
+
+    if (isMobile) {
+      await signInWithRedirect(auth, provider);
+    } else {
+      setTimeout(async () => {
+        try {
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+      
+          if (user.email && ADMIN_EMAILS.includes(user.email)) {
+            await logLoginEvent(user.email);
+            setAuthenticatedUser(user);
+          } else {
+            await signOut(auth);
+            toast({
+              title: "Acesso Negado",
+              description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+              variant: "destructive",
+            });
+          }
+        } catch (error: any) {
+          console.error("Erro no login com Google:", error);
     
-    // Pequeno atraso para garantir que o estado de carregamento seja renderizado antes do popup do Google bloquear a thread
-    setTimeout(async () => {
-      const provider = new GoogleAuthProvider();
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+          let description = "Não foi possível autenticar com o Google. Tente novamente.";
+          if (error.code === 'auth/popup-closed-by-user') {
+            description = "A janela de login foi fechada antes da conclusão.";
+          } else if (error.code === 'auth/cancelled-popup-request') {
+            description = "Múltiplas tentativas de login. Por favor, tente novamente.";
+          } else if (error.code === 'auth/configuration-not-found') {
+            description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
+          } else if (error.code === 'auth/unauthorized-domain') {
+            description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
+          }
     
-        if (user.email && ADMIN_EMAILS.includes(user.email)) {
-          await logLoginEvent(user.email);
-          setAuthenticatedUser(user);
-          setIsLoggingIn(false);
-        } else {
-          await signOut(auth);
           toast({
-            title: "Acesso Negado",
-            description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+            title: "Erro de Login",
+            description,
             variant: "destructive",
           });
-          setIsLoggingIn(false);
+        } finally {
+            setIsLoggingIn(false);
         }
-      } catch (error: any) {
-        console.error("Erro no login com Google:", error);
-  
-        let description = "Não foi possível autenticar com o Google. Tente novamente.";
-        if (error.code === 'auth/popup-closed-by-user') {
-          description = "A janela de login foi fechada antes da conclusão.";
-        } else if (error.code === 'auth/cancelled-popup-request') {
-          description = "Múltiplas tentativas de login. Por favor, tente novamente.";
-        } else if (error.code === 'auth/configuration-not-found') {
-          description = "CONFIGURAÇÃO INCOMPLETA: O método de login com Google não foi ativado no painel do Firebase. Por favor, habilite o provedor 'Google' na seção de Autenticação do seu projeto.";
-        } else if (error.code === 'auth/unauthorized-domain') {
-          description = "CONFIGURAÇÃO INCOMPLETA: O domínio do seu site não está autorizado. Vá em Autenticação > Configurações e adicione o domínio à lista de 'Domínios autorizados' no Firebase.";
-        }
-  
-        toast({
-          title: "Erro de Login",
-          description,
-          variant: "destructive",
-        });
-        setIsLoggingIn(false);
-      }
-    }, 50);
+      }, 50);
+    }
   };
 
 
@@ -117,8 +157,8 @@ export default function Home() {
     }
   };
   
-  if (!isLoaded) {
-    return <LoadingScreen />;
+  if (!isLoaded || isCheckingRedirect) {
+    return <LoadingScreen text={isCheckingRedirect ? "Verificando autenticação..." : undefined}/>;
   }
 
   return (
