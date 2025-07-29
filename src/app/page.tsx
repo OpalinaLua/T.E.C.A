@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
@@ -18,10 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Shield, Loader2 } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
-import { signOut, type User } from "firebase/auth";
+import { signOut, onAuthStateChanged, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ADMIN_EMAILS } from "@/lib/secrets";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { LoginClient } from "@/components/login-client";
 
 export const dynamic = 'force-dynamic';
 
@@ -45,34 +45,22 @@ function HomeClient() {
     updateSelectedCategories,
   } = useSchoolData();
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setAuthenticatedUser(user);
       setIsAuthLoading(false);
-
-      if (user && searchParams.has('openManagement')) {
-        if (ADMIN_EMAILS.includes(user.email || '')) {
-          setIsManagementOpen(true);
-          if (searchParams.get('loginSuccess')) {
-            logLoginEvent(user.email);
-          }
-        }
-        // Limpa os parâmetros da URL para evitar reabrir o modal em um refresh.
-        const newPath = window.location.pathname;
-        window.history.replaceState({ ...window.history.state, as: newPath, url: newPath }, '', newPath);
+      // Se o usuário logou, registra o evento
+      if (user && user.email) {
+          logLoginEvent(user.email);
       }
     });
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, router]);
+  }, []);
 
 
   const handleCategoryChange = (category: Category) => {
@@ -81,23 +69,11 @@ function HomeClient() {
       : [...selectedCategories, category];
     updateSelectedCategories(newCategories);
   };
-
-  const handleOpenManagement = () => {
-    if (authenticatedUser && ADMIN_EMAILS.includes(authenticatedUser.email || '')) {
-      setIsManagementOpen(true);
-    } else {
-      router.push('/login');
-    }
-  };
-
+  
   const handleDialogChange = async (open: boolean) => {
-    if (!open && auth.currentUser) {
-      // Apenas desloga se o diálogo for fechado pelo usuário, 
-      // não quando o usuário ainda não está autenticado.
-      const userIsAdmin = ADMIN_EMAILS.includes(auth.currentUser.email || '');
-      if(userIsAdmin) {
+    // Se o modal for fechado, faz logout
+    if (!open && authenticatedUser) {
         await signOut(auth);
-      }
     }
     setIsManagementOpen(open);
   };
@@ -105,6 +81,8 @@ function HomeClient() {
   if (!isSchoolDataLoaded || isAuthLoading) {
     return <LoadingScreen text="Carregando dados..."/>;
   }
+
+  const userIsAdmin = authenticatedUser && ADMIN_EMAILS.includes(authenticatedUser.email || '');
 
   return (
     <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -122,20 +100,25 @@ function HomeClient() {
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-8">
             <Dialog open={isManagementOpen} onOpenChange={handleDialogChange}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full" onClick={handleOpenManagement}>
+                <Button variant="outline" className="w-full">
                   <Shield className="mr-2 h-4 w-4" />
                   Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
               <DialogContent className="p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col h-full max-h-[90vh]">
                  <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>Painel de Gerenciamento</DialogTitle>
+                    <DialogTitle>{userIsAdmin ? 'Painel de Gerenciamento' : 'Acesso Restrito'}</DialogTitle>
                     <DialogDescription>
-                       Gerencie a gira, médiuns e configurações.
+                       {userIsAdmin ? 'Gerencie a gira, médiuns e configurações.' : 'Faça login com uma conta autorizada para continuar.'}
                     </DialogDescription>
                  </DialogHeader>
                  <div className="flex-grow overflow-y-auto px-6">
-                    {authenticatedUser ? (
+                    {isAuthLoading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-6 w-6 animate-spin mr-3" />
+                        <span className="text-muted-foreground">Verificando...</span>
+                      </div>
+                    ) : userIsAdmin ? (
                         <MediumManagement
                           user={authenticatedUser}
                           mediums={mediums}
@@ -152,10 +135,10 @@ function HomeClient() {
                           onClose={() => handleDialogChange(false)}
                         />
                     ) : (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-6 w-6 animate-spin mr-3" />
-                        <span className="text-muted-foreground">Carregando dados do usuário...</span>
-                      </div>
+                      <LoginClient 
+                         onLoginSuccess={(user) => setAuthenticatedUser(user)}
+                         showDisclaimer={!!authenticatedUser}
+                      />
                     )}
                  </div>
               </DialogContent>
