@@ -116,6 +116,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
             <Label htmlFor="consulente-name">Nome do Consulente</Label>
             <Input
               id="consulente-name"
+              name="consulente-name"
               placeholder="ex: Maria da Silva"
               value={name}
               onChange={(e) => setName(e.target.value)}
