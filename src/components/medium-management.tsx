@@ -455,3 +455,5 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
+
+    
