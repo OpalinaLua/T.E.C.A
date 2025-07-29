@@ -152,8 +152,19 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
           activeEntitiesForGira.length > 0 && (
             <div className="space-y-2">
               {activeEntitiesForGira.map((entity: Entity) => (
-                <div key={entity.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
-                  <p className="text-secondary-foreground">{entity.name}</p>
+                <div 
+                  key={entity.id} 
+                  className={cn(
+                    "flex items-center justify-between p-2 rounded-md bg-secondary/30",
+                    !entity.isAvailable && "opacity-50"
+                  )}
+                >
+                  <p className={cn(
+                    "text-secondary-foreground",
+                    !entity.isAvailable && "line-through"
+                  )}>
+                    {entity.name}
+                  </p>
                   <Badge variant="outline" className="text-xs">{entity.category}</Badge>
                 </div>
               ))}
