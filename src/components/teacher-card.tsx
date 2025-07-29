@@ -118,11 +118,11 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
             {entity.consulentes.length > 0 ? (
               <ul className="space-y-2">
                 {entity.consulentes.map(consulente => (
-                  <li key={consulente.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 group">
+                  <li key={consulente.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
                     <span className="text-secondary-foreground">{consulente.name}</span>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive" disabled={!entity.isAvailable}>
+                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" disabled={!entity.isAvailable}>
                             <UserX className="h-4 w-4" />
                             <span className="sr-only">Excluir consulente</span>
                          </Button>
