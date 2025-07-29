@@ -56,9 +56,14 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
       {/* Cabeçalho do Card com nome, status e botões de ação */}
       <CardHeader>
-        <div className='flex items-center justify-between w-full'>
-          <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
-          <Badge variant="outline" className={cn("text-xs", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+        <div className='flex items-start justify-between w-full'>
+          <div className="flex flex-col">
+            <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
+            {totalConsulentes === 0 && (
+                <p className="text-sm text-muted-foreground font-light italic mt-1">(sem consulentes)</p>
+            )}
+          </div>
+          <Badge variant="outline" className={cn("text-xs shrink-0", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
             {medium.isPresent ? 'Presente' : 'Ausente'}
           </Badge>
         </div>
@@ -75,7 +80,8 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
         {selectedCategories.length > 0 && activeEntitiesForGira.length === 0 && (
            <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium pertence às categorias selecionadas.</p>
         )}
-        {activeEntitiesForGira.map((entity, index) => (
+
+        {totalConsulentes > 0 && activeEntitiesForGira.map((entity, index) => (
           <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
             {index > 0 && <Separator className="my-4" />}
             <div className="flex justify-between items-center mb-2">
