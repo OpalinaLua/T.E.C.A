@@ -57,19 +57,22 @@ function HomeClient() {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setAuthenticatedUser(user);
       setIsAuthLoading(false);
+
+      if (user && searchParams.has('openManagement')) {
+        if (ADMIN_EMAILS.includes(user.email || '')) {
+          setIsManagementOpen(true);
+          if (searchParams.get('loginSuccess')) {
+            logLoginEvent(user.email);
+          }
+        }
+        // Limpa os parâmetros da URL para evitar reabrir o modal em um refresh.
+        const newPath = window.location.pathname;
+        window.history.replaceState({ ...window.history.state, as: newPath, url: newPath }, '', newPath);
+      }
     });
     return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (authenticatedUser && searchParams.has('openManagement')) {
-      if (ADMIN_EMAILS.includes(authenticatedUser.email || '')) {
-        setIsManagementOpen(true);
-      }
-      const newPath = window.location.pathname;
-      window.history.replaceState({ ...window.history.state, as: newPath, url: newPath }, '', newPath);
-    }
-  }, [authenticatedUser, searchParams, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router]);
 
 
   const handleCategoryChange = (category: Category) => {
@@ -89,7 +92,12 @@ function HomeClient() {
 
   const handleDialogChange = async (open: boolean) => {
     if (!open && auth.currentUser) {
-      await signOut(auth);
+      // Apenas desloga se o diálogo for fechado pelo usuário, 
+      // não quando o usuário ainda não está autenticado.
+      const userIsAdmin = ADMIN_EMAILS.includes(auth.currentUser.email || '');
+      if(userIsAdmin) {
+        await signOut(auth);
+      }
     }
     setIsManagementOpen(open);
   };

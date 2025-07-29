@@ -2,65 +2,77 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { ADMIN_EMAILS } from '@/lib/secrets';
-import { useSchoolData } from '@/hooks/use-school-data'; // Importar para usar a função de log
 
 export function LoginClient() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const { logLoginEvent } = useSchoolData(); // Obter a função de log
+  const [user, setUser] = useState<User | null>(null);
 
-  // Efeito para verificar o resultado do redirecionamento quando a página carrega
+  // Efeito para observar o estado de autenticação e redirecionar se já estiver logado
   useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result) {
-          // Usuário foi redirecionado de volta do Google
-          const user = result.user;
-          if (user.email && ADMIN_EMAILS.includes(user.email)) {
-            // Se for admin, registra o login e redireciona para a página principal
-            // com um parâmetro para abrir o painel
-            await logLoginEvent(user.email);
-            router.push('/?openManagement=true');
-          } else {
-            // Se não for admin, desloga e mostra erro
-            await auth.signOut();
-            toast({
-              title: "Acesso Negado",
-              description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
-              variant: "destructive",
-            });
-            setIsLoading(false); // Permite que o botão de login apareça novamente
-          }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        // Se o usuário já estiver logado (veio de um redirecionamento ou sessão existente)
+        if (currentUser.email && ADMIN_EMAILS.includes(currentUser.email)) {
+          // Redireciona para a home com parâmetros para abrir o painel e registrar o login
+          router.replace('/?openManagement=true&loginSuccess=true');
         } else {
-          // Não há resultado de redirecionamento, então apenas para de carregar
+          // Se não for admin, desloga e mostra erro.
+          auth.signOut();
+          toast({
+            title: "Acesso Negado",
+            description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+            variant: "destructive",
+          });
           setIsLoading(false);
         }
-      })
-      .catch((error) => {
-        console.error("Erro no redirecionamento de login:", error);
-        toast({
-          title: "Erro de Autenticação",
-          description: "Ocorreu um erro durante o processo de login. Tente novamente.",
-          variant: "destructive",
-        });
+      } else {
+        // Se não houver usuário, para de carregar e exibe o botão de login
         setIsLoading(false);
-      });
-  }, [router, toast, logLoginEvent]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router, toast]);
 
   // Função para iniciar o fluxo de login
   const handleGoogleLogin = () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider); // Inicia o redirecionamento
+    signInWithRedirect(auth, provider).catch((error) => {
+      console.error("Erro ao iniciar o redirecionamento de login:", error);
+      toast({
+        title: "Erro de Autenticação",
+        description: "Não foi possível iniciar o processo de login. Verifique sua conexão ou tente novamente.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    });
   };
+
+  // Efeito para processar o resultado do redirecionamento do Google
+  // Este useEffect agora serve apenas para capturar erros do processo de redirect
+  useEffect(() => {
+    getRedirectResult(auth).catch((error) => {
+        console.error("Erro no retorno do redirecionamento de login:", error);
+        toast({
+          title: "Erro de Autenticação",
+          description: "Ocorreu um erro durante o processo de login com o Google. Tente novamente.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      });
+  }, [toast]);
+
 
   if (isLoading) {
     return (
