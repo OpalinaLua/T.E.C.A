@@ -55,48 +55,51 @@ export default function Home() {
 
 
   useEffect(() => {
-    // This effect runs once on component mount to check for redirect results
-    const handleRedirectResult = async () => {
-      setIsCheckingAuth(true);
-      try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-          const user = result.user;
-          if (user.email && ADMIN_EMAILS.includes(user.email)) {
-            await logLoginEvent(user.email);
-            setAuthenticatedUser(user);
-            setIsManagementOpen(true); // Open the dialog on successful redirect login
-          } else {
-            await signOut(auth);
-            toast({
-              title: "Acesso Negado",
-              description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
-              variant: "destructive",
-            });
-          }
-        }
-      } catch (error: any) {
-        console.error("Erro no login com redirecionamento:", error);
-        toast({
-          title: "Erro de Login",
-          description: "Não foi possível autenticar com o Google. Tente novamente.",
-          variant: "destructive",
-        });
-      } finally {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // User is signed in.
+        setAuthenticatedUser(user);
         setIsCheckingAuth(false);
-      }
-    };
-    
-    handleRedirectResult();
-
-    // This listener keeps the user state synchronized
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      setAuthenticatedUser(user);
-      if (!user) {
-        setIsLoggingIn(false);
+      } else {
+        // User is signed out.
+        // Check for redirect result on page load.
+        try {
+          const result = await getRedirectResult(auth);
+          if (result && result.user) {
+            // This is the return from a successful redirect login.
+            const redirectedUser = result.user;
+            if (redirectedUser.email && ADMIN_EMAILS.includes(redirectedUser.email)) {
+              await logLoginEvent(redirectedUser.email);
+              setAuthenticatedUser(redirectedUser);
+              setIsManagementOpen(true); // <--- THIS IS THE FIX
+            } else {
+              // User signed in, but is not an admin.
+              await signOut(auth);
+              toast({
+                title: "Acesso Negado",
+                description: "Este e-mail não tem permissão para acessar a área de gerenciamento.",
+                variant: "destructive",
+              });
+            }
+          } else {
+            // No user and no redirect result, so they are logged out.
+             setAuthenticatedUser(null);
+          }
+        } catch (error: any) {
+          console.error("Erro no login com redirecionamento:", error);
+          toast({
+            title: "Erro de Login",
+            description: "Não foi possível autenticar com o Google. Tente novamente.",
+            variant: "destructive",
+          });
+        } finally {
+            setIsCheckingAuth(false);
+            setIsLoggingIn(false);
+        }
       }
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [logLoginEvent, toast]);
 
