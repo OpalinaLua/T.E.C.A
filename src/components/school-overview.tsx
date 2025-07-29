@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from 'react';
@@ -45,13 +46,13 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
   }, [listSource, searchQuery, selectedCategories]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-                <TabsTrigger value="present">Médiuns Presentes</TabsTrigger>
-                <TabsTrigger value="all">Todos os Médiuns</TabsTrigger>
+                <TabsTrigger value="present">Presentes</TabsTrigger>
+                <TabsTrigger value="all">Todos</TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="relative w-full sm:w-auto">
@@ -60,13 +61,13 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
                   placeholder="Buscar médium, entidade..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full sm:w-80"
+                  className="pl-10 w-full sm:w-64 md:w-80"
               />
           </div>
         </div>
 
         {filteredMediums.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredMediums.map(medium => (
               <MediumCard
                 key={medium.id}
@@ -90,7 +91,7 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
                         {activeTab === 'present' ? 'Nenhum médium presente' : 'Nenhum médium cadastrado'}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-2">
-                        {activeTab === 'present' ? 'Vá para a aba "Todos os Médiuns" para marcar a presença.' : 'Use o formulário para adicionar um novo médium.'}
+                        {activeTab === 'present' ? 'Marque a presença dos médiuns no painel de gerenciamento.' : 'Use o formulário para adicionar um novo médium.'}
                     </p>
                 </>
             )}

@@ -310,7 +310,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-grow pt-4">
+            <div className="flex-grow">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
@@ -319,7 +319,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                         <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
                     </TabsList>
                     
-                    <div className="pt-6 max-h-[calc(80vh-180px)] overflow-y-auto pr-2">
+                    <div className="pt-6">
                         <TabsContent value="gira">
                             <Card className="border-0 shadow-none">
                                 <CardHeader className="p-0 pb-4">

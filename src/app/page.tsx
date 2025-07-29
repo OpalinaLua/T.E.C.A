@@ -10,10 +10,10 @@ import type { Category } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -123,7 +123,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-      <header className="max-w-7xl mx-auto mb-8">
+      <header className="max-w-7xl mx-auto mb-6 sm:mb-8">
         <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
           T.E.C.A
         </h1>
@@ -142,54 +142,46 @@ export default function Home() {
                   Gerenciar Médiuns e Gira
                 </Button>
               </DialogTrigger>
-              <DialogContent className={authenticatedUser ? "sm:max-w-xl md:max-w-2xl lg:max-w-3xl" : "sm:max-w-md"}>
-                {!authenticatedUser ? (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle>Acesso Restrito</DialogTitle>
-                      <DialogDescription>
-                        Para gerenciar médiuns e a gira, por favor, faça login com uma conta Google autorizada.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      {isLoggingIn ? (
-                        <div className="flex items-center justify-center p-4">
-                          <Loader2 className="h-6 w-6 animate-spin mr-3" />
-                          <span className="text-muted-foreground">Autenticando...</span>
-                        </div>
-                      ) : (
-                        <Button type="button" onClick={handleGoogleLogin} className="w-full">
-                          <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.5l-62.7 62.7C337 97.4 297.9 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 431 248 431c97.2 0 130.2-72.2 132.9-110.5H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.6z"></path></svg>
-                          Login com Google
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                     <DialogHeader>
-                        <DialogTitle>Painel de Gerenciamento</DialogTitle>
-                        <DialogDescription>
-                          Gerencie a gira, médiuns, categorias e consulte o histórico de acesso.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <MediumManagement
-                        user={authenticatedUser}
-                        mediums={mediums}
-                        spiritualCategories={spiritualCategories}
-                        addMedium={addMedium}
-                        updateMedium={updateMedium}
-                        removeMedium={removeMedium}
-                        toggleMediumPresence={toggleMediumPresence}
-                        clearLoginHistory={clearLoginHistory}
-                        addSpiritualCategory={addSpiritualCategory}
-                        removeSpiritualCategory={removeSpiritualCategory}
-                        selectedCategories={selectedCategories}
-                        onSelectionChange={handleCategoryChange}
-                        onClose={() => handleDialogChange(false)}
-                      />
-                  </>
-                )}
+              <DialogContent className="p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col h-full max-h-[90vh]">
+                 <DialogHeader className="p-6 pb-4">
+                    <DialogTitle>Painel de Gerenciamento</DialogTitle>
+                    <DialogDescription>
+                       {!authenticatedUser ? "Acesse para gerenciar a gira." : "Gerencie a gira, médiuns e configurações."}
+                    </DialogDescription>
+                 </DialogHeader>
+                 <div className="flex-grow overflow-y-auto px-6">
+                    {!authenticatedUser ? (
+                      <div className="py-4">
+                        {isLoggingIn ? (
+                          <div className="flex items-center justify-center p-4">
+                            <Loader2 className="h-6 w-6 animate-spin mr-3" />
+                            <span className="text-muted-foreground">Autenticando...</span>
+                          </div>
+                        ) : (
+                          <Button type="button" onClick={handleGoogleLogin} className="w-full">
+                            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.5l-62.7 62.7C337 97.4 297.9 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 431 248 431c97.2 0 130.2-72.2 132.9-110.5H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.6z"></path></svg>
+                            Login com Google
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                        <MediumManagement
+                          user={authenticatedUser}
+                          mediums={mediums}
+                          spiritualCategories={spiritualCategories}
+                          addMedium={addMedium}
+                          updateMedium={updateMedium}
+                          removeMedium={removeMedium}
+                          toggleMediumPresence={toggleMediumPresence}
+                          clearLoginHistory={clearLoginHistory}
+                          addSpiritualCategory={addSpiritualCategory}
+                          removeSpiritualCategory={removeSpiritualCategory}
+                          selectedCategories={selectedCategories}
+                          onSelectionChange={handleCategoryChange}
+                          onClose={() => handleDialogChange(false)}
+                        />
+                    )}
+                 </div>
               </DialogContent>
             </Dialog>
 

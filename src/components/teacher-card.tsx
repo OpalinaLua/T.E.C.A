@@ -52,14 +52,12 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
       {/* Cabeçalho do Card com nome, status e botões de ação */}
-      <CardHeader className="flex-row items-start justify-between">
-        <div>
+      <CardHeader>
+        <div className='flex items-center justify-between w-full'>
           <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
-          <CardDescription>
-            <Badge variant="outline" className={medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}>
-              {medium.isPresent ? 'Presente' : 'Ausente'}
-            </Badge>
-          </CardDescription>
+          <Badge variant="outline" className={cn("text-xs", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+            {medium.isPresent ? 'Presente' : 'Ausente'}
+          </Badge>
         </div>
       </CardHeader>
       

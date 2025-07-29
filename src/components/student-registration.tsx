@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { Label } from './ui/label';
 
 // Interface para as props do componente.
 interface ConsulenteRegistrationProps {
@@ -21,7 +22,7 @@ interface ConsulenteRegistrationProps {
   spiritualCategories: Category[];
 }
 
-export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories, spiritualCategories }: ConsulenteRegistrationProps) {
+export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories }: ConsulenteRegistrationProps) {
   // Estados do componente.
   const [name, setName] = useState('');
   const [selectedMediumId, setSelectedMediumId] = useState('');
@@ -106,13 +107,13 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-xl sm:text-2xl">Agendamento de Consulente</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl">Agendamento</CardTitle>
         <CardDescription>Agende um consulente com um médium e entidade disponíveis.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="consulente-name" className="text-sm font-medium">Nome do Consulente</label>
+            <Label htmlFor="consulente-name">Nome do Consulente</Label>
             <Input
               id="consulente-name"
               placeholder="ex: Maria da Silva"
@@ -123,9 +124,9 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Médium</label>
-            <Select onValueChange={handleMediumChange} value={selectedMediumId} disabled={availableMediums.length === 0 || isSubmitting}>
-              <SelectTrigger>
+            <Label htmlFor="medium-select">Médium</Label>
+            <Select onValueChange={handleMediumChange} value={selectedMediumId} disabled={availableMediums.length === 0 || isSubmitting} name="medium-select">
+              <SelectTrigger id="medium-select">
                 <SelectValue placeholder="Selecione um(a) médium" />
               </SelectTrigger>
               <SelectContent>
@@ -136,9 +137,9 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Entidade</label>
-            <Select onValueChange={setSelectedEntityId} value={selectedEntityId} disabled={!selectedMediumId || isSubmitting}>
-              <SelectTrigger>
+            <Label htmlFor="entity-select">Entidade</Label>
+            <Select onValueChange={setSelectedEntityId} value={selectedEntityId} disabled={!selectedMediumId || isSubmitting} name="entity-select">
+              <SelectTrigger id="entity-select">
                 <SelectValue placeholder="Selecione uma entidade" />
               </SelectTrigger>
               <SelectContent>
