@@ -41,6 +41,9 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
     return medium.entities.filter(e => selectedCategories.includes(e.category));
   }, [medium.entities, selectedCategories]);
 
+  const totalConsulentes = useMemo(() => {
+    return medium.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
+  }, [medium.entities]);
 
   /**
    * Manipula a remoção de um consulente.
@@ -62,7 +65,10 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
       </CardHeader>
       
       {/* Conteúdo do Card com a lista de entidades e consulentes */}
-      <CardContent className="flex-grow space-y-4">
+      <CardContent className={cn(
+          "flex-grow space-y-4",
+          totalConsulentes === 0 && "pt-0 sm:pt-0" // Torna o card mais compacto se não houver consulentes
+      )}>
         {selectedCategories.length === 0 && (
           <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades disponíveis.</p>
         )}

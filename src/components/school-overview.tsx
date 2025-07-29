@@ -25,25 +25,45 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
       : mediums;
   }, [mediums, activeTab]);
 
-  const filteredMediums = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return listSource;
+  const filteredAndSortedMediums = useMemo(() => {
+    // Função para calcular o total de consulentes de um médium
+    const countConsulentes = (medium: Medium) => 
+        medium.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
 
-    return listSource.filter(medium => {
-      // Check medium name
-      if (medium.name.toLowerCase().includes(query)) {
-        return true;
-      }
-      // Check entity name or category
-      const entityMatch = medium.entities.some(entity =>
-        selectedCategories.includes(entity.category) && (
-          entity.name.toLowerCase().includes(query) ||
-          entity.category.toLowerCase().includes(query)
-        )
-      );
-      return entityMatch;
+    const filtered = listSource.filter(medium => {
+        const query = searchQuery.toLowerCase().trim();
+        if (!query) return true;
+
+        // Check medium name
+        if (medium.name.toLowerCase().includes(query)) {
+            return true;
+        }
+        // Check entity name or category
+        const entityMatch = medium.entities.some(entity =>
+            selectedCategories.includes(entity.category) && (
+            entity.name.toLowerCase().includes(query) ||
+            entity.category.toLowerCase().includes(query)
+            )
+        );
+        return entityMatch;
     });
+
+    // Ordena o array filtrado
+    return filtered.sort((a, b) => {
+        const aHasConsulentes = countConsulentes(a) > 0;
+        const bHasConsulentes = countConsulentes(b) > 0;
+
+        if (aHasConsulentes && !bHasConsulentes) {
+            return -1; // a vem primeiro
+        }
+        if (!aHasConsulentes && bHasConsulentes) {
+            return 1; // b vem primeiro
+        }
+        return 0; // mantém a ordem original
+    });
+
   }, [listSource, searchQuery, selectedCategories]);
+
 
   return (
     <div className="space-y-6">
@@ -66,9 +86,9 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
           </div>
         </div>
 
-        {filteredMediums.length > 0 ? (
+        {filteredAndSortedMediums.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredMediums.map(medium => (
+            {filteredAndSortedMediums.map(medium => (
               <MediumCard
                 key={medium.id}
                 medium={medium}
