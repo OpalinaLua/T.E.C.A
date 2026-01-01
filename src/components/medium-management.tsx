@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -538,19 +537,18 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                             const currentRole = mediumChanges.role ?? medium.role;
 
                                             return (
-                                                <AccordionItem value={medium.id} key={medium.id} className="border-b-0">
+                                                <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
                                                     <div className="flex items-center p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors data-[state=open]:rounded-b-none">
-                                                        <AccordionTrigger className="flex-1 p-0 hover:no-underline">
-                                                            <div className="flex items-center gap-3">
-                                                                <Switch
-                                                                    id={`presence-${medium.id}`}
-                                                                    checked={medium.isPresent}
-                                                                    onCheckedChange={(e) => {
-                                                                        e.stopPropagation();
-                                                                        toggleMediumPresence(medium.id);
-                                                                    }}
-                                                                    aria-label={`Marcar presença para ${medium.name}`}
-                                                                />
+                                                        <div className="flex items-center gap-3 flex-1">
+                                                            <Switch
+                                                                id={`presence-${medium.id}`}
+                                                                checked={medium.isPresent}
+                                                                onCheckedChange={() => {
+                                                                    toggleMediumPresence(medium.id);
+                                                                }}
+                                                                aria-label={`Marcar presença para ${medium.name}`}
+                                                            />
+                                                            <AccordionTrigger className="flex-1 p-0 hover:no-underline justify-start">
                                                                 <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
                                                                     {currentName}
                                                                     {currentRole && <Crown className="h-4 w-4 text-amber-500" />}
@@ -558,8 +556,8 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                                                         {medium.isPresent ? 'Presente' : 'Ausente'}
                                                                     </Badge>
                                                                 </Label>
-                                                            </div>
-                                                        </AccordionTrigger>
+                                                            </AccordionTrigger>
+                                                        </div>
                                                         <div className="flex items-center gap-1 pl-2">
                                                             <Button variant="ghost" size="icon" onClick={() => toggleEditing(medium.id)}>
                                                                 <Pencil className="h-4 w-4" />
@@ -669,9 +667,3 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
-
-    
-
-    
-
-    
