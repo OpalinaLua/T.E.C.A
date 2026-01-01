@@ -122,12 +122,12 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
 
     // 2. Se houver um termo de busca, aplica a filtragem adicional
     if (query) {
-      // Se a busca corresponde ao nome do médium, não filtra as entidades
       const isSearchingForMedium = medium.name.toLowerCase().includes(query);
       if (!isSearchingForMedium) {
         entitiesForGira = entitiesForGira.filter(e => 
           e.name.toLowerCase().includes(query) ||
-          e.category.toLowerCase().includes(query)
+          e.category.toLowerCase().includes(query) ||
+          e.consulentes.some(c => c.name.toLowerCase().includes(query))
         );
       }
     }
@@ -151,6 +151,8 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
     updateConsulenteName(medium.id, entityId, consulenteId, newName);
   };
   
+  const query = searchQuery?.toLowerCase().trim() || '';
+
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
       {/* Cabeçalho do Card com nome, status e botões de ação */}
@@ -197,45 +199,48 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
               </div>
               {entity.consulentes.length > 0 ? (
                 <ul className="space-y-2">
-                  {entity.consulentes.map(consulente => (
-                    <li key={consulente.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
-                      <span className="text-secondary-foreground">{consulente.name}</span>
-                      <div className="flex items-center">
-                        <EditConsulenteDialog
-                          consulente={consulente}
-                          onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
-                          trigger={
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" disabled={!entity.isAvailable}>
-                                <Pencil className="h-4 w-4" />
-                                <span className="sr-only">Editar consulente</span>
-                            </Button>
-                          }
-                        />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable}>
-                                <UserX className="h-4 w-4" />
-                                <span className="sr-only">Excluir consulente</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Excluir Consulente?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza de que deseja remover {consulente.name} desta entidade?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </li>
-                  ))}
+                  {entity.consulentes.map(consulente => {
+                    const isConsulenteMatch = query && consulente.name.toLowerCase().includes(query);
+                    return (
+                        <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md bg-secondary/50", isConsulenteMatch && "ring-2 ring-accent")}>
+                          <span className="text-secondary-foreground">{consulente.name}</span>
+                          <div className="flex items-center">
+                            <EditConsulenteDialog
+                              consulente={consulente}
+                              onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
+                              trigger={
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" disabled={!entity.isAvailable}>
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Editar consulente</span>
+                                </Button>
+                              }
+                            />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable}>
+                                    <UserX className="h-4 w-4" />
+                                    <span className="sr-only">Excluir consulente</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Consulente?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza de que deseja remover {consulente.name} desta entidade?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </li>
+                    )
+                  })}
                 </ul>
               ) : (
                 <p className="text-sm text-muted-foreground italic">Nenhum consulente agendado.</p>

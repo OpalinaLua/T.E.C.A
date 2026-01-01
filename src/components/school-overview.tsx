@@ -45,10 +45,13 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
         if (medium.name.toLowerCase().includes(query)) {
             return true;
         }
-        // Check entity name or category (only within entities that are part of the gira)
+        // Check entity name, category, or consulente name
         const entityMatch = medium.entities.some(entity =>
-            selectedCategories.includes(entity.category) &&
-            (entity.name.toLowerCase().includes(query) || entity.category.toLowerCase().includes(query))
+            selectedCategories.includes(entity.category) && (
+                entity.name.toLowerCase().includes(query) || 
+                entity.category.toLowerCase().includes(query) ||
+                entity.consulentes.some(c => c.name.toLowerCase().includes(query))
+            )
         );
         if (entityMatch) {
             return true;
@@ -86,7 +89,7 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
           <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                  placeholder="Buscar médium, entidade..."
+                  placeholder="Buscar médium, entidade, consulente..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 w-full sm:w-64 md:w-80"
@@ -113,7 +116,7 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
             {searchQuery ? (
                  <>
                     <h3 className="text-lg font-medium text-muted-foreground">Nenhum resultado encontrado</h3>
-                    <p className="text-sm text-muted-foreground mt-2">Sua busca por "{searchQuery}" não encontrou nenhum resultado dentro das categorias da gira selecionada.</p>
+                    <p className="text-sm text-muted-foreground mt-2">Sua busca por "{searchQuery}" não encontrou nenhum resultado.</p>
                 </>
             ) : (
                  <>
