@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Define os tipos de dados centrais para a aplicação.
  * Este arquivo exporta as interfaces para Consulente, Entidade e Médium,
@@ -26,12 +25,19 @@ export type MediumRole = typeof ROLES[number];
 
 
 /**
+ * @type ConsulenteStatus
+ * Representa o status de um consulente agendado.
+ */
+export type ConsulenteStatus = 'agendado' | 'atendido' | 'ausente';
+
+/**
  * @interface Consulente
  * Representa um consulente (aluno/paciente) agendado para um atendimento.
  */
 export interface Consulente {
   id: string;
   name: string;
+  status: ConsulenteStatus;
 }
 
 /**

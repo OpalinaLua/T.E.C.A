@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Medium, Entity, Consulente, Category, MediumRole } from '@/lib/types';
+import type { Medium, Entity, Consulente, Category, MediumRole, ConsulenteStatus } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -216,7 +216,7 @@ export function useSchoolData() {
       }
     }
     
-    const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: trimmedConsulenteName };
+    const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: trimmedConsulenteName, status: 'agendado' };
     
     const updatedEntities = medium.entities.map(e => {
       if (e.id === entityId) {
@@ -302,96 +302,36 @@ export function useSchoolData() {
         throw new Error("Não foi possível atualizar o nome do consulente.");
     }
   }, []);
-
-  /**
-   * Alterna o estado de presença de um médium.
-   * Se o médium for marcado como ausente, todos os seus consulentes são removidos.
-   */
-  const toggleMediumPresence = useCallback(async (mediumId: string): Promise<string> => {
-    const mediumDocRef = doc(db, 'mediums', mediumId);
-    try {
-      return await runTransaction(db, async (transaction) => {
-        const mediumDoc = await transaction.get(mediumDocRef);
-        if (!mediumDoc.exists()) throw new Error("Médium não encontrado.");
-        
-        const medium = mediumDoc.data() as Omit<Medium, 'id'>;
-        const newIsPresent = !medium.isPresent;
-        const updateData: any = { isPresent: newIsPresent };
-        
-        const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
-        
-        if (!newIsPresent) {
-          updateData.entities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
-        }
-        
-        transaction.update(mediumDocRef, updateData);
-
-        const newStatus = newIsPresent ? 'presente' : 'ausente';
-        let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
-        if (!newIsPresent && hadConsulentes) {
-          description += " Todos os consulentes agendados foram removidos.";
-        }
-        return description;
-      });
-    } catch(error) {
-        console.error("Erro ao alterar presença:", error);
-        throw new Error("Não foi possível alterar a presença do médium.");
-    }
-  }, []);
-
-  /**
-   * Alterna a disponibilidade de uma entidade.
-   * Se a entidade ficar indisponível, seus consulentes são removidos.
-   */
-  const toggleEntityAvailability = useCallback(async (mediumId: string, entityId: string): Promise<string> => {
-    const mediumDocRef = doc(db, 'mediums', mediumId);
-    let entityName = '';
-    
-    try {
-      return await runTransaction(db, async (transaction) => {
-        const mediumDoc = await transaction.get(mediumDocRef);
-        if (!mediumDoc.exists()) throw new Error("Médium não encontrado.");
-        
-        const medium = mediumDoc.data() as Omit<Medium, 'id'>;
-        let description = '';
-        const updatedEntities = medium.entities.map(entity => {
-            if (entity.id !== entityId) return entity;
-            
-            entityName = entity.name;
-            const newIsAvailable = !entity.isAvailable;
-            const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
-
-            description = `A entidade ${entity.name} foi marcada como ${newStatus}.`;
-            if (!newIsAvailable && (entity.consulentes?.length || 0) > 0) {
-              description += " Todos os consulentes agendados foram removidos.";
-            }
-
-            return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
-        });
-
-        transaction.update(mediumDocRef, { entities: updatedEntities });
-        return description;
-      });
-    } catch(error) {
-        console.error("Erro ao alterar disponibilidade:", error);
-        throw new Error(`Não foi possível alterar a disponibilidade de ${entityName}.`);
-    }
-  }, []);
-
-  /**
-   * Atualiza os dados de um médium (nome e entidades) no Firestore.
-   */
-  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities' | 'role'>>) => {
-    try {
-      const mediumDocRef = doc(db, 'mediums', mediumId);
-      // Firestore permite 'undefined' para remover campos, então o role pode ser undefined.
-      await updateDoc(mediumDocRef, updatedData);
-    } catch(error) {
-        console.error("Erro ao atualizar médium:", error);
-        throw new Error("Não foi possível salvar as alterações.");
-    }
-  }, []);
   
+  const updateConsulenteStatus = useCallback(async (mediumId: string, entityId: string, consulenteId: string, status: ConsulenteStatus) => {
+    const mediumDocRef = doc(db, 'mediums', mediumId);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const mediumDoc = await transaction.get(mediumDocRef);
+            if (!mediumDoc.exists()) {
+                throw new Error("Médium não encontrado.");
+            }
+            const mediumData = mediumDoc.data() as Medium;
+            const updatedEntities = mediumData.entities.map(entity => {
+                if (entity.id === entityId) {
+                    const updatedConsulentes = entity.consulentes.map(consulente => {
+                        if (consulente.id === consulenteId) {
+                            return { ...consulente, status: status };
+                        }
+                        return consulente;
+                    });
+                    return { ...entity, consulentes: updatedConsulentes };
+                }
+                return entity;
+            });
+            transaction.update(mediumDocRef, { entities: updatedEntities });
+        });
+    } catch (error) {
+        console.error("Erro ao atualizar status do consulente:", error);
+        throw new Error("Não foi possível atualizar o status do consulente.");
+    }
+  }, []);
+
   /**
    * Registra um evento de login no Firestore.
    */
@@ -642,29 +582,20 @@ export function useSchoolData() {
   
   const saveAllManagementChanges = useCallback(async (
     mediumsToUpdate: Medium[],
-    categoriesToUpdate: Category[],
-    originalMediums: Medium[],
-    originalCategories: Category[]
+    categoriesToUpdate: Category[]
   ) => {
     const batch = writeBatch(db);
 
     // 1. Salvar mudanças nos médiuns
     mediumsToUpdate.forEach(medium => {
-        const originalMedium = originalMediums.find(om => om.id === medium.id);
-        // Compara o objeto atual com o original para ver se precisa atualizar
-        // Uma comparação profunda seria melhor, mas JSON.stringify é simples e eficaz aqui.
-        if (JSON.stringify(medium) !== JSON.stringify(originalMedium)) {
-            const mediumRef = doc(db, 'mediums', medium.id);
-            const { id, ...dataToSave } = medium; // remove o 'id' do objeto a ser salvo
-            batch.update(mediumRef, dataToSave);
-        }
+        const mediumRef = doc(db, 'mediums', medium.id);
+        const { id, ...dataToSave } = medium; // remove o 'id' do objeto a ser salvo
+        batch.update(mediumRef, dataToSave);
     });
 
     // 2. Salvar mudanças nas categorias da gira selecionadas
-    if (JSON.stringify(categoriesToUpdate) !== JSON.stringify(originalCategories)) {
-        const giraDocRef = doc(db, 'appState', 'gira');
-        batch.set(giraDocRef, { categories: categoriesToUpdate });
-    }
+    const giraDocRef = doc(db, 'appState', 'gira');
+    batch.set(giraDocRef, { categories: categoriesToUpdate });
 
     try {
         await batch.commit();
@@ -692,9 +623,6 @@ export function useSchoolData() {
     addConsulente,
     removeConsulente,
     updateConsulenteName,
-    toggleMediumPresence,
-    toggleEntityAvailability,
-    updateMedium,
     logLoginEvent,
     clearLoginHistory,
     addSpiritualCategory,
@@ -705,5 +633,6 @@ export function useSchoolData() {
     selectedCategories,
     updateSelectedCategories,
     saveAllManagementChanges,
+    updateConsulenteStatus,
   };
 }

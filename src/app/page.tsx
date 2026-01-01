@@ -6,7 +6,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { LoadingScreen } from "@/components/loading-screen";
 import { ConsulenteRegistration } from '@/components/student-registration';
-import type { Medium, Category } from "@/lib/types";
+import type { Medium, Category, ConsulenteStatus } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,7 @@ function HomeClient() {
     selectedCategories,
     updateSelectedCategories: _updateSelectedCategories,
     saveAllManagementChanges: _saveAllManagementChanges,
+    updateConsulenteStatus: _updateConsulenteStatus,
   } = useSchoolData();
   
   const { toast } = useToast();
@@ -128,16 +129,20 @@ function HomeClient() {
   [_saveAllManagementChanges, handleAsyncAction]);
 
   const updateSelectedCategories = useCallback(async (categories: Category[]) => {
-      try {
-        await _updateSelectedCategories(categories);
-      } catch (error: any) {
+      await _updateSelectedCategories(categories);
+  }, [_updateSelectedCategories]);
+
+  const updateConsulenteStatus = useCallback(async (...args: Parameters<typeof _updateConsulenteStatus>) => {
+    try {
+        await _updateConsulenteStatus(...args);
+    } catch (error: any) {
         toast({
-            title: "Erro ao Salvar",
-            description: error.message || "Não foi possível salvar a seleção da gira.",
+            title: "Erro ao Atualizar Status",
+            description: error.message || "Não foi possível alterar o status do consulente.",
             variant: "destructive",
         });
-      }
-  }, [_updateSelectedCategories, toast]);
+    }
+  }, [_updateConsulenteStatus, toast]);
   
   const logLoginEvent = useCallback((...args: Parameters<typeof _logLoginEvent>) => {
      _logLoginEvent(...args); // Erros já são tratados dentro da função
@@ -212,6 +217,7 @@ function HomeClient() {
                     updateSpiritualCategoryOrder={updateSpiritualCategoryOrder}
                     updateAllEntityLimits={updateAllEntityLimits}
                     updateSpiritualCategoryName={updateSpiritualCategoryName}
+                    updateSelectedCategories={updateSelectedCategories}
                     onSaveAndClose={async (updatedMediums, updatedCategories) => {
                         await saveAllManagementChanges(updatedMediums, updatedCategories, mediums, selectedCategories);
                         await handleLogoutOnClose();
@@ -242,6 +248,7 @@ function HomeClient() {
         mediums={mediums}
         removeConsulente={removeConsulente}
         updateConsulenteName={updateConsulenteName}
+        updateConsulenteStatus={updateConsulenteStatus}
         selectedCategories={selectedCategories}
         spiritualCategories={spiritualCategories}
       />

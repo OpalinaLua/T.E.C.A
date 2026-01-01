@@ -54,6 +54,7 @@ interface MediumManagementProps {
   updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void>;
   updateAllEntityLimits: (newLimit: number) => Promise<void>;
   updateSpiritualCategoryName: (oldName: string, newName: string) => Promise<void>;
+  updateSelectedCategories: (categories: Category[]) => Promise<void>;
   onSaveAndClose: (updatedMediums: Medium[], updatedCategories: Category[]) => Promise<void>;
 }
 
@@ -283,7 +284,7 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
     );
 }
 
-export function MediumManagement({ user, initialMediums, initialSelectedCategories, spiritualCategories, addMedium, removeMedium, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, onSaveAndClose }: MediumManagementProps) {
+export function MediumManagement({ user, initialMediums, initialSelectedCategories, spiritualCategories, addMedium, removeMedium, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, updateSelectedCategories, onSaveAndClose }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
@@ -372,10 +373,9 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
     
     const handleCloseAndSaveChanges = async () => {
         if (pendingCategoryOrder) {
-            // A ordem das categorias é uma operação separada e imediata
             await updateSpiritualCategoryOrder(pendingCategoryOrder);
         }
-        // A função do pai agora lida com o salvamento
+        await updateSelectedCategories(selectedCategories);
         await onSaveAndClose(mediums, selectedCategories);
     };
 
@@ -512,11 +512,13 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                                                             onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
                                                             aria-label={`Marcar presença para ${medium.name}`}
                                                         />
-                                                        <AccordionTrigger className="p-0 hover:no-underline flex-1 text-left">
+                                                        <AccordionTrigger asChild>
+                                                          <div className="p-0 flex-1 text-left cursor-pointer hover:underline">
                                                             <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
                                                                 {medium.name}
                                                                 {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
                                                             </Label>
+                                                          </div>
                                                         </AccordionTrigger>
                                                     </div>
                                                     <div className="flex items-center gap-1 pl-2">

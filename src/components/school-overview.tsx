@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { Medium, Category } from '@/lib/types';
+import type { Medium, Category, ConsulenteStatus } from '@/lib/types';
 import { MediumCard } from './teacher-card';
 import { Input } from './ui/input';
 import { Search } from 'lucide-react';
@@ -12,11 +12,12 @@ interface SchoolOverviewProps {
   mediums: Medium[];
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
   updateConsulenteName: (mediumId: string, entityId: string, consulenteId: string, newName: string) => void;
+  updateConsulenteStatus: (mediumId: string, entityId: string, consulenteId: string, status: ConsulenteStatus) => void;
   selectedCategories: Category[];
   spiritualCategories: Category[];
 }
 
-export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName, selectedCategories, spiritualCategories }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName, updateConsulenteStatus, selectedCategories, spiritualCategories }: SchoolOverviewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('present');
 
@@ -105,6 +106,7 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
                 medium={medium}
                 removeConsulente={removeConsulente}
                 updateConsulenteName={updateConsulenteName}
+                updateConsulenteStatus={updateConsulenteStatus}
                 selectedCategories={selectedCategories}
                 spiritualCategories={spiritualCategories}
                 searchQuery={searchQuery}

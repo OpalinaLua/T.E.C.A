@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Componente que exibe as informações de um médium em um card.
  * Este componente mostra os detalhes do médium, suas entidades e consulentes.
@@ -8,7 +7,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { Medium, Category, Entity, Consulente } from '@/lib/types';
+import type { Medium, Category, Entity, Consulente, ConsulenteStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Pencil, Crown } from 'lucide-react';
+import { UserX, Pencil, Crown, UserCheck, UserMinus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 
@@ -93,12 +92,13 @@ interface MediumCardProps {
   medium: Medium;
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
   updateConsulenteName: (mediumId: string, entityId: string, consulenteId: string, newName: string) => void;
+  updateConsulenteStatus: (mediumId: string, entityId: string, consulenteId: string, status: ConsulenteStatus) => void;
   selectedCategories: Category[];
   spiritualCategories: Category[];
   searchQuery?: string;
 }
 
-export function MediumCard({ medium, removeConsulente, updateConsulenteName, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
+export function MediumCard({ medium, removeConsulente, updateConsulenteName, updateConsulenteStatus, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
   
   const sortedEntities = useMemo(() => {
     // Cria um mapa da ordem global das categorias para busca rápida.
@@ -151,8 +151,25 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
   const handleUpdateConsulente = (entityId: string, consulenteId: string, newName: string) => {
     updateConsulenteName(medium.id, entityId, consulenteId, newName);
   };
+
+  const handleUpdateConsulenteStatus = (entityId: string, consulente: Consulente, newStatus: ConsulenteStatus) => {
+    const statusToSet = consulente.status === newStatus ? 'agendado' : newStatus;
+    updateConsulenteStatus(medium.id, entityId, consulente.id, statusToSet);
+  };
   
   const query = searchQuery?.toLowerCase().trim() || '';
+
+  const getConsulenteStyle = (status: ConsulenteStatus) => {
+    switch (status) {
+      case 'atendido':
+        return "bg-green-500/10 text-green-500/80";
+      case 'ausente':
+        return "bg-red-500/10 text-red-500/80 line-through";
+      case 'agendado':
+      default:
+        return "bg-secondary/50 text-secondary-foreground";
+    }
+  };
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
@@ -197,9 +214,17 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
                   {entity.consulentes.map(consulente => {
                     const isConsulenteMatch = query && consulente.name.toLowerCase().includes(query);
                     return (
-                        <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md bg-secondary/50", isConsulenteMatch && "ring-2 ring-accent")}>
-                          <span className="text-secondary-foreground">{consulente.name}</span>
+                        <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status), isConsulenteMatch && "ring-2 ring-accent")}>
+                          <span className={cn("font-medium", consulente.status === 'ausente' && 'line-through')}>{consulente.name}</span>
                           <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
+                                <UserCheck className="h-4 w-4" />
+                                <span className="sr-only">Marcar como atendido</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-amber-500 h-8 w-8", consulente.status === 'ausente' && 'text-amber-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'ausente')}>
+                                <UserMinus className="h-4 w-4" />
+                                <span className="sr-only">Marcar como ausente</span>
+                            </Button>
                             <EditConsulenteDialog
                               consulente={consulente}
                               onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
