@@ -27,41 +27,46 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
   }, [mediums, activeTab]);
 
   const filteredAndSortedMediums = useMemo(() => {
-    // Função para calcular o total de consulentes de um médium
-    const countConsulentes = (medium: Medium) => 
-        medium.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
+    const query = searchQuery.toLowerCase().trim();
 
-    const filtered = listSource.filter(medium => {
-        const query = searchQuery.toLowerCase().trim();
-        if (!query) return true;
+    // 1. Filtrar médiuns que têm entidades nas categorias da gira selecionada
+    const mediumsInGira = listSource.filter(medium =>
+      medium.entities.some(entity => selectedCategories.includes(entity.category))
+    );
+      
+    // 2. Se não houver busca, retorna a lista filtrada pela gira
+    if (!query) {
+      return mediumsInGira;
+    }
 
+    // 3. Aplicar o critério de busca sobre a lista já filtrada pela gira
+    const searchedMediums = mediumsInGira.filter(medium => {
         // Check medium name
         if (medium.name.toLowerCase().includes(query)) {
             return true;
         }
-        // Check entity name or category
+        // Check entity name or category (only within entities that are part of the gira)
         const entityMatch = medium.entities.some(entity =>
-            entity.name.toLowerCase().includes(query) ||
-            entity.category.toLowerCase().includes(query)
+            selectedCategories.includes(entity.category) &&
+            (entity.name.toLowerCase().includes(query) || entity.category.toLowerCase().includes(query))
         );
         return entityMatch;
     });
 
-    // Ordena o array filtrado
-    return filtered.sort((a, b) => {
+    // 4. Ordenar o resultado final
+    return searchedMediums.sort((a, b) => {
+        const countConsulentes = (m: Medium) => 
+            m.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
+
         const aHasConsulentes = countConsulentes(a) > 0;
         const bHasConsulentes = countConsulentes(b) > 0;
 
-        if (aHasConsulentes && !bHasConsulentes) {
-            return -1; // a vem primeiro
-        }
-        if (!aHasConsulentes && bHasConsulentes) {
-            return 1; // b vem primeiro
-        }
-        return 0; // mantém a ordem original
+        if (aHasConsulentes && !bHasConsulentes) return -1;
+        if (!aHasConsulentes && bHasConsulentes) return 1;
+        return 0;
     });
 
-  }, [listSource, searchQuery]);
+  }, [listSource, searchQuery, selectedCategories]);
 
 
   return (
@@ -103,15 +108,15 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
             {searchQuery ? (
                  <>
                     <h3 className="text-lg font-medium text-muted-foreground">Nenhum resultado encontrado</h3>
-                    <p className="text-sm text-muted-foreground mt-2">Sua busca por "{searchQuery}" não encontrou nenhum resultado.</p>
+                    <p className="text-sm text-muted-foreground mt-2">Sua busca por "{searchQuery}" não encontrou nenhum resultado dentro das categorias da gira selecionada.</p>
                 </>
             ) : (
                  <>
                     <h3 className="text-lg font-medium text-muted-foreground">
-                        {activeTab === 'present' ? 'Nenhum médium presente' : 'Nenhum médium cadastrado'}
+                        {selectedCategories.length === 0 ? 'Nenhuma gira selecionada' : (activeTab === 'present' ? 'Nenhum médium presente na gira' : 'Nenhum médium na gira')}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-2">
-                        {activeTab === 'present' ? 'Marque a presença dos médiuns no painel de gerenciamento.' : 'Use o formulário para adicionar um novo médium.'}
+                        {selectedCategories.length === 0 ? 'Selecione uma categoria de gira no painel de gerenciamento.' : 'Verifique a presença dos médiuns ou as categorias selecionadas.'}
                     </p>
                 </>
             )}
