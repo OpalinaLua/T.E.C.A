@@ -235,28 +235,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                                 </Button>
                               }
                             />
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable} hidden>
-                                    <UserX className="h-4 w-4" />
-                                    <span className="sr-only">Excluir consulente</span>
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir Consulente?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Tem certeza de que deseja remover {consulente.name} desta entidade?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
                           </div>
                         </li>
                     )
