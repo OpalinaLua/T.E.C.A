@@ -34,9 +34,10 @@ interface MediumCardProps {
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   selectedCategories: Category[];
   spiritualCategories: Category[];
+  searchQuery?: string;
 }
 
-export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories, spiritualCategories }: MediumCardProps) {
+export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
   
   const sortedEntities = useMemo(() => {
     // Cria um mapa da ordem global das categorias para busca rápida.
@@ -53,9 +54,21 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
   }, [medium.entities, spiritualCategories]);
 
   const activeEntitiesForGira = useMemo(() => {
-    if (selectedCategories.length === 0) return [];
-    return sortedEntities.filter(e => selectedCategories.includes(e.category));
-  }, [sortedEntities, selectedCategories]);
+    const query = searchQuery?.toLowerCase().trim() || '';
+
+    // Filtra primeiro pelas categorias selecionadas na gira
+    let entitiesForGira = sortedEntities.filter(e => selectedCategories.includes(e.category));
+
+    // Se houver uma busca, filtra adicionalmente
+    if (query) {
+      entitiesForGira = entitiesForGira.filter(e => 
+        e.name.toLowerCase().includes(query) ||
+        e.category.toLowerCase().includes(query)
+      );
+    }
+    
+    return entitiesForGira;
+  }, [sortedEntities, selectedCategories, searchQuery]);
 
 
   const totalConsulentes = useMemo(() => {
@@ -96,7 +109,7 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
         )}
         
         {selectedCategories.length > 0 && activeEntitiesForGira.length === 0 && (
-           <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium pertence às categorias selecionadas.</p>
+           <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium corresponde à sua busca ou às categorias selecionadas.</p>
         )}
 
         {totalConsulentes > 0 ? (

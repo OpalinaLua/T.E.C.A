@@ -50,7 +50,11 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
             selectedCategories.includes(entity.category) &&
             (entity.name.toLowerCase().includes(query) || entity.category.toLowerCase().includes(query))
         );
-        return entityMatch;
+        if (entityMatch) {
+            return true;
+        }
+
+        return false;
     });
 
     // 4. Ordenar o resultado final
@@ -100,6 +104,7 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
                 toggleEntityAvailability={toggleEntityAvailability}
                 selectedCategories={selectedCategories}
                 spiritualCategories={spiritualCategories}
+                searchQuery={searchQuery}
               />
             ))}
           </div>
