@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Info } from 'lucide-react';
 
 // Interface para as props do componente.
 interface ConsulenteRegistrationProps {
@@ -103,6 +105,9 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
     if (isSubmitting) return "Agendando...";
     return "Agendar Consulente";
   }
+  
+  const showNoGiraAlert = selectedCategories.length === 0;
+  const showNoMediumsAlert = selectedCategories.length > 0 && availableMediums.length === 0;
 
   return (
     <Card className="w-full">
@@ -112,6 +117,24 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+           {showNoGiraAlert && (
+              <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Nenhuma Gira Ativa</AlertTitle>
+                  <AlertDescription>
+                      Para realizar agendamentos, selecione uma ou mais categorias de trabalho no painel de gerenciamento.
+                  </AlertDescription>
+              </Alert>
+           )}
+           {showNoMediumsAlert && (
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Nenhum Médium Disponível</AlertTitle>
+                    <AlertDescription>
+                        Não há médiuns presentes ou com vagas para as categorias da gira selecionada. Verifique a presença no painel.
+                    </AlertDescription>
+                </Alert>
+           )}
           <div className="space-y-2">
             <Label htmlFor="consulente-name">Nome do Consulente</Label>
             <Input
@@ -121,7 +144,7 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              disabled={selectedCategories.length === 0 || isSubmitting}
+              disabled={selectedCategories.length === 0 || isSubmitting || availableMediums.length === 0}
             />
           </div>
           <div className="space-y-2">
