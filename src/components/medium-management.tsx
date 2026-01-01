@@ -501,25 +501,24 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                                     <CardDescription>Altere a presença ou edite os dados dos médiuns.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => setEditingMediumId(value || null)}>
+                                     <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => setEditingMediumId(value || null)}>
                                         {mediums.map(medium => (
                                             <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
                                                 <div className="flex items-center p-3 rounded-lg border bg-card transition-colors data-[state=open]:rounded-b-none">
-                                                    <AccordionTrigger asChild className="flex-1 p-0 hover:no-underline">
-                                                      <div className="flex items-center gap-3 cursor-pointer">
-                                                          <Switch
-                                                              id={`presence-${medium.id}`}
-                                                              checked={medium.isPresent}
-                                                              onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
-                                                              onClick={(e) => e.stopPropagation()} // Impede que o switch acione o acordeão
-                                                              aria-label={`Marcar presença para ${medium.name}`}
-                                                          />
-                                                          <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
-                                                              {medium.name}
-                                                              {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
-                                                          </Label>
-                                                      </div>
-                                                    </AccordionTrigger>
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <Switch
+                                                            id={`presence-${medium.id}`}
+                                                            checked={medium.isPresent}
+                                                            onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
+                                                            aria-label={`Marcar presença para ${medium.name}`}
+                                                        />
+                                                        <AccordionTrigger className="p-0 hover:no-underline flex-1 text-left">
+                                                            <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
+                                                                {medium.name}
+                                                                {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
+                                                            </Label>
+                                                        </AccordionTrigger>
+                                                    </div>
                                                     <div className="flex items-center gap-1 pl-2">
                                                         <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
                                                             {medium.isPresent ? 'Presente' : 'Ausente'}
