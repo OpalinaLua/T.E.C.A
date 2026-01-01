@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Medium, Entity, Category, MediumRole } from '@/lib/types';
 import {
   Accordion,
@@ -43,21 +43,18 @@ import { ROLES } from '@/lib/types';
 
 interface MediumManagementProps {
   user: User;
-  mediums: Medium[];
+  initialMediums: Medium[];
+  initialSelectedCategories: Category[];
   spiritualCategories: Category[];
   addMedium: (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole) => Promise<void>;
-  updateMedium: (mediumId: string, data: Partial<Pick<Medium, 'name' | 'entities' | 'role'>>) => void;
   removeMedium: (mediumId: string) => void;
-  toggleMediumPresence: (mediumId: string) => void;
   clearLoginHistory: () => Promise<void>;
   addSpiritualCategory: (category: string) => Promise<void>;
   removeSpiritualCategory: (category: string) => Promise<void>;
   updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void>;
   updateAllEntityLimits: (newLimit: number) => Promise<void>;
   updateSpiritualCategoryName: (oldName: string, newName: string) => Promise<void>;
-  selectedCategories: Category[];
-  onSelectionChange: (category: Category) => void;
-  onClose: () => void;
+  onSaveAndClose: (updatedMediums: Medium[], updatedCategories: Category[]) => Promise<void>;
 }
 
 function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryName, onOrderChange }: { 
@@ -286,67 +283,64 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
     );
 }
 
-export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+export function MediumManagement({ user, initialMediums, initialSelectedCategories, spiritualCategories, addMedium, removeMedium, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, onSaveAndClose }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
+    
+    // Estado local para gerenciar todas as alterações
+    const [mediums, setMediums] = useState<Medium[]>(() => JSON.parse(JSON.stringify(initialMediums)));
+    const [selectedCategories, setSelectedCategories] = useState<Category[]>(initialSelectedCategories);
+    const [editingMediumId, setEditingMediumId] = useState<string | null>(null);
     const [pendingCategoryOrder, setPendingCategoryOrder] = useState<Category[] | null>(null);
 
-    // Estado local para gerenciar as edições
-    const [editedMediums, setEditedMediums] = useState<Record<string, Partial<Pick<Medium, 'name' | 'entities' | 'role'>>>>({});
-    const [editingMediumId, setEditingMediumId] = useState<string | null>(null);
-
+    // Recarrega o estado local se os dados iniciais mudarem (ex: ao reabrir o modal)
     useEffect(() => {
-        setEditedMediums({});
-        setEditingMediumId(null);
-    }, [mediums]);
+        setMediums(JSON.parse(JSON.stringify(initialMediums)));
+        setSelectedCategories(initialSelectedCategories);
+    }, [initialMediums, initialSelectedCategories]);
+
 
     const handleMediumChange = (id: string, field: keyof Medium, value: any) => {
-        setEditedMediums(prev => ({
-            ...prev,
-            [id]: { ...prev[id], [field]: value }
-        }));
+        setMediums(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
     };
     
     const handleEntityChange = (mediumId: string, entityId: string, field: keyof Entity, value: any) => {
-        const medium = mediums.find(m => m.id === mediumId);
-        if (!medium) return;
-        
-        const currentEntities = editedMediums[mediumId]?.entities || medium.entities;
-        
-        const newEntities = currentEntities.map(e => 
-            e.id === entityId ? { ...e, [field]: value } : e
-        );
-
-        handleMediumChange(mediumId, 'entities', newEntities);
+        setMediums(prev => prev.map(medium => {
+            if (medium.id !== mediumId) return medium;
+            const newEntities = medium.entities.map(e => 
+                e.id === entityId ? { ...e, [field]: value } : e
+            );
+            return { ...medium, entities: newEntities };
+        }));
     };
 
     const handleAddEntity = (mediumId: string) => {
-        const medium = mediums.find(m => m.id === mediumId);
-        if (!medium) return;
+        setMediums(prev => prev.map(medium => {
+            if (medium.id !== mediumId) return medium;
 
-        const currentEntities = editedMediums[mediumId]?.entities || medium.entities;
-        const newOrder = currentEntities.length > 0 ? Math.max(...currentEntities.map(e => e.order)) + 1 : 0;
-        
-        const newEntity: Entity = {
-            id: `entity-${Date.now()}`,
-            name: "Nova Entidade",
-            category: "Exu",
-            consulentes: [],
-            isAvailable: true,
-            consulenteLimit: 5,
-            order: newOrder,
-        };
+            const currentEntities = medium.entities;
+            const newOrder = currentEntities.length > 0 ? Math.max(...currentEntities.map(e => e.order)) + 1 : 0;
+            
+            const newEntity: Entity = {
+                id: `entity-${Date.now()}`,
+                name: "Nova Entidade",
+                category: spiritualCategories[0] || "Sem Categoria",
+                consulentes: [],
+                isAvailable: true,
+                consulenteLimit: 5,
+                order: newOrder,
+            };
 
-        handleMediumChange(mediumId, 'entities', [...currentEntities, newEntity]);
+            return { ...medium, entities: [...currentEntities, newEntity] };
+        }));
     };
 
     const handleRemoveEntity = (mediumId: string, entityId: string) => {
         const medium = mediums.find(m => m.id === mediumId);
         if (!medium) return;
 
-        const currentEntities = editedMediums[mediumId]?.entities || medium.entities;
-        const entityToRemove = currentEntities.find(e => e.id === entityId);
+        const entityToRemove = medium.entities.find(e => e.id === entityId);
         
         if (entityToRemove && entityToRemove.consulentes.length > 0) {
             toast({
@@ -357,8 +351,11 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
             return;
         }
 
-        const newEntities = currentEntities.filter(e => e.id !== entityId);
-        handleMediumChange(mediumId, 'entities', newEntities);
+        setMediums(prev => prev.map(m => {
+            if (m.id !== mediumId) return m;
+            const newEntities = m.entities.filter(e => e.id !== entityId);
+            return { ...m, entities: newEntities };
+        }));
     };
 
     const handleConfirmClearHistory = async () => {
@@ -373,75 +370,58 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         }
     };
     
-    const handleClose = async () => {
+    const handleCloseAndSaveChanges = async () => {
         if (pendingCategoryOrder) {
+            // A ordem das categorias é uma operação separada e imediata
             await updateSpiritualCategoryOrder(pendingCategoryOrder);
         }
-        
-        // Salvar todas as edições pendentes
-        for (const mediumId in editedMediums) {
-            if (Object.keys(editedMediums[mediumId]).length > 0) {
-                updateMedium(mediumId, editedMediums[mediumId]);
-            }
-        }
-        toast({
-            title: "Gerenciamento Salvo",
-            description: "Todas as suas alterações foram salvas com sucesso.",
-        });
-
-        onClose();
+        // A função do pai agora lida com o salvamento
+        await onSaveAndClose(mediums, selectedCategories);
     };
 
     const toggleEditing = (mediumId: string) => {
-        if (editingMediumId === mediumId) {
-            // Se está fechando o editor, salva as mudanças
-            if (editedMediums[mediumId] && Object.keys(editedMediums[mediumId]).length > 0) {
-                updateMedium(mediumId, editedMediums[mediumId]);
-                 // Limpa as edições pendentes para este medium
-                setEditedMediums(prev => {
-                    const newEdited = { ...prev };
-                    delete newEdited[mediumId];
-                    return newEdited;
-                });
-            }
-            setEditingMediumId(null);
-        } else {
-            // Se está abrindo um novo, e havia um anterior aberto, salva as mudanças do anterior
-             if (editingMediumId && editedMediums[editingMediumId] && Object.keys(editedMediums[editingMediumId]).length > 0) {
-                updateMedium(editingMediumId, editedMediums[editingMediumId]);
-                 // Limpa as edições pendentes para o medium anterior
-                setEditedMediums(prev => {
-                    const newEdited = { ...prev };
-                    delete newEdited[editingMediumId];
-                    return newEdited;
-                });
-            }
-            setEditingMediumId(mediumId);
-        }
+        setEditingMediumId(prevId => prevId === mediumId ? null : mediumId);
     }
     
+    const handleCategorySelectionChange = (category: Category) => {
+        setSelectedCategories(prev => 
+            prev.includes(category)
+                ? prev.filter(c => c !== category)
+                : [...prev, category]
+        );
+    };
+    
+    const toggleMediumPresenceLocal = (mediumId: string) => {
+        setMediums(prev => prev.map(m => {
+            if (m.id !== mediumId) return m;
+            
+            const newIsPresent = !m.isPresent;
+            // Se está marcando como ausente, limpa os consulentes
+            const newEntities = !newIsPresent 
+                ? m.entities.map(e => ({ ...e, consulentes: [] })) 
+                : m.entities;
+            
+            return { ...m, isPresent: newIsPresent, entities: newEntities };
+        }));
+    };
+    
     const MediumEditor = ({ medium }: { medium: Medium }) => {
-        const mediumChanges = editedMediums[medium.id] || {};
-        const currentName = mediumChanges.name ?? medium.name;
-        const currentRole = mediumChanges.role ?? medium.role;
-        const currentEntities = mediumChanges.entities ?? medium.entities;
-        
         return (
              <AccordionContent className="bg-secondary/30 p-4 rounded-b-md">
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <Label htmlFor={`name-${medium.id}`}>Nome do Médium</Label>
-                            <Input id={`name-${medium.id}`} value={currentName} onChange={(e) => handleMediumChange(medium.id, 'name', e.target.value)} />
+                            <Input id={`name-${medium.id}`} value={medium.name} onChange={(e) => handleMediumChange(medium.id, 'name', e.target.value)} />
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor={`role-${medium.id}`}>Cargo</Label>
-                            <Select value={currentRole} onValueChange={(v) => handleMediumChange(medium.id, 'role', v as MediumRole)}>
+                            <Select value={medium.role || ''} onValueChange={(v) => handleMediumChange(medium.id, 'role', v as MediumRole)}>
                                 <SelectTrigger id={`role-${medium.id}`}>
                                     <SelectValue placeholder="Nenhum" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={' '}>Nenhum</SelectItem>
+                                    <SelectItem value=" ">Nenhum</SelectItem>
                                     {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -449,7 +429,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                     </div>
                     <div className="space-y-2">
                          <Label>Entidades</Label>
-                        {currentEntities.map((entity) => (
+                        {medium.entities.map((entity) => (
                         <div key={entity.id} className="space-y-3 rounded-md border bg-background p-3 relative">
                             <div className="absolute top-1 right-1 flex items-center">
                                 <Button variant="ghost" size="icon" onClick={() => handleRemoveEntity(medium.id, entity.id)} className="h-6 w-6 shrink-0 text-destructive/70 hover:text-destructive">
@@ -508,7 +488,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                     <CategorySelection
                                         spiritualCategories={spiritualCategories}
                                         selectedCategories={selectedCategories}
-                                        onSelectionChange={onSelectionChange}
+                                        onSelectionChange={handleCategorySelectionChange}
                                     />
                                 </CardContent>
                             </Card>
@@ -522,64 +502,56 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => toggleEditing(value)}>
-                                        {mediums.map(medium => {
-                                            const mediumChanges = editedMediums[medium.id] || {};
-                                            const currentName = mediumChanges.name ?? medium.name;
-                                            const currentRole = mediumChanges.role ?? medium.role;
-
-                                            return (
-                                                <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
-                                                    <div className="flex items-center p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors data-[state=open]:rounded-b-none">
-                                                        <div className="flex items-center gap-3 flex-1">
-                                                            <Switch
-                                                                id={`presence-${medium.id}`}
-                                                                checked={medium.isPresent}
-                                                                onCheckedChange={() => {
-                                                                    toggleMediumPresence(medium.id);
-                                                                }}
-                                                                aria-label={`Marcar presença para ${medium.name}`}
-                                                            />
-                                                            <AccordionTrigger className="flex-1 p-0 hover:no-underline justify-start">
-                                                                <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
-                                                                    {currentName}
-                                                                    {currentRole && <Crown className="h-4 w-4 text-amber-500" />}
-                                                                    <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
-                                                                        {medium.isPresent ? 'Presente' : 'Ausente'}
-                                                                    </Badge>
-                                                                </Label>
-                                                            </AccordionTrigger>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 pl-2">
-                                                            <Button variant="ghost" size="icon" onClick={() => toggleEditing(medium.id)}>
+                                        {mediums.map(medium => (
+                                            <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
+                                                <div className="flex items-center p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors data-[state=open]:rounded-b-none">
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <Switch
+                                                            id={`presence-${medium.id}`}
+                                                            checked={medium.isPresent}
+                                                            onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
+                                                            aria-label={`Marcar presença para ${medium.name}`}
+                                                        />
+                                                        <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
+                                                            {medium.name}
+                                                            {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
+                                                            <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+                                                                {medium.isPresent ? 'Presente' : 'Ausente'}
+                                                            </Badge>
+                                                        </Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 pl-2">
+                                                        <AccordionTrigger asChild>
+                                                            <Button variant="ghost" size="icon">
                                                                 <Pencil className="h-4 w-4" />
                                                             </Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => removeMedium(medium.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                                                            Excluir
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </div>
+                                                        </AccordionTrigger>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => removeMedium(medium.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                                        Excluir
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
                                                     </div>
-                                                    <MediumEditor medium={medium} />
-                                                </AccordionItem>
-                                            )
-                                        })}
+                                                </div>
+                                                <MediumEditor medium={medium} />
+                                            </AccordionItem>
+                                        ))}
                                         </Accordion>
                                          {mediums.length === 0 && (
                                             <p className="text-sm text-muted-foreground italic text-center py-4">Nenhum médium cadastrado.</p>
@@ -650,7 +622,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                 </Tabs>
             </div>
             <div className="flex-shrink-0 pt-4 mt-auto border-t">
-                <Button onClick={handleClose} variant="outline" className="w-full">
+                <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
                     Fechar e Salvar
                 </Button>

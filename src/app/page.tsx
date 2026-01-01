@@ -6,7 +6,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { LoadingScreen } from "@/components/loading-screen";
 import { ConsulenteRegistration } from '@/components/student-registration';
-import type { Category } from "@/lib/types";
+import type { Medium, Category } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -39,9 +39,6 @@ function HomeClient() {
     removeMedium: _removeMedium,
     addConsulente: _addConsulente,
     removeConsulente: _removeConsulente,
-    toggleMediumPresence: _toggleMediumPresence,
-    toggleEntityAvailability: _toggleEntityAvailability,
-    updateMedium: _updateMedium,
     logLoginEvent: _logLoginEvent,
     clearLoginHistory: _clearLoginHistory,
     addSpiritualCategory: _addSpiritualCategory,
@@ -51,6 +48,7 @@ function HomeClient() {
     updateSpiritualCategoryName: _updateSpiritualCategoryName,
     selectedCategories,
     updateSelectedCategories: _updateSelectedCategories,
+    saveAllManagementChanges: _saveAllManagementChanges,
   } = useSchoolData();
   
   const { toast } = useToast();
@@ -61,9 +59,9 @@ function HomeClient() {
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState("overview");
   
-  const handleAsyncAction = useCallback(async <T extends any[]>(
-      action: (...args: T) => Promise<string | void>,
-      success: { title: string; description?: string } | ((result: string | void) => { title: string; description?: string }),
+  const handleAsyncAction = useCallback(async <T extends any[], R>(
+      action: (...args: T) => Promise<R>,
+      success: { title: string; description?: string } | ((result: R) => { title: string; description?: string }),
       ...args: T
   ) => {
       try {
@@ -95,14 +93,6 @@ function HomeClient() {
   const removeConsulente = useCallback((...args: Parameters<typeof _removeConsulente>) => 
       handleAsyncAction(_removeConsulente, { title: "Consulente Removido", description: `${args[3]} foi removido(a).` }, ...args),
   [_removeConsulente, handleAsyncAction]);
-  
-  const toggleMediumPresence = useCallback((...args: Parameters<typeof _toggleMediumPresence>) => 
-      handleAsyncAction(_toggleMediumPresence, (desc) => ({ title: "Presença Alterada", description: desc as string }), ...args),
-  [_toggleMediumPresence, handleAsyncAction]);
-  
-  const toggleEntityAvailability = useCallback((...args: Parameters<typeof _toggleEntityAvailability>) =>
-      handleAsyncAction(_toggleEntityAvailability, (desc) => ({ title: "Disponibilidade Alterada", description: desc as string }), ...args),
-  [_toggleEntityAvailability, handleAsyncAction]);
 
   const clearLoginHistory = useCallback((...args: Parameters<typeof _clearLoginHistory>) =>
       handleAsyncAction(_clearLoginHistory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
@@ -127,14 +117,15 @@ function HomeClient() {
   const updateSpiritualCategoryName = useCallback((...args: Parameters<typeof _updateSpiritualCategoryName>) =>
       handleAsyncAction(_updateSpiritualCategoryName, (desc) => ({ title: "Sucesso!", description: desc as string }), ...args),
   [_updateSpiritualCategoryName, handleAsyncAction]);
+  
+  const saveAllManagementChanges = useCallback((...args: Parameters<typeof _saveAllManagementChanges>) => 
+      handleAsyncAction(_saveAllManagementChanges, { title: "Sucesso", description: "Todas as alterações foram salvas." }, ...args),
+  [_saveAllManagementChanges, handleAsyncAction]);
 
   const updateSelectedCategories = useCallback(async (categories: Category[]) => {
       try {
         await _updateSelectedCategories(categories);
-        toast({
-          title: "Gira Atualizada",
-          description: "A seleção de categorias da gira foi salva."
-        })
+        // Toast removido para evitar notificações a cada clique
       } catch (error: any) {
         toast({
             title: "Erro ao Salvar",
@@ -145,10 +136,8 @@ function HomeClient() {
   }, [_updateSelectedCategories, toast]);
   
   const logLoginEvent = useCallback((...args: Parameters<typeof _logLoginEvent>) => {
-     _logLoginEvent(...args).catch(err => {
-        toast({ title: "Erro de Auditoria", description: err.message, variant: "destructive" });
-     });
-  }, [_logLoginEvent, toast]);
+     _logLoginEvent(...args); // Erros já são tratados dentro da função
+  }, [_logLoginEvent]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -164,20 +153,19 @@ function HomeClient() {
   }, []);
 
 
-  const handleCategoryChange = (category: Category) => {
-    const newCategories = selectedCategories.includes(category)
-      ? selectedCategories.filter(c => c !== category)
-      : [...selectedCategories, category];
-    updateSelectedCategories(newCategories);
-  };
-  
   const handleDialogChange = async (open: boolean) => {
-    // Se o modal for fechado, faz logout
     if (!open && authenticatedUser) {
-        await signOut(auth);
+        // O logout agora acontece apenas se o usuário não clicar em "salvar e fechar"
     }
     setIsManagementOpen(open);
   };
+
+  const handleLogoutOnClose = async () => {
+    if (authenticatedUser) {
+        await signOut(auth);
+    }
+    setIsManagementOpen(false);
+  }
   
   if (!isSchoolDataLoaded || isAuthLoading) {
     return <LoadingScreen text="Carregando dados..."/>;
@@ -197,7 +185,7 @@ function HomeClient() {
             <DialogHeader className="p-6 pb-4">
               <DialogTitle>{userIsAdmin ? 'Painel de Gerenciamento' : 'Acesso Restrito'}</DialogTitle>
               <DialogDescription>
-                  {userIsAdmin ? 'Gerencie a gira, médiuns e configurações.' : 'Faça login com uma conta autorizada para continuar.'}
+                  {userIsAdmin ? 'Gerencie a gira, médiuns e configurações. As alterações são salvas ao clicar em "Fechar e Salvar".' : 'Faça login com uma conta autorizada para continuar.'}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-grow overflow-y-auto px-6">
@@ -209,21 +197,21 @@ function HomeClient() {
               ) : userIsAdmin ? (
                   <MediumManagement
                     user={authenticatedUser}
-                    mediums={mediums}
+                    initialMediums={mediums}
+                    initialSelectedCategories={selectedCategories}
                     spiritualCategories={spiritualCategories}
                     addMedium={addMedium}
-                    updateMedium={_updateMedium}
                     removeMedium={removeMedium}
-                    toggleMediumPresence={toggleMediumPresence}
                     clearLoginHistory={clearLoginHistory}
                     addSpiritualCategory={addSpiritualCategory}
                     removeSpiritualCategory={removeSpiritualCategory}
                     updateSpiritualCategoryOrder={updateSpiritualCategoryOrder}
                     updateAllEntityLimits={updateAllEntityLimits}
                     updateSpiritualCategoryName={updateSpiritualCategoryName}
-                    selectedCategories={selectedCategories}
-                    onSelectionChange={handleCategoryChange}
-                    onClose={() => handleDialogChange(false)}
+                    onSaveAndClose={async (updatedMediums, updatedCategories) => {
+                        await saveAllManagementChanges(updatedMediums, updatedCategories, mediums, selectedCategories);
+                        await handleLogoutOnClose();
+                    }}
                   />
               ) : (
                 <LoginClient 
@@ -249,7 +237,6 @@ function HomeClient() {
      <SchoolOverview
         mediums={mediums}
         removeConsulente={removeConsulente}
-        toggleEntityAvailability={toggleEntityAvailability}
         selectedCategories={selectedCategories}
         spiritualCategories={spiritualCategories}
       />

@@ -379,7 +379,7 @@ export function useSchoolData() {
       });
     } catch (error) {
       console.error("Erro ao registrar login:", error);
-      throw new Error("Não foi possível registrar o evento de login.");
+      // Não joga erro para não quebrar a UI por causa de log.
     }
   }, []);
 
@@ -563,7 +563,7 @@ export function useSchoolData() {
             // --- FASE DE LEITURA ---
             const categoriesDoc = await transaction.get(categoriesDocRef);
             if (!categoriesDoc.exists()) throw new Error("Documento de categorias não encontrado.");
-
+            
             const giraDoc = await transaction.get(giraDocRef);
             const mediumsSnapshot = await getDocs(mediumsQuery); // Leitura fora da transação para obter referências
 
@@ -611,6 +611,40 @@ export function useSchoolData() {
         throw new Error(error.message || 'Não foi possível completar a operação.');
     }
   }, []);
+  
+  const saveAllManagementChanges = useCallback(async (
+    mediumsToUpdate: Medium[],
+    categoriesToUpdate: Category[],
+    originalMediums: Medium[],
+    originalCategories: Category[]
+  ) => {
+    const batch = writeBatch(db);
+
+    // 1. Salvar mudanças nos médiuns
+    mediumsToUpdate.forEach(medium => {
+        const originalMedium = originalMediums.find(om => om.id === medium.id);
+        // Compara o objeto atual com o original para ver se precisa atualizar
+        // Uma comparação profunda seria melhor, mas JSON.stringify é simples e eficaz aqui.
+        if (JSON.stringify(medium) !== JSON.stringify(originalMedium)) {
+            const mediumRef = doc(db, 'mediums', medium.id);
+            const { id, ...dataToSave } = medium; // remove o 'id' do objeto a ser salvo
+            batch.update(mediumRef, dataToSave);
+        }
+    });
+
+    // 2. Salvar mudanças nas categorias da gira selecionadas
+    if (JSON.stringify(categoriesToUpdate) !== JSON.stringify(originalCategories)) {
+        const giraDocRef = doc(db, 'appState', 'gira');
+        batch.set(giraDocRef, { categories: categoriesToUpdate });
+    }
+
+    try {
+        await batch.commit();
+    } catch (error) {
+        console.error("Erro ao salvar todas as alterações em lote:", error);
+        throw new Error("Ocorreu um erro ao salvar as alterações. Tente novamente.");
+    }
+  }, []);
 
   useEffect(() => {
     if(error) {
@@ -641,5 +675,6 @@ export function useSchoolData() {
     updateSpiritualCategoryName,
     selectedCategories,
     updateSelectedCategories,
+    saveAllManagementChanges,
   };
 }

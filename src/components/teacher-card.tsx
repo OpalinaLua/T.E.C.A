@@ -31,13 +31,12 @@ import { cn } from '@/lib/utils';
 interface MediumCardProps {
   medium: Medium;
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
-  toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   selectedCategories: Category[];
   spiritualCategories: Category[];
   searchQuery?: string;
 }
 
-export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
+export function MediumCard({ medium, removeConsulente, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
   
   const sortedEntities = useMemo(() => {
     // Cria um mapa da ordem global das categorias para busca rápida.
@@ -85,6 +84,8 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
   const handleRemoveConsulente = (entityId: string, consulenteId: string, consulenteName: string) => {
     removeConsulente(medium.id, entityId, consulenteId, consulenteName);
   };
+  
+  // A função de toggle não está mais aqui, será gerenciada no painel de admin.
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
@@ -128,29 +129,7 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
                   </h3>
                   <Badge variant="outline">{entity.category}</Badge>
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.stopPropagation() }}>
-                      {entity.isAvailable ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      <span className="sr-only">Alterar Disponibilidade da Entidade</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Alterar Disponibilidade?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Isso marcará a entidade "{entity.name}" como {entity.isAvailable ? 'indisponível' : 'disponível'}.
-                        {entity.isAvailable && (entity.consulentes?.length > 0) && ' Ao fazer isso, todos os consulentes agendados para esta entidade serão removidos.'}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => toggleEntityAvailability(medium.id, entity.id)}>
-                        Confirmar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                 {/* O botão de toggle foi removido, pois a disponibilidade é gerenciada no painel de admin */}
               </div>
               {entity.consulentes.length > 0 ? (
                 <ul className="space-y-2">
