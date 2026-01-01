@@ -427,7 +427,6 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                     <SelectValue placeholder="Nenhum" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={''}>Nenhum</SelectItem>
                                     {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -642,3 +641,5 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
+
+    
