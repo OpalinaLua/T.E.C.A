@@ -64,6 +64,7 @@ interface MediumManagementProps {
   removeSpiritualCategory: (category: string) => Promise<void>;
   updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void>;
   updateAllEntityLimits: (newLimit: number) => Promise<void>;
+  updateSpiritualCategoryName: (oldName: string, newName: string) => Promise<void>;
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
   onClose: () => void;
@@ -197,6 +198,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
                                 <SelectValue placeholder="Nenhum" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="">Nenhum</SelectItem>
                                 {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -254,15 +256,17 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
     );
 }
 
-function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, onOrderChange }: { 
+function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryName, onOrderChange }: { 
     spiritualCategories: Category[];
     addSpiritualCategory: (category: string) => Promise<void>;
     removeSpiritualCategory: (category: string) => Promise<void>;
+    updateSpiritualCategoryName: (oldName: string, newName: string) => Promise<void>;
     onOrderChange: (categories: Category[]) => void;
 }) {
     const { toast } = useToast();
     const [newCategory, setNewCategory] = useState('');
     const [orderedCategories, setOrderedCategories] = useState(spiritualCategories);
+    const [editingCategory, setEditingCategory] = useState<{ oldName: string, newName: string } | null>(null);
 
     useEffect(() => {
         setOrderedCategories(spiritualCategories);
@@ -286,6 +290,25 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
     const handleRemoveCategory = async (category: string) => {
         await removeSpiritualCategory(category);
     };
+
+    const handleUpdateCategoryName = async () => {
+        if (!editingCategory) return;
+        
+        const { oldName, newName } = editingCategory;
+        const trimmedNewName = newName.trim();
+
+        if (trimmedNewName === '' || trimmedNewName === oldName) {
+            toast({ title: "Nome Inválido", description: "O novo nome não pode ser vazio ou igual ao antigo.", variant: "destructive" });
+            return;
+        }
+        if (orderedCategories.includes(trimmedNewName)) {
+            toast({ title: "Nome Duplicado", description: `A categoria "${trimmedNewName}" já existe.`, variant: "destructive" });
+            return;
+        }
+
+        await updateSpiritualCategoryName(oldName, trimmedNewName);
+        setEditingCategory(null);
+    }
 
     const moveCategory = (index: number, direction: 'up' | 'down') => {
         const newCategories = [...orderedCategories];
@@ -318,7 +341,7 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
                 </div>
             </div>
             <div className="space-y-2">
-                <Label>Ordenar Categorias</Label>
+                <Label>Gerenciar Categorias</Label>
                 <ScrollArea className="h-60 border rounded-lg p-2">
                     <div className="space-y-2">
                     {orderedCategories.map((cat, index) => (
@@ -334,33 +357,65 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
                                 </div>
                                 <span className="font-medium">{cat}</span>
                             </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Remover a categoria "{cat}" também a removerá de todas as entidades associadas (serão movidas para "Sem Categoria"). Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleRemoveCategory(cat)} variant="destructive">
-                                            Excluir
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="flex items-center">
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-7 w-7" onClick={() => setEditingCategory({ oldName: cat, newName: cat })}>
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Remover a categoria "{cat}" também a removerá de todas as entidades associadas (serão movidas para "Sem Categoria"). Esta ação não pode ser desfeita.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleRemoveCategory(cat)} variant="destructive">
+                                                Excluir
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         </div>
                     ))}
                     {orderedCategories.length === 0 && <p className="text-sm text-center italic text-muted-foreground p-4">Nenhuma categoria cadastrada.</p>}
                     </div>
                 </ScrollArea>
             </div>
+             {editingCategory && (
+                <AlertDialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Renomear Categoria</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Digite o novo nome para a categoria "{editingCategory.oldName}". Isso atualizará a categoria em todas as entidades associadas.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <Input
+                            value={editingCategory.newName}
+                            onChange={(e) => setEditingCategory({ ...editingCategory, newName: e.target.value })}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleUpdateCategoryName();
+                                }
+                            }}
+                            autoFocus
+                        />
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setEditingCategory(null)}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleUpdateCategoryName}>Renomear</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
         </div>
     );
 }
@@ -429,7 +484,7 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
     );
 }
 
-export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
@@ -568,6 +623,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                                 spiritualCategories={spiritualCategories} 
                                                 addSpiritualCategory={addSpiritualCategory} 
                                                 removeSpiritualCategory={removeSpiritualCategory} 
+                                                updateSpiritualCategoryName={updateSpiritualCategoryName}
                                                 onOrderChange={setPendingCategoryOrder}
                                             />
                                         </AccordionContent>
