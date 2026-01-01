@@ -237,7 +237,7 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                             />
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable}>
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable} hidden>
                                     <UserX className="h-4 w-4" />
                                     <span className="sr-only">Excluir consulente</span>
                                 </Button>
