@@ -451,23 +451,32 @@ export function useSchoolData() {
 
   /**
    * Adiciona uma nova categoria espiritual à lista no Firestore.
+   * Agora, ele adiciona a nova categoria ao final da lista existente.
    */
   const addSpiritualCategory = useCallback(async (category: string) => {
-    if (!category || category.trim() === '') {
-        toast({ title: 'Erro', description: 'O nome da categoria não pode ser vazio.', variant: 'destructive' });
-        return;
-    }
-    const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
-    try {
-        await updateDoc(categoriesDocRef, {
-            list: arrayUnion(category.trim())
-        });
-        toast({ title: 'Sucesso', description: `Categoria "${category.trim()}" adicionada.` });
-    } catch (error) {
-        console.error('Erro ao adicionar categoria:', error);
-        toast({ title: 'Erro', description: 'Não foi possível adicionar a categoria.', variant: 'destructive' });
-    }
+      if (!category || category.trim() === '') {
+          toast({ title: 'Erro', description: 'O nome da categoria não pode ser vazio.', variant: 'destructive' });
+          return;
+      }
+      const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
+      try {
+          // Usa arrayUnion para adicionar a nova categoria sem duplicar.
+          await updateDoc(categoriesDocRef, {
+              list: arrayUnion(category.trim())
+          });
+          toast({ title: 'Sucesso', description: `Categoria "${category.trim()}" adicionada.` });
+      } catch (error) {
+          // Se o documento não existir, cria um novo.
+          if ((error as any).code === 'not-found') {
+              await setDoc(categoriesDocRef, { list: [category.trim()] });
+              toast({ title: 'Sucesso', description: `Categoria "${category.trim()}" adicionada.` });
+          } else {
+              console.error('Erro ao adicionar categoria:', error);
+              toast({ title: 'Erro', description: 'Não foi possível adicionar a categoria.', variant: 'destructive' });
+          }
+      }
   }, [toast]);
+
 
   /**
    * Remove uma categoria espiritual. A lógica transacional foi movida para esta função.
@@ -479,9 +488,18 @@ export function useSchoolData() {
             const giraDocRef = doc(db, 'appState', 'gira');
             const mediumsCollectionRef = collection(db, 'mediums');
             
+            // Remove a categoria da lista principal e da gira ativa
             transaction.update(categoriesDocRef, { list: arrayRemove(category) });
             transaction.update(giraDocRef, { categories: arrayRemove(category) });
             
+            // Verifica se a categoria 'Sem Categoria' existe, se não, adiciona
+            const categoriesDoc = await transaction.get(categoriesDocRef);
+            const categoriesData = categoriesDoc.data();
+            if (categoriesData && !categoriesData.list.includes('Sem Categoria')) {
+                transaction.update(categoriesDocRef, { list: arrayUnion('Sem Categoria') });
+            }
+
+            // Atualiza todas as entidades que usam a categoria removida
             const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
             mediumsSnapshot.forEach(mediumDoc => {
                 const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
@@ -502,6 +520,7 @@ export function useSchoolData() {
         throw error;
     }
   }, [toast]);
+
 
   /**
    * Atualiza a ordem da lista de categorias espirituais no Firestore.
@@ -538,3 +557,5 @@ export function useSchoolData() {
     updateSelectedCategories,
   };
 }
+
+    

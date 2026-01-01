@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Medium, Entity, Category } from '@/lib/types';
 import {
   Accordion,
@@ -234,13 +234,17 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
     );
 }
 
-function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder }: Pick<MediumManagementProps, 'spiritualCategories' | 'addSpiritualCategory' | 'removeSpiritualCategory' | 'updateSpiritualCategoryOrder'>) {
+function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, onOrderChange }: { 
+    spiritualCategories: Category[];
+    addSpiritualCategory: (category: string) => Promise<void>;
+    removeSpiritualCategory: (category: string) => Promise<void>;
+    onOrderChange: (categories: Category[]) => void;
+}) {
     const { toast } = useToast();
     const [newCategory, setNewCategory] = useState('');
     const [orderedCategories, setOrderedCategories] = useState(spiritualCategories);
 
-    // Sync with external changes
-    useState(() => {
+    useEffect(() => {
         setOrderedCategories(spiritualCategories);
     }, [spiritualCategories]);
 
@@ -255,18 +259,15 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
             return;
         }
 
-        const newOrder = [...orderedCategories, trimmedCategory];
-        await updateSpiritualCategoryOrder(newOrder);
+        await addSpiritualCategory(trimmedCategory);
         setNewCategory('');
     };
 
     const handleRemoveCategory = async (category: string) => {
-        const newOrder = orderedCategories.filter(c => c !== category);
-        await removeSpiritualCategory(category); // This still handles the complex logic
-        setOrderedCategories(newOrder); // Optimistic update for the UI
+        await removeSpiritualCategory(category);
     };
 
-    const moveCategory = async (index: number, direction: 'up' | 'down') => {
+    const moveCategory = (index: number, direction: 'up' | 'down') => {
         const newCategories = [...orderedCategories];
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= newCategories.length) return;
@@ -274,7 +275,7 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
         [newCategories[index], newCategories[targetIndex]] = [newCategories[targetIndex], newCategories[index]];
         
         setOrderedCategories(newCategories);
-        await updateSpiritualCategoryOrder(newCategories);
+        onOrderChange(newCategories); // Informa o pai sobre a mudança na ordem
     };
 
     return (
@@ -348,6 +349,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
+    const [pendingCategoryOrder, setPendingCategoryOrder] = useState<Category[] | null>(null);
 
     const handleConfirmClearHistory = async () => {
         if (isSuperAdmin) {
@@ -363,6 +365,13 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                 variant: "destructive",
             });
         }
+    };
+    
+    const handleClose = async () => {
+        if (pendingCategoryOrder) {
+            await updateSpiritualCategoryOrder(pendingCategoryOrder);
+        }
+        onClose();
     };
 
     return (
@@ -464,7 +473,12 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                     <AccordionItem value="manage-categories">
                                         <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
                                         <AccordionContent>
-                                            <CategoryManagement spiritualCategories={spiritualCategories} addSpiritualCategory={addSpiritualCategory} removeSpiritualCategory={removeSpiritualCategory} updateSpiritualCategoryOrder={updateSpiritualCategoryOrder} />
+                                            <CategoryManagement 
+                                                spiritualCategories={spiritualCategories} 
+                                                addSpiritualCategory={addSpiritualCategory} 
+                                                removeSpiritualCategory={removeSpiritualCategory} 
+                                                onOrderChange={setPendingCategoryOrder}
+                                            />
                                         </AccordionContent>
                                     </AccordionItem>
                                     <AccordionItem value="login-history">
@@ -504,11 +518,13 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                 </Tabs>
             </div>
             <div className="flex-shrink-0 pt-4 mt-auto border-t">
-                <Button onClick={onClose} variant="outline" className="w-full">
+                <Button onClick={handleClose} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
-                    Fechar
+                    Fechar e Salvar
                 </Button>
             </div>
         </div>
     );
 }
+
+    
