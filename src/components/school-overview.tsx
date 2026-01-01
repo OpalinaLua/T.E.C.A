@@ -41,10 +41,8 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
         }
         // Check entity name or category
         const entityMatch = medium.entities.some(entity =>
-            selectedCategories.includes(entity.category) && (
             entity.name.toLowerCase().includes(query) ||
             entity.category.toLowerCase().includes(query)
-            )
         );
         return entityMatch;
     });
@@ -63,7 +61,7 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
         return 0; // mantém a ordem original
     });
 
-  }, [listSource, searchQuery, selectedCategories]);
+  }, [listSource, searchQuery]);
 
 
   return (
