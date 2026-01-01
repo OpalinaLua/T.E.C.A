@@ -56,19 +56,23 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
   const activeEntitiesForGira = useMemo(() => {
     const query = searchQuery?.toLowerCase().trim() || '';
 
-    // Filtra primeiro pelas categorias selecionadas na gira
+    // 1. Filtra primeiro pelas categorias selecionadas na gira
     let entitiesForGira = sortedEntities.filter(e => selectedCategories.includes(e.category));
 
-    // Se houver uma busca, filtra adicionalmente
+    // 2. Se houver um termo de busca, aplica a filtragem adicional
     if (query) {
-      entitiesForGira = entitiesForGira.filter(e => 
-        e.name.toLowerCase().includes(query) ||
-        e.category.toLowerCase().includes(query)
-      );
+      // Se a busca corresponde ao nome do médium, não filtra as entidades
+      const isSearchingForMedium = medium.name.toLowerCase().includes(query);
+      if (!isSearchingForMedium) {
+        entitiesForGira = entitiesForGira.filter(e => 
+          e.name.toLowerCase().includes(query) ||
+          e.category.toLowerCase().includes(query)
+        );
+      }
     }
     
     return entitiesForGira;
-  }, [sortedEntities, selectedCategories, searchQuery]);
+  }, [sortedEntities, selectedCategories, searchQuery, medium.name]);
 
 
   const totalConsulentes = useMemo(() => {
