@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Medium, Entity, Consulente, Category, MediumRole, ConsulenteStatus } from '@/lib/types';
+import type { Medium, Entity, Consulente, Category, MediumRole, ConsulenteStatus, GiraHistoryEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -189,51 +189,102 @@ export function useSchoolData() {
   /**
    * Adiciona um novo consulente a uma entidade de um médium específico. Lança erro em caso de falha.
    */
-  const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string): Promise<void> => {
-    const medium = mediums.find(m => m.id === mediumId);
-    if (!medium) {
-      throw new Error("Médium não encontrado.");
-    }
-
-    const entity = medium.entities.find(e => e.id === entityId);
-    if (!entity) {
-      throw new Error("Entidade não encontrada.");
-    }
-    
-    const targetCategory = entity.category;
+    const addConsulente = useCallback(async (consulenteName: string, mediumId: string, entityId: string): Promise<void> => {
     const trimmedConsulenteName = consulenteName.trim();
-    const lowerCaseConsulenteName = trimmedConsulenteName.toLowerCase();
+    const lowerCaseName = trimmedConsulenteName.toLowerCase();
+    
+    // Encontrar o médium e a entidade alvo
+    const targetMedium = mediums.find(m => m.id === mediumId);
+    const targetEntity = targetMedium?.entities.find(e => e.id === entityId);
 
-    // Verifica se o consulente já está agendado em uma entidade da mesma categoria.
-    for (const m of mediums) {
-      for (const e of m.entities) {
-        if (e.category === targetCategory) {
-          const alreadyExists = e.consulentes.some(c => c.name.trim().toLowerCase() === lowerCaseConsulenteName);
-          if (alreadyExists) {
-            throw new Error(`${trimmedConsulenteName} já está agendado(a) na categoria "${targetCategory}". Um consulente só pode ser agendado em uma entidade por categoria.`);
-          }
-        }
-      }
+    if (!targetMedium || !targetEntity) {
+        throw new Error("Médium ou Entidade alvo não encontrado(a).");
     }
+
+    let existingConsulenteLocation: { mediumId: string, entityId: string, consulente: Consulente } | null = null;
     
-    const newConsulente: Consulente = { id: `consulente-${Date.now()}`, name: trimmedConsulenteName, status: 'agendado' };
-    
-    const updatedEntities = medium.entities.map(e => {
-      if (e.id === entityId) {
-        const consulentes = e.consulentes || [];
-        return { ...e, consulentes: [...consulentes, newConsulente] };
-      }
-      return e;
-    });
+    // Verificar se o consulente já existe em qualquer lugar
+    for (const medium of mediums) {
+        for (const entity of medium.entities) {
+            const consulente = entity.consulentes.find(c => c.name.toLowerCase() === lowerCaseName);
+            if (consulente) {
+                existingConsulenteLocation = { mediumId: medium.id, entityId: entity.id, consulente };
+                break;
+            }
+        }
+        if (existingConsulenteLocation) break;
+    }
+
+    const batch = writeBatch(db);
 
     try {
-        const mediumDocRef = doc(db, 'mediums', mediumId);
-        await updateDoc(mediumDocRef, { entities: updatedEntities });
-    } catch(error) {
-        console.error("Erro ao adicionar consulente:", error);
-        throw new Error("Não foi possível agendar o consulente.");
+        const newHistoryEntry: GiraHistoryEntry = {
+            date: new Date().toISOString(),
+            categories: selectedCategories,
+            entityName: targetEntity.name,
+        };
+        
+        let consulenteToRegister: Consulente;
+
+        // Se o consulente já existe, vamos movê-lo
+        if (existingConsulenteLocation) {
+            const { mediumId: oldMediumId, entityId: oldEntityId, consulente: oldConsulente } = existingConsulenteLocation;
+            
+            // Cria o novo histórico (mantém no máximo 1 entrada anterior)
+            const newHistory = [newHistoryEntry, ...(oldConsulente.history || [])].slice(0, 2);
+            consulenteToRegister = { ...oldConsulente, status: 'agendado', history: newHistory };
+            
+            // 1. Remover o consulente da lista antiga
+            const oldMediumDocRef = doc(db, 'mediums', oldMediumId);
+            batch.update(oldMediumDocRef, {
+                [`entities`]: arrayRemove(existingConsulenteLocation) // This is tricky, easier to update the whole entities array
+            });
+            // Firestore SDK não tem uma forma simples de remover um item aninhado. 
+            // É mais seguro ler, modificar e escrever a entidade ou o médium inteiro.
+            // Para a lógica do batch, vamos ler os médiuns e reescrevê-los.
+            
+            // A abordagem mais simples (sem ler todos os docs) é reescrever os arrays de consulentes.
+            const oldMediumData = mediums.find(m => m.id === oldMediumId);
+            if (!oldMediumData) throw new Error("Médium antigo não encontrado para remoção.");
+
+            const oldMediumEntitiesUpdated = oldMediumData.entities.map(e => {
+                if (e.id === oldEntityId) {
+                    return { ...e, consulentes: e.consulentes.filter(c => c.id !== oldConsulente.id) };
+                }
+                return e;
+            });
+            batch.update(oldMediumDocRef, { entities: oldMediumEntitiesUpdated });
+
+        } else { // Consulente é novo
+            consulenteToRegister = {
+                id: `consulente-${Date.now()}`,
+                name: trimmedConsulenteName,
+                status: 'agendado',
+                history: [newHistoryEntry]
+            };
+        }
+
+        // 2. Adicionar o consulente à nova lista
+        const newMediumDocRef = doc(db, 'mediums', mediumId);
+        const newMediumEntitiesUpdated = targetMedium.entities.map(e => {
+            if (e.id === entityId) {
+                // Verificar limite de vagas antes de adicionar
+                if (e.consulentes.length >= e.consulenteLimit) {
+                    throw new Error(`A entidade "${e.name}" já atingiu o limite de vagas.`);
+                }
+                return { ...e, consulentes: [...e.consulentes, consulenteToRegister] };
+            }
+            return e;
+        });
+        batch.update(newMediumDocRef, { entities: newMediumEntitiesUpdated });
+
+        await batch.commit();
+
+    } catch(error: any) {
+        console.error("Erro ao adicionar/mover consulente:", error);
+        throw new Error(error.message || "Não foi possível agendar o consulente.");
     }
-  }, [mediums]);
+  }, [mediums, selectedCategories]);
 
   /**
    * Remove um consulente de uma entidade de um médium. Busca os dados mais recentes antes de atualizar.

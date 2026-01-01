@@ -21,11 +21,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Pencil, Crown, UserCheck, UserMinus } from 'lucide-react';
+import { Pencil, Crown, UserCheck, UserMinus, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface EditConsulenteDialogProps {
   consulente: Consulente;
@@ -141,13 +143,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
      return activeEntitiesForGira.reduce((acc, entity) => acc + entity.consulentes.length, 0);
   }, [activeEntitiesForGira]);
 
-  /**
-   * Manipula a remoção de um consulente.
-   */
-  const handleRemoveConsulente = (entityId: string, consulenteId: string, consulenteName: string) => {
-    removeConsulente(medium.id, entityId, consulenteId, consulenteName);
-  };
-  
   const handleUpdateConsulente = (entityId: string, consulenteId: string, newName: string) => {
     updateConsulenteName(medium.id, entityId, consulenteId, newName);
   };
@@ -172,81 +167,106 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
   };
 
   return (
-    <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
-      {/* Cabeçalho do Card com nome, status e botões de ação */}
-      <CardHeader>
-        <div className='flex items-start justify-between w-full'>
-          <div className="flex flex-col gap-2">
-            <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
-             {medium.role && (
-              <Badge variant="secondary" className="w-fit">
-                <Crown className="mr-1.5 h-3 w-3 text-amber-500" />
-                {medium.role}
-              </Badge>
-            )}
-          </div>
-          <Badge variant="outline" className={cn("text-xs shrink-0", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
-            {medium.isPresent ? 'Presente' : 'Ausente'}
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      {/* Conteúdo do Card com a lista de entidades e consulentes */}
-      <CardContent className={cn("flex-grow space-y-4", totalConsulentesInGira === 0 && activeEntitiesForGira.length === 0 && "pt-0 sm:pt-0")}>
-        {selectedCategories.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades.</p>
-        ) : activeEntitiesForGira.length === 0 ? (
-           <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium corresponde à sua busca ou às categorias selecionadas.</p>
-        ) : (
-          activeEntitiesForGira.map((entity, index) => (
-            <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
-              {index > 0 && <Separator className="my-4" />}
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className={cn("font-semibold text-lg", (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through")}>
-                    {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
-                  </h3>
-                  <Badge variant="outline">{entity.category}</Badge>
-                </div>
-              </div>
-              {entity.consulentes.length > 0 ? (
-                <ul className="space-y-2">
-                  {entity.consulentes.map(consulente => {
-                    const isConsulenteMatch = query && consulente.name.toLowerCase().includes(query);
-                    return (
-                        <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status), isConsulenteMatch && "ring-2 ring-accent")}>
-                          <span className={cn("font-medium", consulente.status === 'ausente' && 'line-through')}>{consulente.name}</span>
-                          <div className="flex items-center">
-                            <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
-                                <UserCheck className="h-4 w-4" />
-                                <span className="sr-only">Marcar como atendido</span>
-                            </Button>
-                            <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-amber-500 h-8 w-8", consulente.status === 'ausente' && 'text-amber-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'ausente')}>
-                                <UserMinus className="h-4 w-4" />
-                                <span className="sr-only">Marcar como ausente</span>
-                            </Button>
-                            <EditConsulenteDialog
-                              consulente={consulente}
-                              onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
-                              trigger={
-                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" disabled={!entity.isAvailable}>
-                                    <Pencil className="h-4 w-4" />
-                                    <span className="sr-only">Editar consulente</span>
-                                </Button>
-                              }
-                            />
-                          </div>
-                        </li>
-                    )
-                  })}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Nenhum consulente agendado.</p>
+    <TooltipProvider>
+      <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
+        {/* Cabeçalho do Card com nome, status e botões de ação */}
+        <CardHeader>
+          <div className='flex items-start justify-between w-full'>
+            <div className="flex flex-col gap-2">
+              <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
+               {medium.role && (
+                <Badge variant="secondary" className="w-fit">
+                  <Crown className="mr-1.5 h-3 w-3 text-amber-500" />
+                  {medium.role}
+                </Badge>
               )}
             </div>
-          ))
-        )}
-      </CardContent>
-    </Card>
+            <Badge variant="outline" className={cn("text-xs shrink-0", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+              {medium.isPresent ? 'Presente' : 'Ausente'}
+            </Badge>
+          </div>
+        </CardHeader>
+        
+        {/* Conteúdo do Card com a lista de entidades e consulentes */}
+        <CardContent className={cn("flex-grow space-y-4", totalConsulentesInGira === 0 && activeEntitiesForGira.length === 0 && "pt-0 sm:pt-0")}>
+          {selectedCategories.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades.</p>
+          ) : activeEntitiesForGira.length === 0 ? (
+             <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium corresponde à sua busca ou às categorias selecionadas.</p>
+          ) : (
+            activeEntitiesForGira.map((entity, index) => (
+              <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
+                {index > 0 && <Separator className="my-4" />}
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h3 className={cn("font-semibold text-lg", (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through")}>
+                      {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
+                    </h3>
+                    <Badge variant="outline">{entity.category}</Badge>
+                  </div>
+                </div>
+                {entity.consulentes.length > 0 ? (
+                  <ul className="space-y-2">
+                    {entity.consulentes.map(consulente => {
+                      const isConsulenteMatch = query && consulente.name.toLowerCase().includes(query);
+                      return (
+                          <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status), isConsulenteMatch && "ring-2 ring-accent")}>
+                            <div className="flex items-center gap-2">
+                                {consulente.history && consulente.history.length > 0 && (
+                                     <Tooltip delayDuration={200}>
+                                        <TooltipTrigger asChild>
+                                            <History className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" align="start">
+                                            <div className="p-1 space-y-2">
+                                                <p className="font-bold text-sm">Histórico Recente:</p>
+                                                <ul className="space-y-1.5">
+                                                    {consulente.history.map((h, i) => (
+                                                        <li key={i} className="text-xs">
+                                                            <span className="font-semibold">{format(new Date(h.date), "dd/MM/yy", { locale: ptBR })}:</span>
+                                                            <span className="italic text-muted-foreground"> {h.entityName} ({h.categories.join(', ')})</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                                <span className={cn("font-medium", consulente.status === 'ausente' && 'line-through')}>{consulente.name}</span>
+                            </div>
+
+                            <div className="flex items-center">
+                              <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
+                                  <UserCheck className="h-4 w-4" />
+                                  <span className="sr-only">Marcar como atendido</span>
+                              </Button>
+                              <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-amber-500 h-8 w-8", consulente.status === 'ausente' && 'text-amber-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'ausente')}>
+                                  <UserMinus className="h-4 w-4" />
+                                  <span className="sr-only">Marcar como ausente</span>
+                              </Button>
+                              <EditConsulenteDialog
+                                consulente={consulente}
+                                onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
+                                trigger={
+                                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" disabled={!entity.isAvailable}>
+                                      <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">Editar consulente</span>
+                                  </Button>
+                                }
+                              />
+                            </div>
+                          </li>
+                      )
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Nenhum consulente agendado.</p>
+                )}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }

@@ -31,13 +31,24 @@ export type MediumRole = typeof ROLES[number];
 export type ConsulenteStatus = 'agendado' | 'atendido' | 'ausente';
 
 /**
- * @interface Consulente
- * Representa um consulente (aluno/paciente) agendado para um atendimento.
+ * @interface GiraHistoryEntry
+ * Representa uma entrada no histórico de giras de um consulente.
  */
+export interface GiraHistoryEntry {
+  date: string; // ISO date string
+  categories: Category[];
+  entityName: string;
+}
+
+/**
+* @interface Consulente
+* Representa um consulente (aluno/paciente) agendado para um atendimento.
+*/
 export interface Consulente {
   id: string;
   name: string;
   status: ConsulenteStatus;
+  history?: GiraHistoryEntry[];
 }
 
 /**
