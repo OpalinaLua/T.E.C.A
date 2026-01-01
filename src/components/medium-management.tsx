@@ -80,7 +80,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedName, setEditedName] = useState(medium.name);
-    const [editedRole, setEditedRole] = useState<MediumRole | ''>(medium.role || '');
+    const [editedRole, setEditedRole] = useState<MediumRole | undefined>(medium.role || undefined);
     const [editedEntities, setEditedEntities] = useState<Entity[]>(
         () => ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
     );
@@ -144,9 +144,8 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
         }
         
         const finalEntities = editedEntities.map((e, index) => ({ ...e, order: index }));
-        const finalRole = editedRole === '' ? undefined : editedRole;
 
-        updateMedium(medium.id, { name: editedName, entities: finalEntities, role: finalRole });
+        updateMedium(medium.id, { name: editedName, entities: finalEntities, role: editedRole });
         toast({
             title: "Médium Atualizado",
             description: `Os dados de ${editedName} foram atualizados.`,
@@ -157,7 +156,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
 
     const resetEditState = () => {
         setEditedName(medium.name);
-        setEditedRole(medium.role || '');
+        setEditedRole(medium.role || undefined);
         setEditedEntities(
             ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
         );
@@ -198,7 +197,6 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
                                 <SelectValue placeholder="Nenhum" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Nenhum</SelectItem>
                                 {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -619,5 +617,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
+
+    
 
     

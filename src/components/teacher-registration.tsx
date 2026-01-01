@@ -34,7 +34,7 @@ interface EntityInput {
 export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }: MediumRegistrationProps) {
   // Estados do componente
   const [name, setName] = useState('');
-  const [role, setRole] = useState<MediumRole | ''>('');
+  const [role, setRole] = useState<MediumRole | undefined>(undefined);
   const [currentEntityName, setCurrentEntityName] = useState('');
   const [currentEntityLimit, setCurrentEntityLimit] = useState('5'); // Limite padrão
   const [currentEntityCategory, setCurrentEntityCategory] = useState<Category | ''>('');
@@ -85,10 +85,10 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
     if (name.trim() && entities.length > 0) {
       setIsSubmitting(true);
       try {
-        await addMedium(name.trim(), entities, role === '' ? undefined : role);
+        await addMedium(name.trim(), entities, role);
         // Limpa o formulário após o sucesso
         setName('');
-        setRole('');
+        setRole(undefined);
         setEntities([]);
         setCurrentEntityName('');
         setCurrentEntityLimit('5');
@@ -137,7 +137,6 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
                         <SelectValue placeholder="Nenhum" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
                         {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                     </SelectContent>
                 </Select>
@@ -231,3 +230,5 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
     </Card>
   );
 }
+
+    
