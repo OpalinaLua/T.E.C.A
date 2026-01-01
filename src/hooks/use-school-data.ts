@@ -112,18 +112,16 @@ export function useSchoolData() {
       updateLoadingState();
     });
 
-    // Listener para Categorias Espirituais (disponíveis)
+    // Listener para Categorias Espirituais (disponíveis e ordenadas)
     const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
     const unsubscribeCategories = onSnapshot(categoriesDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Garante que é um array e ordena alfabeticamente
-        const categories = Array.isArray(data.list) ? data.list.sort() : [];
+        const categories = Array.isArray(data.list) ? data.list : [];
         setSpiritualCategories(categories);
       } else {
-        // Se não existir, cria o documento com uma lista padrão
         const defaultCategories = ["Exu", "Pombogira", "Malandros", "Pretos-Velhos", "Caboclos", "Boiadeiros", "Marinheiros", "Erês"];
-        setDoc(categoriesDocRef, { list: defaultCategories.sort() });
+        setDoc(categoriesDocRef, { list: defaultCategories });
         setSpiritualCategories(defaultCategories);
       }
       spiritualCategoriesLoaded = true;
@@ -182,12 +180,11 @@ export function useSchoolData() {
           consulentes: [],
           isAvailable: true,
           consulenteLimit: entity.limit,
-          order: index, // Adiciona o campo de ordem
+          order: index, 
         })),
         createdAt: serverTimestamp(),
       };
       await addDoc(collection(db, 'mediums'), newMedium);
-      // O toast de sucesso foi removido daqui para ser controlado pelo componente que chama.
     } catch (error) {
       console.error("Erro ao adicionar médium:", error);
       toast({ title: "Erro ao Salvar", description: "Não foi possível cadastrar o médium.", variant: "destructive" });
@@ -281,25 +278,20 @@ export function useSchoolData() {
    * Remove um consulente de uma entidade de um médium. Busca os dados mais recentes antes de atualizar.
    */
   const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => {
+    // Otimisticamente atualiza a UI para uma resposta imediata
+    setMediums(prevMediums => prevMediums.map(medium => {
+        if (medium.id !== mediumId) return medium;
+        const updatedEntities = medium.entities.map(entity => {
+            if (entity.id !== entityId) return entity;
+            const updatedConsulentes = entity.consulentes.filter(c => c.id !== consulenteId);
+            return { ...entity, consulentes: updatedConsulentes };
+        });
+        return { ...medium, entities: updatedEntities };
+    }));
+    
     const mediumDocRef = doc(db, 'mediums', mediumId);
     
-    // Otimisticamente atualiza a UI
-    setMediums(prevMediums => prevMediums.map(medium => {
-      if (medium.id !== mediumId) return medium;
-      
-      const updatedEntities = medium.entities.map(entity => {
-          if (entity.id !== entityId) return entity;
-          return {
-              ...entity,
-              consulentes: entity.consulentes.filter(c => c.id !== consulenteId)
-          };
-      });
-      
-      return { ...medium, entities: updatedEntities };
-    }));
-
     try {
-      // Tenta atualizar no backend
       const mediumDoc = await getDoc(mediumDocRef);
       if (!mediumDoc.exists()) {
         throw new Error("Médium não encontrado no banco de dados.");
@@ -319,9 +311,8 @@ export function useSchoolData() {
 
     } catch(error) {
         console.error("Erro ao remover consulente:", error);
-        toast({ title: "Erro ao Remover", description: `Não foi possível remover ${consulenteName}.`, variant: "destructive" });
-        // Reverte a UI em caso de erro. A sincronização do onSnapshot também ajudaria aqui.
-        // Uma implementação mais robusta poderia buscar os dados novamente.
+        toast({ title: "Erro ao Remover", description: `Não foi possível remover ${consulenteName}. A página será atualizada para refletir os dados corretos.`, variant: "destructive" });
+        // Em caso de erro, a sincronização do onSnapshot irá corrigir o estado da UI.
     }
   }, [toast]);
 
@@ -405,12 +396,6 @@ export function useSchoolData() {
   const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
     try {
       const mediumDocRef = doc(db, 'mediums', mediumId);
-      // Garante que a ordem seja salva
-      if (updatedData.entities) {
-          updatedData.entities.forEach((entity, index) => {
-              entity.order = index;
-          });
-      }
       await updateDoc(mediumDocRef, updatedData);
     } catch(error) {
         console.error("Erro ao atualizar médium:", error);
@@ -423,7 +408,6 @@ export function useSchoolData() {
    */
   const logLoginEvent = useCallback(async (email: string | null) => {
     if (!email) {
-      // Não mostra toast, pois pode ser um log interno. Apenas registra o erro.
       console.error("Erro de Auditoria: O e-mail do usuário é inválido para registro.");
       return;
     }
@@ -486,11 +470,7 @@ export function useSchoolData() {
   }, [toast]);
 
   /**
-   * Remove uma categoria espiritual.
-   * Esta operação é transacional para garantir a consistência dos dados:
-   * 1. Remove a categoria da lista de categorias disponíveis.
-   * 2. Remove a categoria da lista de categorias selecionadas para a gira atual.
-   * 3. Percorre todos os médiuns e atualiza a categoria das entidades associadas para 'Sem Categoria'.
+   * Remove uma categoria espiritual. A lógica transacional foi movida para esta função.
    */
   const removeSpiritualCategory = useCallback(async (category: string) => {
     try {
@@ -499,12 +479,9 @@ export function useSchoolData() {
             const giraDocRef = doc(db, 'appState', 'gira');
             const mediumsCollectionRef = collection(db, 'mediums');
             
-            // 1. Agendar remoção da lista de categorias
             transaction.update(categoriesDocRef, { list: arrayRemove(category) });
-            // 2. Agendar remoção da gira atual
             transaction.update(giraDocRef, { categories: arrayRemove(category) });
             
-            // 3. Ler todos os médiuns para atualizar entidades
             const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
             mediumsSnapshot.forEach(mediumDoc => {
                 const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
@@ -518,12 +495,28 @@ export function useSchoolData() {
                 }
             });
         });
-        toast({ title: 'Sucesso', description: `Categoria "${category}" removida.` });
+        toast({ title: 'Sucesso', description: `Categoria "${category}" removida e entidades atualizadas.` });
     } catch (error) {
         console.error('Erro ao remover categoria:', error);
         toast({ title: 'Erro na Transação', description: 'Não foi possível remover a categoria de forma consistente.', variant: 'destructive' });
+        throw error;
     }
-}, [toast]);
+  }, [toast]);
+
+  /**
+   * Atualiza a ordem da lista de categorias espirituais no Firestore.
+   */
+  const updateSpiritualCategoryOrder = useCallback(async (categories: Category[]) => {
+      const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
+      try {
+          await updateDoc(categoriesDocRef, { list: categories });
+          toast({ title: 'Sucesso', description: 'Ordem das categorias foi atualizada.' });
+      } catch (error) {
+          console.error("Erro ao atualizar a ordem das categorias:", error);
+          toast({ title: 'Erro ao Salvar', description: 'Não foi possível salvar a nova ordem das categorias.', variant: 'destructive' });
+      }
+  }, [toast]);
+
 
   return {
     mediums,
@@ -540,6 +533,7 @@ export function useSchoolData() {
     clearLoginHistory,
     addSpiritualCategory,
     removeSpiritualCategory,
+    updateSpiritualCategoryOrder,
     selectedCategories,
     updateSelectedCategories,
   };

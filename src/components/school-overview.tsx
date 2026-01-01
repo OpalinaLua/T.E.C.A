@@ -13,9 +13,10 @@ interface SchoolOverviewProps {
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   selectedCategories: Category[];
+  spiritualCategories: Category[];
 }
 
-export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailability, selectedCategories }: SchoolOverviewProps) {
+export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailability, selectedCategories, spiritualCategories }: SchoolOverviewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('present');
 
@@ -95,6 +96,7 @@ export function SchoolOverview({ mediums, removeConsulente, toggleEntityAvailabi
                 removeConsulente={removeConsulente}
                 toggleEntityAvailability={toggleEntityAvailability}
                 selectedCategories={selectedCategories}
+                spiritualCategories={spiritualCategories}
               />
             ))}
           </div>

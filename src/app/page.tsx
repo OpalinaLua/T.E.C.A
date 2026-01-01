@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
@@ -44,6 +45,7 @@ function HomeClient() {
     clearLoginHistory,
     addSpiritualCategory,
     removeSpiritualCategory,
+    updateSpiritualCategoryOrder,
     selectedCategories,
     updateSelectedCategories,
   } = useSchoolData();
@@ -122,6 +124,7 @@ function HomeClient() {
                     clearLoginHistory={clearLoginHistory}
                     addSpiritualCategory={addSpiritualCategory}
                     removeSpiritualCategory={removeSpiritualCategory}
+                    updateSpiritualCategoryOrder={updateSpiritualCategoryOrder}
                     selectedCategories={selectedCategories}
                     onSelectionChange={handleCategoryChange}
                     onClose={() => handleDialogChange(false)}
@@ -152,6 +155,7 @@ function HomeClient() {
         removeConsulente={removeConsulente}
         toggleEntityAvailability={toggleEntityAvailability}
         selectedCategories={selectedCategories}
+        spiritualCategories={spiritualCategories}
       />
   )
 

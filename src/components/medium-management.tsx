@@ -60,6 +60,7 @@ interface MediumManagementProps {
   clearLoginHistory: () => Promise<void>;
   addSpiritualCategory: (category: string) => Promise<void>;
   removeSpiritualCategory: (category: string) => Promise<void>;
+  updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void>;
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
   onClose: () => void;
@@ -104,7 +105,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
         if (entity && entity.consulentes.length > 0) {
             toast({
                 title: "Ação não permitida",
-                description: `Não é possível remover la entidade "${entity.name}" pois ela possui consulentes agendados.`,
+                description: `Não é possível remover a entidade "${entity.name}" pois ela possui consulentes agendados.`,
                 variant: "destructive"
             });
             return;
@@ -127,23 +128,6 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
             }
         ])
     }
-
-    const moveEntity = (index: number, direction: 'up' | 'down') => {
-        const newEntities = [...editedEntities];
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-        if (targetIndex < 0 || targetIndex >= newEntities.length) {
-            return; // Cannot move outside of array bounds
-        }
-
-        // Simple swap
-        [newEntities[index], newEntities[targetIndex]] = [newEntities[targetIndex], newEntities[index]];
-        
-        // Update order property based on new position
-        const reorderedEntities = newEntities.map((e, idx) => ({ ...e, order: idx }));
-
-        setEditedEntities(reorderedEntities);
-    };
 
     const handleUpdate = () => {
         if (editedName.trim() === '') {
@@ -201,23 +185,15 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
                 <div className="grid grid-cols-1 gap-y-2 sm:items-start sm:gap-x-4">
                 <Label className="text-left sm:pt-2">Entidades</Label>
                 <div className="col-span-1 sm:col-span-3 space-y-4">
-                    {editedEntities.map((entity, index) => (
+                    {editedEntities.map((entity) => (
                     <div key={entity.id} className="space-y-3 rounded-md border p-3 relative">
                          <div className="absolute top-1 right-1 flex items-center">
-                            <Button variant="ghost" size="icon" onClick={() => moveEntity(index, 'up')} disabled={index === 0} className="h-6 w-6">
-                                <ArrowUp className="h-4 w-4" />
-                                <span className="sr-only">Mover para Cima</span>
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => moveEntity(index, 'down')} disabled={index === editedEntities.length - 1} className="h-6 w-6">
-                                <ArrowDown className="h-4 w-4" />
-                                <span className="sr-only">Mover para Baixo</span>
-                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="h-6 w-6 shrink-0 text-destructive/70 hover:text-destructive">
                                 <X className="h-4 w-4" />
                                 <span className="sr-only">Remover Entidade</span>
                             </Button>
                         </div>
-                        <div className='pr-28 space-y-1.5'>
+                        <div className='pr-12 space-y-1.5'>
                             <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
                             <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
                         </div>
@@ -258,43 +234,85 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
     );
 }
 
-function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory }: Pick<MediumManagementProps, 'spiritualCategories' | 'addSpiritualCategory' | 'removeSpiritualCategory'>) {
+function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder }: Pick<MediumManagementProps, 'spiritualCategories' | 'addSpiritualCategory' | 'removeSpiritualCategory' | 'updateSpiritualCategoryOrder'>) {
     const { toast } = useToast();
     const [newCategory, setNewCategory] = useState('');
+    const [orderedCategories, setOrderedCategories] = useState(spiritualCategories);
 
-    const handleAddCategory = () => {
+    // Sync with external changes
+    useState(() => {
+        setOrderedCategories(spiritualCategories);
+    }, [spiritualCategories]);
+
+    const handleAddCategory = async () => {
         const trimmedCategory = newCategory.trim();
         if (trimmedCategory === '') {
             toast({ title: 'Erro', description: 'O nome da categoria não pode ser vazio.', variant: 'destructive' });
             return;
         }
-        addSpiritualCategory(trimmedCategory);
+        if (orderedCategories.includes(trimmedCategory)) {
+            toast({ title: 'Erro', description: 'Essa categoria já existe.', variant: 'destructive' });
+            return;
+        }
+
+        const newOrder = [...orderedCategories, trimmedCategory];
+        await updateSpiritualCategoryOrder(newOrder);
         setNewCategory('');
+    };
+
+    const handleRemoveCategory = async (category: string) => {
+        const newOrder = orderedCategories.filter(c => c !== category);
+        await removeSpiritualCategory(category); // This still handles the complex logic
+        setOrderedCategories(newOrder); // Optimistic update for the UI
+    };
+
+    const moveCategory = async (index: number, direction: 'up' | 'down') => {
+        const newCategories = [...orderedCategories];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= newCategories.length) return;
+
+        [newCategories[index], newCategories[targetIndex]] = [newCategories[targetIndex], newCategories[index]];
+        
+        setOrderedCategories(newCategories);
+        await updateSpiritualCategoryOrder(newCategories);
     };
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2">
-                <Input
-                    placeholder="Nome da nova categoria"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddCategory();
-                        }
-                    }}
-                />
-                <Button onClick={handleAddCategory}>Adicionar</Button>
+            <div className="space-y-2">
+                <Label>Adicionar Categoria</Label>
+                <div className="flex gap-2">
+                    <Input
+                        placeholder="Nome da nova categoria"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCategory();
+                            }
+                        }}
+                    />
+                    <Button onClick={handleAddCategory}>Adicionar</Button>
+                </div>
             </div>
             <div className="space-y-2">
-                <Label>Categorias Atuais</Label>
-                <ScrollArea className="h-40 border rounded-lg p-2">
+                <Label>Ordenar Categorias</Label>
+                <ScrollArea className="h-60 border rounded-lg p-2">
                     <div className="space-y-2">
-                    {spiritualCategories.map(cat => (
+                    {orderedCategories.map((cat, index) => (
                         <div key={cat} className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
-                            <span className="font-medium">{cat}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-col">
+                                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveCategory(index, 'up')} disabled={index === 0}>
+                                        <ArrowUp className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveCategory(index, 'down')} disabled={index === orderedCategories.length - 1}>
+                                        <ArrowDown className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                                <span className="font-medium">{cat}</span>
+                            </div>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7">
@@ -305,12 +323,12 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Remover a categoria "{cat}" também a removerá de todas as entidades associadas. Esta ação não pode ser desfeita.
+                                            Remover a categoria "{cat}" também a removerá de todas as entidades associadas (serão movidas para "Sem Categoria"). Esta ação não pode ser desfeita.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => removeSpiritualCategory(cat)} variant="destructive">
+                                        <AlertDialogAction onClick={() => handleRemoveCategory(cat)} variant="destructive">
                                             Excluir
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
@@ -318,7 +336,7 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
                             </AlertDialog>
                         </div>
                     ))}
-                    {spiritualCategories.length === 0 && <p className="text-sm text-center italic text-muted-foreground p-4">Nenhuma categoria cadastrada.</p>}
+                    {orderedCategories.length === 0 && <p className="text-sm text-center italic text-muted-foreground p-4">Nenhuma categoria cadastrada.</p>}
                     </div>
                 </ScrollArea>
             </div>
@@ -326,7 +344,7 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
     );
 }
 
-export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
@@ -446,7 +464,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                     <AccordionItem value="manage-categories">
                                         <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
                                         <AccordionContent>
-                                            <CategoryManagement spiritualCategories={spiritualCategories} addSpiritualCategory={addSpiritualCategory} removeSpiritualCategory={removeSpiritualCategory} />
+                                            <CategoryManagement spiritualCategories={spiritualCategories} addSpiritualCategory={addSpiritualCategory} removeSpiritualCategory={removeSpiritualCategory} updateSpiritualCategoryOrder={updateSpiritualCategoryOrder} />
                                         </AccordionContent>
                                     </AccordionItem>
                                     <AccordionItem value="login-history">

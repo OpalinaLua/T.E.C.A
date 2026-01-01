@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Componente que exibe as informações de um médium em um card.
  * Este componente mostra os detalhes do médium, suas entidades e consulentes.
@@ -32,16 +33,21 @@ interface MediumCardProps {
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
   toggleEntityAvailability: (mediumId: string, entityId: string) => void;
   selectedCategories: Category[];
+  spiritualCategories: Category[];
 }
 
-export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories }: MediumCardProps) {
+export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories, spiritualCategories }: MediumCardProps) {
   
   const sortedEntities = useMemo(() => {
-    // Garante que a propriedade order exista e fornece um fallback, depois ordena
-    return [...medium.entities]
-        .map((e, index) => ({ ...e, order: e.order ?? index }))
-        .sort((a, b) => a.order - b.order);
-  }, [medium.entities]);
+    // Cria um mapa da ordem global das categorias para busca rápida.
+    const categoryOrderMap = new Map(spiritualCategories.map((cat, index) => [cat, index]));
+    
+    return [...medium.entities].sort((a, b) => {
+        const orderA = categoryOrderMap.get(a.category) ?? Infinity;
+        const orderB = categoryOrderMap.get(b.category) ?? Infinity;
+        return orderA - orderB;
+    });
+  }, [medium.entities, spiritualCategories]);
 
   const activeEntitiesForGira = useMemo(() => {
     if (selectedCategories.length === 0) return [];
