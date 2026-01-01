@@ -616,23 +616,39 @@ export function useSchoolData() {
         await runTransaction(db, async (transaction) => {
             const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
             const giraDocRef = doc(db, 'appState', 'gira');
-            const mediumsCollectionRef = collection(db, 'mediums');
+            const mediumsQuery = query(collection(db, 'mediums'));
 
-            // 1. Atualizar a lista de categorias mestre
+            // --- FASE DE LEITURA ---
             const categoriesDoc = await transaction.get(categoriesDocRef);
             if (!categoriesDoc.exists()) throw new Error("Documento de categorias não encontrado.");
+
+            const giraDoc = await transaction.get(giraDocRef);
+            const mediumsSnapshot = await getDocs(mediumsQuery); // Leitura fora da transação para obter referências
+
             const categoriesData = categoriesDoc.data();
             const currentCategories = categoriesData.list as Category[];
-
             if (currentCategories.includes(trimmedNewName)) {
                 throw new Error(`A categoria "${trimmedNewName}" já existe.`);
             }
+            
+            const mediumsToUpdate: { ref: any, data: any }[] = [];
+            for (const mediumDoc of mediumsSnapshot.docs) {
+                const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
+                const needsUpdate = mediumData.entities.some(e => e.category === oldName);
+                if (needsUpdate) {
+                    const updatedEntities = mediumData.entities.map(entity => 
+                        entity.category === oldName ? { ...entity, category: trimmedNewName } : entity
+                    );
+                    mediumsToUpdate.push({ ref: mediumDoc.ref, data: { entities: updatedEntities } });
+                }
+            }
 
+            // --- FASE DE ESCRITA ---
+            // 1. Atualizar a lista de categorias mestre
             const updatedCategoriesList = currentCategories.map(c => c === oldName ? trimmedNewName : c);
             transaction.update(categoriesDocRef, { list: updatedCategoriesList });
 
             // 2. Atualizar a seleção da gira, se necessário
-            const giraDoc = await transaction.get(giraDocRef);
             if (giraDoc.exists()) {
                 const giraData = giraDoc.data();
                 const selectedGiraCategories = giraData.categories as Category[];
@@ -642,17 +658,9 @@ export function useSchoolData() {
                 }
             }
 
-            // 3. Atualizar todas as entidades nos médiuns
-            const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
-            mediumsSnapshot.forEach(mediumDoc => {
-                const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
-                const needsUpdate = mediumData.entities.some(e => e.category === oldName);
-                if (needsUpdate) {
-                    const updatedEntities = mediumData.entities.map(entity => 
-                        entity.category === oldName ? { ...entity, category: trimmedNewName } : entity
-                    );
-                    transaction.update(mediumDoc.ref, { entities: updatedEntities });
-                }
+            // 3. Atualizar todos os médiuns afetados
+            mediumsToUpdate.forEach(mediumUpdate => {
+                transaction.update(mediumUpdate.ref, mediumUpdate.data);
             });
         });
         toast({ title: 'Sucesso!', description: `Categoria "${oldName}" foi renomeada para "${trimmedNewName}" em toda a aplicação.` });
@@ -661,7 +669,7 @@ export function useSchoolData() {
         toast({ title: 'Erro ao Renomear', description: error.message || 'Não foi possível completar a operação.', variant: 'destructive' });
         throw error;
     }
-}, [toast]);
+  }, [toast]);
 
 
   return {
