@@ -103,6 +103,7 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
 
         if (trimmedNewName === '' || trimmedNewName === oldName) {
             toast({ title: "Nome Inválido", description: "O novo nome não pode ser vazio ou igual ao antigo.", variant: "destructive" });
+            setEditingCategory(null);
             return;
         }
         if (orderedCategories.includes(trimmedNewName)) {
@@ -403,7 +404,31 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
     };
 
     const toggleEditing = (mediumId: string) => {
-        setEditingMediumId(prev => prev === mediumId ? null : mediumId);
+        if (editingMediumId === mediumId) {
+            // Se está fechando o editor, salva as mudanças
+            if (editedMediums[mediumId] && Object.keys(editedMediums[mediumId]).length > 0) {
+                updateMedium(mediumId, editedMediums[mediumId]);
+                 // Limpa as edições pendentes para este medium
+                setEditedMediums(prev => {
+                    const newEdited = { ...prev };
+                    delete newEdited[mediumId];
+                    return newEdited;
+                });
+            }
+            setEditingMediumId(null);
+        } else {
+            // Se está abrindo um novo, e havia um anterior aberto, salva as mudanças do anterior
+             if (editingMediumId && editedMediums[editingMediumId] && Object.keys(editedMediums[editingMediumId]).length > 0) {
+                updateMedium(editingMediumId, editedMediums[editingMediumId]);
+                 // Limpa as edições pendentes para o medium anterior
+                setEditedMediums(prev => {
+                    const newEdited = { ...prev };
+                    delete newEdited[editingMediumId];
+                    return newEdited;
+                });
+            }
+            setEditingMediumId(mediumId);
+        }
     }
     
     const MediumEditor = ({ medium }: { medium: Medium }) => {
@@ -641,5 +666,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
+
+    
 
     
