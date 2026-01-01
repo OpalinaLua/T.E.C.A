@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSchoolData } from '@/hooks/use-school-data';
 import { SchoolOverview } from '@/components/school-overview';
 import { LoadingScreen } from "@/components/loading-screen";
@@ -25,6 +25,7 @@ import { LoginClient } from "@/components/login-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 
 export const dynamic = 'force-dynamic';
@@ -34,29 +35,120 @@ function HomeClient() {
     mediums,
     spiritualCategories,
     isLoaded: isSchoolDataLoaded,
-    addMedium,
-    removeMedium,
-    addConsulente,
-    removeConsulente,
-    toggleMediumPresence,
-    toggleEntityAvailability,
-    updateMedium,
-    logLoginEvent,
-    clearLoginHistory,
-    addSpiritualCategory,
-    removeSpiritualCategory,
-    updateSpiritualCategoryOrder,
-    updateAllEntityLimits,
-    updateSpiritualCategoryName,
+    addMedium: _addMedium,
+    removeMedium: _removeMedium,
+    addConsulente: _addConsulente,
+    removeConsulente: _removeConsulente,
+    toggleMediumPresence: _toggleMediumPresence,
+    toggleEntityAvailability: _toggleEntityAvailability,
+    updateMedium: _updateMedium,
+    logLoginEvent: _logLoginEvent,
+    clearLoginHistory: _clearLoginHistory,
+    addSpiritualCategory: _addSpiritualCategory,
+    removeSpiritualCategory: _removeSpiritualCategory,
+    updateSpiritualCategoryOrder: _updateSpiritualCategoryOrder,
+    updateAllEntityLimits: _updateAllEntityLimits,
+    updateSpiritualCategoryName: _updateSpiritualCategoryName,
     selectedCategories,
-    updateSelectedCategories,
+    updateSelectedCategories: _updateSelectedCategories,
   } = useSchoolData();
+  
+  const { toast } = useToast();
 
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState("overview");
+  
+  const handleAsyncAction = useCallback(async <T extends any[]>(
+      action: (...args: T) => Promise<string | void>,
+      success: { title: string; description?: string } | ((result: string | void) => { title: string; description?: string }),
+      ...args: T
+  ) => {
+      try {
+          const result = await action(...args);
+          const toastMessage = typeof success === 'function' ? success(result) : success;
+          toast(toastMessage);
+      } catch (error: any) {
+          toast({
+              title: "Erro na Operação",
+              description: error.message || "Ocorreu um erro inesperado.",
+              variant: "destructive",
+          });
+      }
+  }, [toast]);
+  
+  // Wrappers for data functions to include toasts
+  const addMedium = useCallback((...args: Parameters<typeof _addMedium>) => 
+      handleAsyncAction(_addMedium, { title: "Sucesso", description: `Médium ${args[0]} foi cadastrado(a).` }, ...args), 
+  [_addMedium, handleAsyncAction]);
+
+  const removeMedium = useCallback((...args: Parameters<typeof _removeMedium>) => 
+      handleAsyncAction(_removeMedium, { title: "Médium Removido", description: `O médium foi removido com sucesso.` }, ...args),
+  [_removeMedium, handleAsyncAction]);
+
+  const addConsulente = useCallback((...args: Parameters<typeof _addConsulente>) => 
+      handleAsyncAction(_addConsulente, { title: "Sucesso", description: `Consulente ${args[0]} foi agendado(a).` }, ...args),
+  [_addConsulente, handleAsyncAction]);
+
+  const removeConsulente = useCallback((...args: Parameters<typeof _removeConsulente>) => 
+      handleAsyncAction(_removeConsulente, { title: "Consulente Removido", description: `${args[3]} foi removido(a).` }, ...args),
+  [_removeConsulente, handleAsyncAction]);
+  
+  const toggleMediumPresence = useCallback((...args: Parameters<typeof _toggleMediumPresence>) => 
+      handleAsyncAction(_toggleMediumPresence, (desc) => ({ title: "Presença Alterada", description: desc as string }), ...args),
+  [_toggleMediumPresence, handleAsyncAction]);
+  
+  const toggleEntityAvailability = useCallback((...args: Parameters<typeof _toggleEntityAvailability>) =>
+      handleAsyncAction(_toggleEntityAvailability, (desc) => ({ title: "Disponibilidade Alterada", description: desc as string }), ...args),
+  [_toggleEntityAvailability, handleAsyncAction]);
+
+  const clearLoginHistory = useCallback((...args: Parameters<typeof _clearLoginHistory>) =>
+      handleAsyncAction(_clearLoginHistory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+  [_clearLoginHistory, handleAsyncAction]);
+
+  const addSpiritualCategory = useCallback((...args: Parameters<typeof _addSpiritualCategory>) =>
+      handleAsyncAction(_addSpiritualCategory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+  [_addSpiritualCategory, handleAsyncAction]);
+
+  const removeSpiritualCategory = useCallback((...args: Parameters<typeof _removeSpiritualCategory>) =>
+      handleAsyncAction(_removeSpiritualCategory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+  [_removeSpiritualCategory, handleAsyncAction]);
+  
+  const updateSpiritualCategoryOrder = useCallback((...args: Parameters<typeof _updateSpiritualCategoryOrder>) => 
+    handleAsyncAction(_updateSpiritualCategoryOrder, { title: 'Sucesso', description: 'Ordem das categorias foi atualizada.' }, ...args),
+  [_updateSpiritualCategoryOrder, handleAsyncAction]);
+  
+  const updateAllEntityLimits = useCallback((...args: Parameters<typeof _updateAllEntityLimits>) =>
+      handleAsyncAction(_updateAllEntityLimits, (desc) => ({ title: "Sucesso!", description: desc as string }), ...args),
+  [_updateAllEntityLimits, handleAsyncAction]);
+  
+  const updateSpiritualCategoryName = useCallback((...args: Parameters<typeof _updateSpiritualCategoryName>) =>
+      handleAsyncAction(_updateSpiritualCategoryName, (desc) => ({ title: "Sucesso!", description: desc as string }), ...args),
+  [_updateSpiritualCategoryName, handleAsyncAction]);
+
+  const updateSelectedCategories = useCallback(async (categories: Category[]) => {
+      try {
+        await _updateSelectedCategories(categories);
+        toast({
+          title: "Gira Atualizada",
+          description: "A seleção de categorias da gira foi salva."
+        })
+      } catch (error: any) {
+        toast({
+            title: "Erro ao Salvar",
+            description: error.message || "Não foi possível salvar a seleção da gira.",
+            variant: "destructive",
+        });
+      }
+  }, [_updateSelectedCategories, toast]);
+  
+  const logLoginEvent = useCallback((...args: Parameters<typeof _logLoginEvent>) => {
+     _logLoginEvent(...args).catch(err => {
+        toast({ title: "Erro de Auditoria", description: err.message, variant: "destructive" });
+     });
+  }, [_logLoginEvent, toast]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -120,7 +212,7 @@ function HomeClient() {
                     mediums={mediums}
                     spiritualCategories={spiritualCategories}
                     addMedium={addMedium}
-                    updateMedium={updateMedium}
+                    updateMedium={_updateMedium}
                     removeMedium={removeMedium}
                     toggleMediumPresence={toggleMediumPresence}
                     clearLoginHistory={clearLoginHistory}

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -85,7 +86,6 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
             toast({ title: 'Erro', description: 'Essa categoria já existe.', variant: 'destructive' });
             return;
         }
-
         await addSpiritualCategory(trimmedCategory);
         setNewCategory('');
     };
@@ -101,7 +101,6 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
         const trimmedNewName = newName.trim();
 
         if (trimmedNewName === '' || trimmedNewName === oldName) {
-            toast({ title: "Nome Inválido", description: "O novo nome não pode ser vazio ou igual ao antigo.", variant: "destructive" });
             setEditingCategory(null);
             return;
         }
@@ -109,13 +108,8 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
             toast({ title: "Nome Duplicado", description: `A categoria "${trimmedNewName}" já existe.`, variant: "destructive" });
             return;
         }
-
-        try {
-            await updateSpiritualCategoryName(oldName, trimmedNewName);
-            setEditingCategory(null);
-        } catch (e) {
-            // O erro já é tratado no hook, apenas logamos aqui se necessário.
-        }
+        await updateSpiritualCategoryName(oldName, trimmedNewName);
+        setEditingCategory(null);
     }
 
     const moveCategory = (index: number, direction: 'up' | 'down') => {
@@ -369,11 +363,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
 
     const handleConfirmClearHistory = async () => {
         if (isSuperAdmin) {
-            try {
-                await clearLoginHistory();
-            } catch (error) {
-                // Toast for error is handled in the useSchoolData hook
-            }
+            await clearLoginHistory();
         } else {
             toast({
                 title: "Acesso Negado",
@@ -451,6 +441,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                     <SelectValue placeholder="Nenhum" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value={' '}>Nenhum</SelectItem>
                                     {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                                 </SelectContent>
                             </Select>
