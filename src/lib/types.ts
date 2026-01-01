@@ -12,6 +12,18 @@
  */
 export type Category = string;
 
+/**
+ * @const ROLES
+ * Define os cargos que um médium pode ter.
+ */
+export const ROLES = ["Pai de Santo", "Pai Pequeno", "Mãe Pequena"] as const;
+
+/**
+ * @type MediumRole
+ * Representa um dos cargos definidos em ROLES.
+ */
+export type MediumRole = typeof ROLES[number];
+
 
 /**
  * @interface Consulente
@@ -45,9 +57,10 @@ export interface Entity {
 export interface Medium {
   id: string;
   name: string;
+  role?: MediumRole;
   entities: Entity[];
   isPresent: boolean;
-  createdAt: string; // Usado para ordenação local
+  createdAt: any; 
 }
 
 /**

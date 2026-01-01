@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Eye, EyeOff } from 'lucide-react';
+import { UserX, Eye, EyeOff, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Interface para as props do componente.
@@ -45,7 +45,10 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
     return [...medium.entities].sort((a, b) => {
         const orderA = categoryOrderMap.get(a.category) ?? Infinity;
         const orderB = categoryOrderMap.get(b.category) ?? Infinity;
-        return orderA - orderB;
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        return a.order - b.order; // Fallback para a ordem da entidade, se houver
     });
   }, [medium.entities, spiritualCategories]);
 
@@ -71,8 +74,14 @@ export function MediumCard({ medium, removeConsulente, toggleEntityAvailability,
       {/* Cabeçalho do Card com nome, status e botões de ação */}
       <CardHeader>
         <div className='flex items-start justify-between w-full'>
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-2">
             <CardTitle className="font-headline text-xl sm:text-2xl">{medium.name}</CardTitle>
+             {medium.role && (
+              <Badge variant="secondary" className="w-fit">
+                <Crown className="mr-1.5 h-3 w-3 text-amber-500" />
+                {medium.role}
+              </Badge>
+            )}
           </div>
           <Badge variant="outline" className={cn("text-xs shrink-0", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
             {medium.isPresent ? 'Presente' : 'Ausente'}

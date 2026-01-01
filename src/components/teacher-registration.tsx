@@ -13,12 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
-import type { Category } from '@/lib/types';
+import type { Category, MediumRole } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ROLES } from '@/lib/types';
 
 // Interface para as props do componente.
 interface MediumRegistrationProps {
-  addMedium: (name: string, entities: { name: string; limit: number, category: Category }[]) => Promise<void>;
+  addMedium: (name: string, entities: { name: string; limit: number, category: Category }[], role?: MediumRole) => Promise<void>;
   spiritualCategories: Category[];
   onSuccess?: () => void;
 }
@@ -33,6 +34,7 @@ interface EntityInput {
 export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }: MediumRegistrationProps) {
   // Estados do componente
   const [name, setName] = useState('');
+  const [role, setRole] = useState<MediumRole | ''>('');
   const [currentEntityName, setCurrentEntityName] = useState('');
   const [currentEntityLimit, setCurrentEntityLimit] = useState('5'); // Limite padrão
   const [currentEntityCategory, setCurrentEntityCategory] = useState<Category | ''>('');
@@ -83,9 +85,10 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
     if (name.trim() && entities.length > 0) {
       setIsSubmitting(true);
       try {
-        await addMedium(name.trim(), entities);
+        await addMedium(name.trim(), entities, role === '' ? undefined : role);
         // Limpa o formulário após o sucesso
         setName('');
+        setRole('');
         setEntities([]);
         setCurrentEntityName('');
         setCurrentEntityLimit('5');
@@ -116,15 +119,29 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4 px-0">
-          <div className="space-y-2">
-            <Label htmlFor="medium-name">Nome do Médium</Label>
-            <Input
-              id="medium-name"
-              placeholder="ex: Médium João"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="space-y-2 w-full sm:w-2/3">
+              <Label htmlFor="medium-name">Nome do Médium</Label>
+              <Input
+                id="medium-name"
+                placeholder="ex: Médium João"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+             <div className="space-y-2 w-full sm:w-1/3">
+                <Label htmlFor="medium-role">Cargo (Opcional)</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as MediumRole)}>
+                    <SelectTrigger id="medium-role">
+                        <SelectValue placeholder="Nenhum" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">Nenhum</SelectItem>
+                        {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
           </div>
           
           <div className="space-y-2">

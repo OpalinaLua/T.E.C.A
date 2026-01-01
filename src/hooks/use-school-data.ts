@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Medium, Entity, Consulente, Category } from '@/lib/types';
+import type { Medium, Entity, Consulente, Category, MediumRole } from '@/lib/types';
 import { useToast } from './use-toast';
 import { db } from '@/lib/firebase';
 import {
@@ -64,7 +64,6 @@ export function useSchoolData() {
         variant: "destructive",
         duration: Infinity,
       });
-      setIsLoaded(true); // Libera a tela mesmo com erro de configuração
       mediumsLoaded = selectedCategoriesLoaded = spiritualCategoriesLoaded = true;
       updateLoadingState();
       return;
@@ -167,13 +166,13 @@ export function useSchoolData() {
   /**
    * Adiciona um novo médium à coleção no Firestore.
    */
-  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number; category: Category }[]) => {
+  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole) => {
     if (!name.trim() || entities.length === 0) {
         toast({ title: "Erro", description: "Nome e entidades são obrigatórios.", variant: "destructive" });
         return;
     }
     try {
-      const newMedium = {
+      const newMedium: Omit<Medium, 'id' | 'createdAt'> = {
         name,
         isPresent: true,
         entities: entities.map((entity, index) => ({
@@ -185,8 +184,10 @@ export function useSchoolData() {
           consulenteLimit: entity.limit,
           order: index, 
         })),
-        createdAt: serverTimestamp(),
+        role: role,
+        createdAt: serverTimestamp() as any, // Cast to any to avoid type issues with serverTimestamp
       };
+
       await addDoc(collection(db, 'mediums'), newMedium);
     } catch (error) {
       console.error("Erro ao adicionar médium:", error);
@@ -399,9 +400,10 @@ export function useSchoolData() {
   /**
    * Atualiza os dados de um médium (nome e entidades) no Firestore.
    */
-  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
+  const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities' | 'role'>>) => {
     try {
       const mediumDocRef = doc(db, 'mediums', mediumId);
+      // Firestore permite 'undefined' para remover campos, então o role pode ser undefined.
       await updateDoc(mediumDocRef, updatedData);
     } catch(error) {
         console.error("Erro ao atualizar médium:", error);
@@ -543,7 +545,7 @@ export function useSchoolData() {
   }, [toast]);
 
   /**
-   * Atualiza o limite de consulentes para TODAS as entidades de TODOS os médiuns.
+   * Atualiza o limite de consulentes para TODAS as entidades de TODOS os médiuns, com exceções.
    */
   const updateAllEntityLimits = useCallback(async (newLimit: number) => {
     if (newLimit < 0 || isNaN(newLimit)) {
@@ -554,6 +556,7 @@ export function useSchoolData() {
     const mediumsCollectionRef = collection(db, 'mediums');
     
     try {
+        let updatedCount = 0;
         await runTransaction(db, async (transaction) => {
             const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
             
@@ -564,21 +567,37 @@ export function useSchoolData() {
 
             mediumsSnapshot.forEach(mediumDoc => {
                 const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
+
+                // EXCEÇÃO 1: Ignora médiuns com cargo definido
+                if (mediumData.role) {
+                    return;
+                }
                 
-                const updatedEntities = mediumData.entities.map(entity => ({
-                    ...entity,
-                    consulenteLimit: newLimit
-                }));
+                const updatedEntities = mediumData.entities.map(entity => {
+                    // EXCEÇÃO 2: Ignora entidades com limite 0
+                    if (entity.consulenteLimit === 0) {
+                        return entity;
+                    }
+                    return {
+                        ...entity,
+                        consulenteLimit: newLimit
+                    };
+                });
                 
                 transaction.update(mediumDoc.ref, { entities: updatedEntities });
+                updatedCount++;
             });
         });
         
-        toast({ title: 'Sucesso!', description: `O limite de todas as entidades foi atualizado para ${newLimit}.` });
+        if (updatedCount > 0) {
+            toast({ title: 'Sucesso!', description: `O limite de entidades para ${updatedCount} médiuns foi atualizado para ${newLimit}.` });
+        } else {
+            toast({ title: 'Nenhuma Alteração', description: 'Nenhum médium elegível para a atualização global foi encontrado.' });
+        }
 
     } catch (error) {
         console.error("Erro ao atualizar todos os limites de entidades:", error);
-        toast({ title: 'Erro na Operação em Lote', description: 'Não foi possível atualizar os limites de todas as entidades.', variant: 'destructive' });
+        toast({ title: 'Erro na Operação em Lote', description: 'Não foi possível atualizar os limites das entidades.', variant: 'destructive' });
         throw error;
     }
   }, [toast]);

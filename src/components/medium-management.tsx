@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { Medium, Entity, Category } from '@/lib/types';
+import type { Medium, Entity, Category, MediumRole } from '@/lib/types';
 import {
   Accordion,
   AccordionContent,
@@ -35,7 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Library } from 'lucide-react';
+import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -48,14 +48,15 @@ import { cn } from '@/lib/utils';
 import { SUPER_ADMINS } from '@/lib/secrets';
 import type { User } from 'firebase/auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ROLES } from '@/lib/types';
 
 
 interface MediumManagementProps {
   user: User;
   mediums: Medium[];
   spiritualCategories: Category[];
-  addMedium: (name: string, entities: { name: string; limit: number; category: Category }[]) => Promise<void>;
-  updateMedium: (mediumId: string, data: { name?: string; entities?: Entity[] }) => void;
+  addMedium: (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole) => Promise<void>;
+  updateMedium: (mediumId: string, data: Partial<Pick<Medium, 'name' | 'entities' | 'role'>>) => void;
   removeMedium: (mediumId: string) => void;
   toggleMediumPresence: (mediumId: string) => void;
   clearLoginHistory: () => Promise<void>;
@@ -79,6 +80,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedName, setEditedName] = useState(medium.name);
+    const [editedRole, setEditedRole] = useState<MediumRole | ''>(medium.role || '');
     const [editedEntities, setEditedEntities] = useState<Entity[]>(
         () => ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
     );
@@ -142,8 +144,9 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
         }
         
         const finalEntities = editedEntities.map((e, index) => ({ ...e, order: index }));
+        const finalRole = editedRole === '' ? undefined : editedRole;
 
-        updateMedium(medium.id, { name: editedName, entities: finalEntities });
+        updateMedium(medium.id, { name: editedName, entities: finalEntities, role: finalRole });
         toast({
             title: "Médium Atualizado",
             description: `Os dados de ${editedName} foram atualizados.`,
@@ -154,6 +157,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
 
     const resetEditState = () => {
         setEditedName(medium.name);
+        setEditedRole(medium.role || '');
         setEditedEntities(
             ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
         );
@@ -179,10 +183,26 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
                 <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-center sm:gap-x-4">
-                <Label htmlFor="name" className="text-left sm:text-right">
-                    Nome
-                </Label>
-                <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-1 sm:col-span-3" />
+                    <Label htmlFor="name" className="text-left sm:text-right">
+                        Nome
+                    </Label>
+                    <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-1 sm:col-span-3" />
+                </div>
+                 <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-center sm:gap-x-4">
+                    <Label htmlFor="role" className="text-left sm:text-right">
+                        Cargo
+                    </Label>
+                    <div className="col-span-1 sm:col-span-3">
+                        <Select value={editedRole} onValueChange={(v) => setEditedRole(v as MediumRole)}>
+                            <SelectTrigger id="role">
+                                <SelectValue placeholder="Nenhum" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">Nenhum</SelectItem>
+                                {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 gap-y-2 sm:items-start sm:gap-x-4">
                 <Label className="text-left sm:pt-2">Entidades</Label>
@@ -370,7 +390,8 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
             <div className="space-y-2">
                 <Label>Alterar Limite de Atendimento Global</Label>
                  <p className="text-sm text-muted-foreground">
-                    Altera o limite de vagas para <strong>todas</strong> as entidades de <strong>todos</strong> os médiuns de uma só vez.
+                    Altera o limite de vagas para <strong>todas</strong> as entidades de <strong>todos</strong> os médiuns de uma só vez. 
+                    <br/><strong className="text-amber-500">Exceções:</strong> Médiuns com cargos (Pai de Santo, etc.) e entidades com limite 0 não são afetados.
                 </p>
                 <div className="flex gap-2">
                     <Input
@@ -393,7 +414,7 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar Alteração Global?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Você tem certeza que deseja alterar o limite de atendimento para <strong>TODAS</strong> as entidades de <strong>TODOS</strong> os médiuns para <strong>{newLimit}</strong>? Esta ação não pode ser desfeita.
+                                    Você tem certeza que deseja alterar o limite de atendimento para <strong>TODAS</strong> as entidades (com as exceções mencionadas) para <strong>{newLimit}</strong>? Esta ação não pode ser desfeita.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -488,6 +509,7 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                                   />
                                                   <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
                                                     {medium.name}
+                                                     {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
                                                     <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
                                                         {medium.isPresent ? 'Presente' : 'Ausente'}
                                                     </Badge>
