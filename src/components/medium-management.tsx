@@ -346,7 +346,7 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
         if (entityToRemove && entityToRemove.consulentes.length > 0) {
             toast({
                 title: "Ação não permitida",
-                description: `Não é possível remover a entidade "${entityToRemove.name}" pois ela possui consulentes agendados.`,
+                description: `Não é possível remover la entidade "${entityToRemove.name}" pois ela possui consulentes agendados.`,
                 variant: "destructive"
             });
             return;
@@ -375,7 +375,6 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
         if (pendingCategoryOrder) {
             await updateSpiritualCategoryOrder(pendingCategoryOrder);
         }
-        await updateSelectedCategories(selectedCategories);
         await onSaveAndClose(mediums, selectedCategories);
     };
 
@@ -513,12 +512,12 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                                                             aria-label={`Marcar presença para ${medium.name}`}
                                                         />
                                                         <AccordionTrigger asChild>
-                                                          <div className="p-0 flex-1 text-left cursor-pointer hover:underline">
-                                                            <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
-                                                                {medium.name}
-                                                                {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
-                                                            </Label>
-                                                          </div>
+                                                            <div className="p-0 flex-1 text-left cursor-pointer hover:underline">
+                                                                <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
+                                                                    {medium.name}
+                                                                    {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
+                                                                </Label>
+                                                            </div>
                                                         </AccordionTrigger>
                                                     </div>
                                                     <div className="flex items-center gap-1 pl-2">

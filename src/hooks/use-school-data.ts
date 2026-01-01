@@ -128,19 +128,6 @@ export function useSchoolData() {
       unsubscribeCategories();
     };
   }, []);
-  
-  /**
-   * Atualiza as categorias selecionadas para a gira no Firestore.
-   */
-  const updateSelectedCategories = useCallback(async (categories: Category[]) => {
-    try {
-      const giraDocRef = doc(db, 'appState', 'gira');
-      await setDoc(giraDocRef, { categories: categories });
-    } catch (error) {
-      console.error("Erro ao atualizar a seleção da gira:", error);
-      throw new Error("Não foi possível salvar a seleção da gira.");
-    }
-  }, []);
 
   /**
    * Adiciona um novo médium à coleção no Firestore.
@@ -655,6 +642,13 @@ export function useSchoolData() {
         throw new Error("Ocorreu um erro ao salvar as alterações. Tente novamente.");
     }
   }, []);
+  
+  const updateSelectedCategories = useCallback(async (categories: Category[]) => {
+      // Esta função agora apenas atualiza o estado local.
+      // A persistência será feita pelo saveAllManagementChanges.
+      setSelectedCategories(categories);
+  }, []);
+
 
   useEffect(() => {
     if(error) {

@@ -128,10 +128,6 @@ function HomeClient() {
       handleAsyncAction(_saveAllManagementChanges, { title: "Sucesso", description: "Todas as alterações foram salvas." }, ...args),
   [_saveAllManagementChanges, handleAsyncAction]);
 
-  const updateSelectedCategories = useCallback(async (categories: Category[]) => {
-      await _updateSelectedCategories(categories);
-  }, [_updateSelectedCategories]);
-
   const updateConsulenteStatus = useCallback(async (...args: Parameters<typeof _updateConsulenteStatus>) => {
     try {
         await _updateConsulenteStatus(...args);
@@ -217,9 +213,9 @@ function HomeClient() {
                     updateSpiritualCategoryOrder={updateSpiritualCategoryOrder}
                     updateAllEntityLimits={updateAllEntityLimits}
                     updateSpiritualCategoryName={updateSpiritualCategoryName}
-                    updateSelectedCategories={updateSelectedCategories}
+                    updateSelectedCategories={_updateSelectedCategories}
                     onSaveAndClose={async (updatedMediums, updatedCategories) => {
-                        await saveAllManagementChanges(updatedMediums, updatedCategories, mediums, selectedCategories);
+                        await saveAllManagementChanges(updatedMediums, updatedCategories);
                         await handleLogoutOnClose();
                     }}
                   />
