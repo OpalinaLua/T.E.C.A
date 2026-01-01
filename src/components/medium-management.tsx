@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -34,7 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown } from 'lucide-react';
+import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Library } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -61,6 +62,7 @@ interface MediumManagementProps {
   addSpiritualCategory: (category: string) => Promise<void>;
   removeSpiritualCategory: (category: string) => Promise<void>;
   updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void>;
+  updateAllEntityLimits: (newLimit: number) => Promise<void>;
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
   onClose: () => void;
@@ -345,7 +347,70 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
     );
 }
 
-export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
+function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (limit: number) => Promise<void> }) {
+    const { toast } = useToast();
+    const [newLimit, setNewLimit] = useState('');
+
+    const handleUpdateAll = async () => {
+        const limit = parseInt(newLimit, 10);
+        if (isNaN(limit) || limit < 0) {
+            toast({
+                title: 'Valor Inválido',
+                description: 'Por favor, insira um número válido igual ou maior que zero.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        await updateAllEntityLimits(limit);
+        setNewLimit('');
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <Label>Alterar Limite de Atendimento Global</Label>
+                 <p className="text-sm text-muted-foreground">
+                    Altera o limite de vagas para <strong>todas</strong> as entidades de <strong>todos</strong> os médiuns de uma só vez.
+                </p>
+                <div className="flex gap-2">
+                    <Input
+                        type="number"
+                        placeholder="Novo limite"
+                        value={newLimit}
+                        onChange={(e) => setNewLimit(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                // We need a confirmation dialog here, so just trigger button click
+                            }
+                        }}
+                    />
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button disabled={newLimit.trim() === ''}>Aplicar a Todos</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Alteração Global?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Você tem certeza que deseja alterar o limite de atendimento para <strong>TODAS</strong> as entidades de <strong>TODOS</strong> os médiuns para <strong>{newLimit}</strong>? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleUpdateAll}>
+                                    Confirmar e Aplicar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function MediumManagement({ user, mediums, spiritualCategories, addMedium, updateMedium, removeMedium, toggleMediumPresence, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, selectedCategories, onSelectionChange, onClose }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
@@ -469,7 +534,13 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
 
                         {isSuperAdmin && (
                             <TabsContent value="advanced">
-                                 <Accordion type="single" collapsible className="w-full">
+                                 <Accordion type="single" collapsible className="w-full" defaultValue="manage-limits">
+                                    <AccordionItem value="manage-limits">
+                                        <AccordionTrigger className="text-lg font-bold font-headline">Gerenciamento Global</AccordionTrigger>
+                                        <AccordionContent>
+                                            <GlobalSettings updateAllEntityLimits={updateAllEntityLimits} />
+                                        </AccordionContent>
+                                    </AccordionItem>
                                     <AccordionItem value="manage-categories">
                                         <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
                                         <AccordionContent>

@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview Hook personalizado para gerenciar os dados da escola.
  * Este hook encapsula a lógica de estado, comunicando-se em tempo real
@@ -63,7 +64,9 @@ export function useSchoolData() {
         variant: "destructive",
         duration: Infinity,
       });
-      setIsLoaded(true);
+      setIsLoaded(true); // Libera a tela mesmo com erro de configuração
+      mediumsLoaded = selectedCategoriesLoaded = spiritualCategoriesLoaded = true;
+      updateLoadingState();
       return;
     }
     
@@ -277,7 +280,7 @@ export function useSchoolData() {
   /**
    * Remove um consulente de uma entidade de um médium. Busca os dados mais recentes antes de atualizar.
    */
-  const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => {
+    const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => {
     // Otimisticamente atualiza a UI para uma resposta imediata
     setMediums(prevMediums => prevMediums.map(medium => {
         if (medium.id !== mediumId) return medium;
@@ -292,17 +295,19 @@ export function useSchoolData() {
     const mediumDocRef = doc(db, 'mediums', mediumId);
     
     try {
-      const mediumDoc = await getDoc(mediumDocRef);
-      if (!mediumDoc.exists()) {
-        throw new Error("Médium não encontrado no banco de dados.");
-      }
-      const currentMedium = mediumDoc.data() as Omit<Medium, 'id'>;
-      const updatedEntities = currentMedium.entities.map(entity =>
-        entity.id === entityId
-          ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
-          : entity
-      );
-      await updateDoc(mediumDocRef, { entities: updatedEntities });
+      await runTransaction(db, async (transaction) => {
+        const mediumDoc = await transaction.get(mediumDocRef);
+        if (!mediumDoc.exists()) {
+          throw new Error("Médium não encontrado no banco de dados.");
+        }
+        const currentMedium = mediumDoc.data() as Omit<Medium, 'id'>;
+        const updatedEntities = currentMedium.entities.map(entity =>
+          entity.id === entityId
+            ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
+            : entity
+        );
+        transaction.update(mediumDocRef, { entities: updatedEntities });
+      });
       
       toast({
           title: "Consulente Removido",
@@ -315,6 +320,7 @@ export function useSchoolData() {
         // Em caso de erro, a sincronização do onSnapshot irá corrigir o estado da UI.
     }
   }, [toast]);
+
 
   /**
    * Alterna o estado de presença de um médium.
@@ -536,6 +542,48 @@ export function useSchoolData() {
       }
   }, [toast]);
 
+  /**
+   * Atualiza o limite de consulentes para TODAS as entidades de TODOS os médiuns.
+   */
+  const updateAllEntityLimits = useCallback(async (newLimit: number) => {
+    if (newLimit < 0 || isNaN(newLimit)) {
+        toast({ title: 'Erro', description: 'O limite deve ser um número igual ou maior que zero.', variant: 'destructive' });
+        return;
+    }
+    
+    const mediumsCollectionRef = collection(db, 'mediums');
+    
+    try {
+        await runTransaction(db, async (transaction) => {
+            const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
+            
+            if (mediumsSnapshot.empty) {
+                toast({ title: 'Aviso', description: 'Nenhum médium cadastrado para atualizar.' });
+                return;
+            }
+
+            mediumsSnapshot.forEach(mediumDoc => {
+                const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
+                
+                const updatedEntities = mediumData.entities.map(entity => ({
+                    ...entity,
+                    consulenteLimit: newLimit
+                }));
+                
+                transaction.update(mediumDoc.ref, { entities: updatedEntities });
+            });
+        });
+        
+        toast({ title: 'Sucesso!', description: `O limite de todas as entidades foi atualizado para ${newLimit}.` });
+
+    } catch (error) {
+        console.error("Erro ao atualizar todos os limites de entidades:", error);
+        toast({ title: 'Erro na Operação em Lote', description: 'Não foi possível atualizar os limites de todas as entidades.', variant: 'destructive' });
+        throw error;
+    }
+  }, [toast]);
+
+
 
   return {
     mediums,
@@ -555,7 +603,6 @@ export function useSchoolData() {
     updateSpiritualCategoryOrder,
     selectedCategories,
     updateSelectedCategories,
+    updateAllEntityLimits,
   };
 }
-
-    
