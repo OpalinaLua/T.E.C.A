@@ -7,8 +7,8 @@
  */
 "use client";
 
-import { useMemo } from 'react';
-import type { Medium, Category, Entity } from '@/lib/types';
+import { useMemo, useState } from 'react';
+import type { Medium, Category, Entity, Consulente } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,19 +24,81 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { UserX, Eye, EyeOff, Crown } from 'lucide-react';
+import { UserX, Pencil, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from './ui/input';
+
+interface EditConsulenteDialogProps {
+  consulente: Consulente;
+  onSave: (newName: string) => void;
+  trigger: React.ReactNode;
+}
+
+function EditConsulenteDialog({ consulente, onSave, trigger }: EditConsulenteDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [newName, setNewName] = useState(consulente.name);
+
+  const handleSave = () => {
+    if (newName.trim() && newName.trim() !== consulente.name) {
+      onSave(newName.trim());
+    }
+    setOpen(false);
+  };
+  
+  // Reseta o nome ao abrir o dialog
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setNewName(consulente.name);
+    }
+    setOpen(isOpen);
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogTrigger asChild>
+        {trigger}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Editar Nome do Consulente</AlertDialogTitle>
+          <AlertDialogDescription>
+            Altere o nome de "{consulente.name}" e clique em Salvar.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSave();
+            }
+          }}
+          autoFocus
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSave}>
+            Salvar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 
 // Interface para as props do componente.
 interface MediumCardProps {
   medium: Medium;
   removeConsulente: (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => void;
+  updateConsulenteName: (mediumId: string, entityId: string, consulenteId: string, newName: string) => void;
   selectedCategories: Category[];
   spiritualCategories: Category[];
   searchQuery?: string;
 }
 
-export function MediumCard({ medium, removeConsulente, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
+export function MediumCard({ medium, removeConsulente, updateConsulenteName, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
   
   const sortedEntities = useMemo(() => {
     // Cria um mapa da ordem global das categorias para busca rápida.
@@ -85,8 +147,10 @@ export function MediumCard({ medium, removeConsulente, selectedCategories, spiri
     removeConsulente(medium.id, entityId, consulenteId, consulenteName);
   };
   
-  // A função de toggle não está mais aqui, será gerenciada no painel de admin.
-
+  const handleUpdateConsulente = (entityId: string, consulenteId: string, newName: string) => {
+    updateConsulenteName(medium.id, entityId, consulenteId, newName);
+  };
+  
   return (
     <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
       {/* Cabeçalho do Card com nome, status e botões de ação */}
@@ -136,28 +200,40 @@ export function MediumCard({ medium, removeConsulente, selectedCategories, spiri
                   {entity.consulentes.map(consulente => (
                     <li key={consulente.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50">
                       <span className="text-secondary-foreground">{consulente.name}</span>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                           <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" disabled={!entity.isAvailable}>
-                              <UserX className="h-4 w-4" />
-                              <span className="sr-only">Excluir consulente</span>
-                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir Consulente?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza de que deseja remover {consulente.name} desta entidade?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <div className="flex items-center">
+                        <EditConsulenteDialog
+                          consulente={consulente}
+                          onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
+                          trigger={
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" disabled={!entity.isAvailable}>
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Editar consulente</span>
+                            </Button>
+                          }
+                        />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable}>
+                                <UserX className="h-4 w-4" />
+                                <span className="sr-only">Excluir consulente</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Consulente?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza de que deseja remover {consulente.name} desta entidade?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleRemoveConsulente(entity.id, consulente.id, consulente.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </li>
                   ))}
                 </ul>

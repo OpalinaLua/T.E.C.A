@@ -274,6 +274,34 @@ export function useSchoolData() {
     }
   }, []);
 
+  const updateConsulenteName = useCallback(async (mediumId: string, entityId: string, consulenteId: string, newName: string) => {
+    const mediumDocRef = doc(db, 'mediums', mediumId);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const mediumDoc = await transaction.get(mediumDocRef);
+            if (!mediumDoc.exists()) {
+                throw new Error("Médium não encontrado.");
+            }
+            const mediumData = mediumDoc.data() as Medium;
+            const updatedEntities = mediumData.entities.map(entity => {
+                if (entity.id === entityId) {
+                    const updatedConsulentes = entity.consulentes.map(consulente => {
+                        if (consulente.id === consulenteId) {
+                            return { ...consulente, name: newName };
+                        }
+                        return consulente;
+                    });
+                    return { ...entity, consulentes: updatedConsulentes };
+                }
+                return entity;
+            });
+            transaction.update(mediumDocRef, { entities: updatedEntities });
+        });
+    } catch (error) {
+        console.error("Erro ao atualizar nome do consulente:", error);
+        throw new Error("Não foi possível atualizar o nome do consulente.");
+    }
+  }, []);
 
   /**
    * Alterna o estado de presença de um médium.
@@ -663,6 +691,7 @@ export function useSchoolData() {
     removeMedium,
     addConsulente,
     removeConsulente,
+    updateConsulenteName,
     toggleMediumPresence,
     toggleEntityAvailability,
     updateMedium,

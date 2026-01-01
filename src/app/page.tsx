@@ -39,6 +39,7 @@ function HomeClient() {
     removeMedium: _removeMedium,
     addConsulente: _addConsulente,
     removeConsulente: _removeConsulente,
+    updateConsulenteName: _updateConsulenteName,
     logLoginEvent: _logLoginEvent,
     clearLoginHistory: _clearLoginHistory,
     addSpiritualCategory: _addSpiritualCategory,
@@ -94,6 +95,10 @@ function HomeClient() {
       handleAsyncAction(_removeConsulente, { title: "Consulente Removido", description: `${args[3]} foi removido(a).` }, ...args),
   [_removeConsulente, handleAsyncAction]);
 
+  const updateConsulenteName = useCallback((...args: Parameters<typeof _updateConsulenteName>) => 
+      handleAsyncAction(_updateConsulenteName, { title: "Nome Atualizado", description: `O nome foi alterado para ${args[3]}.` }, ...args),
+  [_updateConsulenteName, handleAsyncAction]);
+
   const clearLoginHistory = useCallback((...args: Parameters<typeof _clearLoginHistory>) =>
       handleAsyncAction(_clearLoginHistory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
   [_clearLoginHistory, handleAsyncAction]);
@@ -125,7 +130,6 @@ function HomeClient() {
   const updateSelectedCategories = useCallback(async (categories: Category[]) => {
       try {
         await _updateSelectedCategories(categories);
-        // Toast removido para evitar notificações a cada clique
       } catch (error: any) {
         toast({
             title: "Erro ao Salvar",
@@ -237,6 +241,7 @@ function HomeClient() {
      <SchoolOverview
         mediums={mediums}
         removeConsulente={removeConsulente}
+        updateConsulenteName={updateConsulenteName}
         selectedCategories={selectedCategories}
         spiritualCategories={spiritualCategories}
       />
