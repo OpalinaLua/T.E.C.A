@@ -123,6 +123,7 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
     // 2. Se houver um termo de busca, aplica a filtragem adicional
     if (query) {
       const isSearchingForMedium = medium.name.toLowerCase().includes(query);
+      // Se a busca não for pelo nome do médium, filtramos as entidades
       if (!isSearchingForMedium) {
         entitiesForGira = entitiesForGira.filter(e => 
           e.name.toLowerCase().includes(query) ||
@@ -136,9 +137,9 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
   }, [sortedEntities, selectedCategories, searchQuery, medium.name]);
 
 
-  const totalConsulentes = useMemo(() => {
-    return medium.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
-  }, [medium.entities]);
+  const totalConsulentesInGira = useMemo(() => {
+     return activeEntitiesForGira.reduce((acc, entity) => acc + entity.consulentes.length, 0);
+  }, [activeEntitiesForGira]);
 
   /**
    * Manipula a remoção de um consulente.
@@ -174,17 +175,12 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
       </CardHeader>
       
       {/* Conteúdo do Card com a lista de entidades e consulentes */}
-      <CardContent className={cn("flex-grow space-y-4", totalConsulentes === 0 && "pt-0 sm:pt-0")}>
-        {selectedCategories.length === 0 && (
-          <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades disponíveis.</p>
-        )}
-        
-        {selectedCategories.length > 0 && activeEntitiesForGira.length === 0 && (
+      <CardContent className={cn("flex-grow space-y-4", totalConsulentesInGira === 0 && activeEntitiesForGira.length === 0 && "pt-0 sm:pt-0")}>
+        {selectedCategories.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades.</p>
+        ) : activeEntitiesForGira.length === 0 ? (
            <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium corresponde à sua busca ou às categorias selecionadas.</p>
-        )}
-
-        {totalConsulentes > 0 ? (
-          // --- VISÃO DETALHADA (COM CONSULENTES) ---
+        ) : (
           activeEntitiesForGira.map((entity, index) => (
             <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
               {index > 0 && <Separator className="my-4" />}
@@ -195,7 +191,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
                   </h3>
                   <Badge variant="outline">{entity.category}</Badge>
                 </div>
-                 {/* O botão de toggle foi removido, pois a disponibilidade é gerenciada no painel de admin */}
               </div>
               {entity.consulentes.length > 0 ? (
                 <ul className="space-y-2">
@@ -247,29 +242,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, sel
               )}
             </div>
           ))
-        ) : (
-          // --- VISÃO SIMPLIFICADA (SEM CONSULENTES) ---
-          activeEntitiesForGira.length > 0 && (
-            <div className="space-y-2">
-              {activeEntitiesForGira.map((entity: Entity) => (
-                <div 
-                  key={entity.id} 
-                  className={cn(
-                    "flex items-center justify-between p-2 rounded-md bg-secondary/30",
-                    (!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-50"
-                  )}
-                >
-                  <p className={cn(
-                    "text-secondary-foreground",
-                    (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through"
-                  )}>
-                    {entity.name}
-                  </p>
-                  <Badge variant="outline" className="text-xs">{entity.category}</Badge>
-                </div>
-              ))}
-            </div>
-          )
         )}
       </CardContent>
     </Card>
