@@ -34,7 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut } from 'lucide-react';
+import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -65,12 +65,20 @@ interface MediumManagementProps {
   onClose: () => void;
 }
 
+// Helper to ensure entities have an order property
+const ensureEntityOrder = (entities: Entity[]): Entity[] => {
+  return entities.map((e, index) => ({ ...e, order: e.order ?? index }));
+};
+
+
 // Internal component to handle the state for editing a single medium
 function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Medium; updateMedium: MediumManagementProps['updateMedium'], spiritualCategories: Category[] }) {
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editedName, setEditedName] = useState(medium.name);
-    const [editedEntities, setEditedEntities] = useState<Entity[]>(JSON.parse(JSON.stringify(medium.entities)));
+    const [editedEntities, setEditedEntities] = useState<Entity[]>(
+        () => ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
+    );
 
     const handleEntityNameChange = (entityId: string, newName: string) => {
         setEditedEntities(currentEntities => 
@@ -105,6 +113,7 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
     }
     
     const handleAddEntityToEdit = () => {
+        const newOrder = editedEntities.length > 0 ? Math.max(...editedEntities.map(e => e.order)) + 1 : 0;
         setEditedEntities(currentEntities => [
             ...currentEntities,
             {
@@ -114,9 +123,27 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
                 consulentes: [],
                 isAvailable: true,
                 consulenteLimit: 5,
+                order: newOrder,
             }
         ])
     }
+
+    const moveEntity = (index: number, direction: 'up' | 'down') => {
+        const newEntities = [...editedEntities];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+        if (targetIndex < 0 || targetIndex >= newEntities.length) {
+            return; // Cannot move outside of array bounds
+        }
+
+        // Simple swap
+        [newEntities[index], newEntities[targetIndex]] = [newEntities[targetIndex], newEntities[index]];
+        
+        // Update order property based on new position
+        const reorderedEntities = newEntities.map((e, idx) => ({ ...e, order: idx }));
+
+        setEditedEntities(reorderedEntities);
+    };
 
     const handleUpdate = () => {
         if (editedName.trim() === '') {
@@ -128,28 +155,30 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
             return;
         }
         
-        const nameChanged = editedName !== medium.name;
-        const entitiesChanged = JSON.stringify(editedEntities) !== JSON.stringify(medium.entities);
+        const finalEntities = editedEntities.map((e, index) => ({ ...e, order: index }));
 
-        if (nameChanged || entitiesChanged) {
-            updateMedium(medium.id, { name: editedName, entities: editedEntities });
-            toast({
-                title: "Médium Atualizado",
-                description: `Os dados de ${editedName} foram atualizados.`,
-            });
-        }
+        updateMedium(medium.id, { name: editedName, entities: finalEntities });
+        toast({
+            title: "Médium Atualizado",
+            description: `Os dados de ${editedName} foram atualizados.`,
+        });
 
         setIsEditDialogOpen(false);
     }
 
     const resetEditState = () => {
         setEditedName(medium.name);
-        setEditedEntities(JSON.parse(JSON.stringify(medium.entities)));
+        setEditedEntities(
+            ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
+        );
     }
 
     return (
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-            if (!open) resetEditState();
+            if (open) {
+                // Ensure state is fresh when dialog opens
+                resetEditState();
+            }
             setIsEditDialogOpen(open);
         }}>
             <DialogTrigger asChild>
@@ -172,13 +201,23 @@ function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Med
                 <div className="grid grid-cols-1 gap-y-2 sm:items-start sm:gap-x-4">
                 <Label className="text-left sm:pt-2">Entidades</Label>
                 <div className="col-span-1 sm:col-span-3 space-y-4">
-                    {editedEntities.map((entity) => (
+                    {editedEntities.map((entity, index) => (
                     <div key={entity.id} className="space-y-3 rounded-md border p-3 relative">
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="absolute top-1 right-1 h-6 w-6 shrink-0">
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Remover Entidade</span>
-                        </Button>
-                        <div className='pr-8 space-y-1.5'>
+                         <div className="absolute top-1 right-1 flex items-center">
+                            <Button variant="ghost" size="icon" onClick={() => moveEntity(index, 'up')} disabled={index === 0} className="h-6 w-6">
+                                <ArrowUp className="h-4 w-4" />
+                                <span className="sr-only">Mover para Cima</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => moveEntity(index, 'down')} disabled={index === editedEntities.length - 1} className="h-6 w-6">
+                                <ArrowDown className="h-4 w-4" />
+                                <span className="sr-only">Mover para Baixo</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="h-6 w-6 shrink-0 text-destructive/70 hover:text-destructive">
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remover Entidade</span>
+                            </Button>
+                        </div>
+                        <div className='pr-28 space-y-1.5'>
                             <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
                             <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
                         </div>
@@ -455,5 +494,3 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
-
-    

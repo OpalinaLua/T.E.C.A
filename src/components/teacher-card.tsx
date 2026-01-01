@@ -36,10 +36,18 @@ interface MediumCardProps {
 
 export function MediumCard({ medium, removeConsulente, toggleEntityAvailability, selectedCategories }: MediumCardProps) {
   
+  const sortedEntities = useMemo(() => {
+    // Garante que a propriedade order exista e fornece um fallback, depois ordena
+    return [...medium.entities]
+        .map((e, index) => ({ ...e, order: e.order ?? index }))
+        .sort((a, b) => a.order - b.order);
+  }, [medium.entities]);
+
   const activeEntitiesForGira = useMemo(() => {
     if (selectedCategories.length === 0) return [];
-    return medium.entities.filter(e => selectedCategories.includes(e.category));
-  }, [medium.entities, selectedCategories]);
+    return sortedEntities.filter(e => selectedCategories.includes(e.category));
+  }, [sortedEntities, selectedCategories]);
+
 
   const totalConsulentes = useMemo(() => {
     return medium.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);

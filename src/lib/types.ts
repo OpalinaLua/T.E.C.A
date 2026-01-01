@@ -34,6 +34,7 @@ export interface Entity {
   consulentes: Consulente[];
   isAvailable: boolean;
   consulenteLimit: number;
+  order: number;
 }
 
 /**

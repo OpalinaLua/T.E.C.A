@@ -182,6 +182,7 @@ export function useSchoolData() {
           consulentes: [],
           isAvailable: true,
           consulenteLimit: entity.limit,
+          order: index, // Adiciona o campo de ordem
         })),
         createdAt: serverTimestamp(),
       };
@@ -404,6 +405,12 @@ export function useSchoolData() {
   const updateMedium = useCallback(async (mediumId: string, updatedData: Partial<Pick<Medium, 'name' | 'entities'>>) => {
     try {
       const mediumDocRef = doc(db, 'mediums', mediumId);
+      // Garante que a ordem seja salva
+      if (updatedData.entities) {
+          updatedData.entities.forEach((entity, index) => {
+              entity.order = index;
+          });
+      }
       await updateDoc(mediumDocRef, updatedData);
     } catch(error) {
         console.error("Erro ao atualizar médium:", error);
@@ -537,5 +544,3 @@ export function useSchoolData() {
     updateSelectedCategories,
   };
 }
-
-    
