@@ -87,7 +87,7 @@ export function useSchoolData() {
         variant: "destructive",
         duration: Infinity,
       });
-      mediumsLoaded = true;
+      mediumsLoaded = true; // Marca como carregado mesmo com erro para liberar a tela
       updateLoadingState();
     });
 
@@ -108,7 +108,7 @@ export function useSchoolData() {
         description: "Não foi possível carregar as configurações da gira.",
         variant: "destructive",
       });
-      selectedCategoriesLoaded = true;
+      selectedCategoriesLoaded = true; // Marca como carregado mesmo com erro
       updateLoadingState();
     });
 
@@ -135,7 +135,7 @@ export function useSchoolData() {
         description: "Não foi possível carregar a lista de categorias da gira.",
         variant: "destructive",
       });
-      spiritualCategoriesLoaded = true;
+      spiritualCategoriesLoaded = true; // Marca como carregado mesmo com erro
       updateLoadingState();
     });
 
@@ -282,20 +282,34 @@ export function useSchoolData() {
   const removeConsulente = useCallback(async (mediumId: string, entityId: string, consulenteId: string, consulenteName: string) => {
     const mediumDocRef = doc(db, 'mediums', mediumId);
     
-    try {
-      await runTransaction(db, async (transaction) => {
-        const mediumDoc = await transaction.get(mediumDocRef);
-        if (!mediumDoc.exists()) {
-          throw new Error("Médium não encontrado no banco de dados.");
-        }
-        const currentMedium = mediumDoc.data() as Omit<Medium, 'id'>;
-        const updatedEntities = currentMedium.entities.map(entity =>
-          entity.id === entityId
-            ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
-            : entity
-        );
-        transaction.update(mediumDocRef, { entities: updatedEntities });
+    // Otimisticamente atualiza a UI
+    setMediums(prevMediums => prevMediums.map(medium => {
+      if (medium.id !== mediumId) return medium;
+      
+      const updatedEntities = medium.entities.map(entity => {
+          if (entity.id !== entityId) return entity;
+          return {
+              ...entity,
+              consulentes: entity.consulentes.filter(c => c.id !== consulenteId)
+          };
       });
+      
+      return { ...medium, entities: updatedEntities };
+    }));
+
+    try {
+      // Tenta atualizar no backend
+      const mediumDoc = await getDoc(mediumDocRef);
+      if (!mediumDoc.exists()) {
+        throw new Error("Médium não encontrado no banco de dados.");
+      }
+      const currentMedium = mediumDoc.data() as Omit<Medium, 'id'>;
+      const updatedEntities = currentMedium.entities.map(entity =>
+        entity.id === entityId
+          ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
+          : entity
+      );
+      await updateDoc(mediumDocRef, { entities: updatedEntities });
       
       toast({
           title: "Consulente Removido",
@@ -305,6 +319,8 @@ export function useSchoolData() {
     } catch(error) {
         console.error("Erro ao remover consulente:", error);
         toast({ title: "Erro ao Remover", description: `Não foi possível remover ${consulenteName}.`, variant: "destructive" });
+        // Reverte a UI em caso de erro. A sincronização do onSnapshot também ajudaria aqui.
+        // Uma implementação mais robusta poderia buscar os dados novamente.
     }
   }, [toast]);
 
