@@ -12,16 +12,6 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -68,192 +58,6 @@ interface MediumManagementProps {
   selectedCategories: Category[];
   onSelectionChange: (category: Category) => void;
   onClose: () => void;
-}
-
-// Helper to ensure entities have an order property
-const ensureEntityOrder = (entities: Entity[]): Entity[] => {
-  return entities.map((e, index) => ({ ...e, order: e.order ?? index }));
-};
-
-
-// Internal component to handle the state for editing a single medium
-function EditMedium({ medium, updateMedium, spiritualCategories }: { medium: Medium; updateMedium: MediumManagementProps['updateMedium'], spiritualCategories: Category[] }) {
-    const { toast } = useToast();
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [editedName, setEditedName] = useState(medium.name);
-    const [editedRole, setEditedRole] = useState<MediumRole | undefined>(medium.role || undefined);
-    const [editedEntities, setEditedEntities] = useState<Entity[]>(
-        () => ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
-    );
-
-    const handleEntityNameChange = (entityId: string, newName: string) => {
-        setEditedEntities(currentEntities => 
-        currentEntities.map(e => e.id === entityId ? { ...e, name: newName } : e)
-        );
-    };
-
-    const handleEntityCategoryChange = (entityId: string, newCategory: Category) => {
-        setEditedEntities(currentEntities =>
-        currentEntities.map(e => e.id === entityId ? { ...e, category: newCategory } : e)
-        );
-    };
-    
-    const handleEntityLimitChange = (entityId: string, newLimit: string) => {
-        const limit = parseInt(newLimit, 10);
-        setEditedEntities(currentEntities => 
-            currentEntities.map(e => e.id === entityId ? { ...e, consulenteLimit: isNaN(limit) ? 0 : limit } : e)
-        );
-    };
-
-    const handleRemoveEntityFromEdit = (entityId: string) => {
-        const entity = editedEntities.find(e => e.id === entityId);
-        if (entity && entity.consulentes.length > 0) {
-            toast({
-                title: "Ação não permitida",
-                description: `Não é possível remover a entidade "${entity.name}" pois ela possui consulentes agendados.`,
-                variant: "destructive"
-            });
-            return;
-        }
-        setEditedEntities(currentEntities => currentEntities.filter(e => e.id !== entityId));
-    }
-    
-    const handleAddEntityToEdit = () => {
-        const newOrder = editedEntities.length > 0 ? Math.max(...editedEntities.map(e => e.order)) + 1 : 0;
-        setEditedEntities(currentEntities => [
-            ...currentEntities,
-            {
-                id: `entity-${Date.now()}`,
-                name: "Nova Entidade",
-                category: "Exu",
-                consulentes: [],
-                isAvailable: true,
-                consulenteLimit: 5,
-                order: newOrder,
-            }
-        ])
-    }
-
-    const handleUpdate = () => {
-        if (editedName.trim() === '') {
-            toast({ title: "Erro", description: "O nome do médium não pode ser vazio.", variant: "destructive" });
-            return;
-        }
-        if (editedEntities.some(e => e.name.trim() === '')) {
-            toast({ title: "Erro", description: "O nome da entidade não pode ser vazio.", variant: "destructive" });
-            return;
-        }
-        
-        const finalEntities = editedEntities.map((e, index) => ({ ...e, order: index }));
-
-        updateMedium(medium.id, { name: editedName, entities: finalEntities, role: editedRole });
-        toast({
-            title: "Médium Atualizado",
-            description: `Os dados de ${editedName} foram atualizados.`,
-        });
-
-        setIsEditDialogOpen(false);
-    }
-
-    const resetEditState = () => {
-        setEditedName(medium.name);
-        setEditedRole(medium.role || undefined);
-        setEditedEntities(
-            ensureEntityOrder(JSON.parse(JSON.stringify(medium.entities))).sort((a, b) => a.order - b.order)
-        );
-    }
-
-    return (
-        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-            if (open) {
-                // Ensure state is fresh when dialog opens
-                resetEditState();
-            }
-            setIsEditDialogOpen(open);
-        }}>
-            <DialogTrigger asChild>
-            <Button variant="ghost" size="icon">
-                <Pencil className="h-4 w-4" />
-                <span className="sr-only">Editar Médium</span>
-            </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>Editar Médium</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
-                <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-center sm:gap-x-4">
-                    <Label htmlFor="name" className="text-left sm:text-right">
-                        Nome
-                    </Label>
-                    <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="col-span-1 sm:col-span-3" />
-                </div>
-                 <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-4 sm:items-center sm:gap-x-4">
-                    <Label htmlFor="role" className="text-left sm:text-right">
-                        Cargo
-                    </Label>
-                    <div className="col-span-1 sm:col-span-3">
-                        <Select value={editedRole} onValueChange={(v) => setEditedRole(v as MediumRole)}>
-                            <SelectTrigger id="role">
-                                <SelectValue placeholder="Nenhum" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">Nenhum</SelectItem>
-                                {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 gap-y-2 sm:items-start sm:gap-x-4">
-                <Label className="text-left sm:pt-2">Entidades</Label>
-                <div className="col-span-1 sm:col-span-3 space-y-4">
-                    {editedEntities.map((entity) => (
-                    <div key={entity.id} className="space-y-3 rounded-md border p-3 relative">
-                         <div className="absolute top-1 right-1 flex items-center">
-                            <Button variant="ghost" size="icon" onClick={() => handleRemoveEntityFromEdit(entity.id)} className="h-6 w-6 shrink-0 text-destructive/70 hover:text-destructive">
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Remover Entidade</span>
-                            </Button>
-                        </div>
-                        <div className='pr-12 space-y-1.5'>
-                            <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
-                            <Input id={`entity-name-${entity.id}`} placeholder="Nome da entidade" value={entity.name} onChange={(e) => handleEntityNameChange(entity.id, e.target.value)} />
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <div className="w-full space-y-1.5">
-                            <Label htmlFor={`entity-category-${entity.id}`}>Categoria</Label>
-                            <Select value={entity.category} onValueChange={(v) => handleEntityCategoryChange(entity.id, v as Category)}>
-                                <SelectTrigger id={`entity-category-${entity.id}`}>
-                                <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                {spiritualCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            </div>
-                            <div className="w-full space-y-1.5">
-                            <Label htmlFor={`entity-limit-${entity.id}`}>Limite</Label>
-                            <Input id={`entity-limit-${entity.id}`} placeholder="Limite" type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityLimitChange(entity.id, e.target.value)} />
-                            </div>
-                        </div>
-                    </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={handleAddEntityToEdit} className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Adicionar Entidade
-                    </Button>
-                </div>
-                </div>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-                </DialogClose>
-                <Button onClick={handleUpdate}>Salvar Alterações</Button>
-            </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
 }
 
 function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryName, onOrderChange }: { 
@@ -306,8 +110,12 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
             return;
         }
 
-        await updateSpiritualCategoryName(oldName, trimmedNewName);
-        setEditingCategory(null);
+        try {
+            await updateSpiritualCategoryName(oldName, trimmedNewName);
+            setEditingCategory(null);
+        } catch (e) {
+            // O erro já é tratado no hook, apenas logamos aqui se necessário.
+        }
     }
 
     const moveCategory = (index: number, direction: 'up' | 'down') => {
@@ -490,6 +298,75 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
     const [activeTab, setActiveTab] = useState("gira");
     const [pendingCategoryOrder, setPendingCategoryOrder] = useState<Category[] | null>(null);
 
+    // Estado local para gerenciar as edições
+    const [editedMediums, setEditedMediums] = useState<Record<string, Partial<Pick<Medium, 'name' | 'entities' | 'role'>>>>({});
+    const [editingMediumId, setEditingMediumId] = useState<string | null>(null);
+
+    useEffect(() => {
+        setEditedMediums({});
+        setEditingMediumId(null);
+    }, [mediums]);
+
+    const handleMediumChange = (id: string, field: keyof Medium, value: any) => {
+        setEditedMediums(prev => ({
+            ...prev,
+            [id]: { ...prev[id], [field]: value }
+        }));
+    };
+    
+    const handleEntityChange = (mediumId: string, entityId: string, field: keyof Entity, value: any) => {
+        const medium = mediums.find(m => m.id === mediumId);
+        if (!medium) return;
+        
+        const currentEntities = editedMediums[mediumId]?.entities || medium.entities;
+        
+        const newEntities = currentEntities.map(e => 
+            e.id === entityId ? { ...e, [field]: value } : e
+        );
+
+        handleMediumChange(mediumId, 'entities', newEntities);
+    };
+
+    const handleAddEntity = (mediumId: string) => {
+        const medium = mediums.find(m => m.id === mediumId);
+        if (!medium) return;
+
+        const currentEntities = editedMediums[mediumId]?.entities || medium.entities;
+        const newOrder = currentEntities.length > 0 ? Math.max(...currentEntities.map(e => e.order)) + 1 : 0;
+        
+        const newEntity: Entity = {
+            id: `entity-${Date.now()}`,
+            name: "Nova Entidade",
+            category: "Exu",
+            consulentes: [],
+            isAvailable: true,
+            consulenteLimit: 5,
+            order: newOrder,
+        };
+
+        handleMediumChange(mediumId, 'entities', [...currentEntities, newEntity]);
+    };
+
+    const handleRemoveEntity = (mediumId: string, entityId: string) => {
+        const medium = mediums.find(m => m.id === mediumId);
+        if (!medium) return;
+
+        const currentEntities = editedMediums[mediumId]?.entities || medium.entities;
+        const entityToRemove = currentEntities.find(e => e.id === entityId);
+        
+        if (entityToRemove && entityToRemove.consulentes.length > 0) {
+            toast({
+                title: "Ação não permitida",
+                description: `Não é possível remover a entidade "${entityToRemove.name}" pois ela possui consulentes agendados.`,
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const newEntities = currentEntities.filter(e => e.id !== entityId);
+        handleMediumChange(mediumId, 'entities', newEntities);
+    };
+
     const handleConfirmClearHistory = async () => {
         if (isSuperAdmin) {
             try {
@@ -510,7 +387,87 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         if (pendingCategoryOrder) {
             await updateSpiritualCategoryOrder(pendingCategoryOrder);
         }
+        
+        // Salvar todas as edições pendentes
+        for (const mediumId in editedMediums) {
+            if (Object.keys(editedMediums[mediumId]).length > 0) {
+                updateMedium(mediumId, editedMediums[mediumId]);
+            }
+        }
+        toast({
+            title: "Gerenciamento Salvo",
+            description: "Todas as suas alterações foram salvas com sucesso.",
+        });
+
         onClose();
+    };
+
+    const toggleEditing = (mediumId: string) => {
+        setEditingMediumId(prev => prev === mediumId ? null : mediumId);
+    }
+    
+    const MediumEditor = ({ medium }: { medium: Medium }) => {
+        const mediumChanges = editedMediums[medium.id] || {};
+        const currentName = mediumChanges.name ?? medium.name;
+        const currentRole = mediumChanges.role ?? medium.role;
+        const currentEntities = mediumChanges.entities ?? medium.entities;
+        
+        return (
+             <AccordionContent className="bg-secondary/30 p-4 rounded-b-md">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`name-${medium.id}`}>Nome do Médium</Label>
+                            <Input id={`name-${medium.id}`} value={currentName} onChange={(e) => handleMediumChange(medium.id, 'name', e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`role-${medium.id}`}>Cargo</Label>
+                            <Select value={currentRole} onValueChange={(v) => handleMediumChange(medium.id, 'role', v as MediumRole)}>
+                                <SelectTrigger id={`role-${medium.id}`}>
+                                    <SelectValue placeholder="Nenhum" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={''}>Nenhum</SelectItem>
+                                    {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                         <Label>Entidades</Label>
+                        {currentEntities.map((entity) => (
+                        <div key={entity.id} className="space-y-3 rounded-md border bg-background p-3 relative">
+                            <div className="absolute top-1 right-1 flex items-center">
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveEntity(medium.id, entity.id)} className="h-6 w-6 shrink-0 text-destructive/70 hover:text-destructive">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className='pr-12 space-y-1.5'>
+                                <Label htmlFor={`entity-name-${entity.id}`}>Nome da Entidade</Label>
+                                <Input id={`entity-name-${entity.id}`} value={entity.name} onChange={(e) => handleEntityChange(medium.id, entity.id, 'name', e.target.value)} />
+                            </div>
+                             <div className="flex flex-col sm:flex-row gap-2">
+                                <div className="w-full space-y-1.5">
+                                    <Label htmlFor={`entity-category-${entity.id}`}>Categoria</Label>
+                                    <Select value={entity.category} onValueChange={(v) => handleEntityChange(medium.id, entity.id, 'category', v as Category)}>
+                                        <SelectTrigger id={`entity-category-${entity.id}`}><SelectValue /></SelectTrigger>
+                                        <SelectContent>{spiritualCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="w-full space-y-1.5">
+                                    <Label htmlFor={`entity-limit-${entity.id}`}>Limite</Label>
+                                    <Input id={`entity-limit-${entity.id}`} type="number" value={entity.consulenteLimit} onChange={(e) => handleEntityChange(medium.id, entity.id, 'consulenteLimit', parseInt(e.target.value, 10) || 0)} />
+                                </div>
+                            </div>
+                        </div>
+                        ))}
+                         <Button variant="outline" size="sm" onClick={() => handleAddEntity(medium.id)} className="w-full">
+                            <Plus className="mr-2 h-4 w-4" /> Adicionar Entidade
+                        </Button>
+                    </div>
+                </div>
+            </AccordionContent>
+        );
     };
 
     return (
@@ -550,55 +507,67 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
                                     <CardDescription>Altere a presença ou edite os dados dos médiuns.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <div className="space-y-2">
-                                        {mediums.map(medium => (
-                                            <div key={medium.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                  <Switch
-                                                    id={`presence-${medium.id}`}
-                                                    checked={medium.isPresent}
-                                                    onCheckedChange={() => toggleMediumPresence(medium.id)}
-                                                    aria-label={`Marcar presença para ${medium.name}`}
-                                                  />
-                                                  <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
-                                                    {medium.name}
-                                                     {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
-                                                    <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
-                                                        {medium.isPresent ? 'Presente' : 'Ausente'}
-                                                    </Badge>
-                                                  </Label>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <EditMedium medium={medium} updateMedium={updateMedium} spiritualCategories={spiritualCategories} />
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
-                                                                <Trash2 className="h-4 w-4" />
-                                                                <span className="sr-only">Remover Médium</span>
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => removeMedium(medium.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                                                    Excluir
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={setEditingMediumId}>
+                                        {mediums.map(medium => {
+                                            const mediumChanges = editedMediums[medium.id] || {};
+                                            const currentName = mediumChanges.name ?? medium.name;
+                                            const currentRole = mediumChanges.role ?? medium.role;
+
+                                            return (
+                                                <AccordionItem value={medium.id} key={medium.id} className="border-b-0">
+                                                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors data-[state=open]:rounded-b-none">
+                                                        <div className="flex items-center gap-3">
+                                                        <Switch
+                                                            id={`presence-${medium.id}`}
+                                                            checked={medium.isPresent}
+                                                            onCheckedChange={() => toggleMediumPresence(medium.id)}
+                                                            aria-label={`Marcar presença para ${medium.name}`}
+                                                        />
+                                                        <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
+                                                            {currentName}
+                                                            {currentRole && <Crown className="h-4 w-4 text-amber-500" />}
+                                                            <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+                                                                {medium.isPresent ? 'Presente' : 'Ausente'}
+                                                            </Badge>
+                                                        </Label>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <AccordionTrigger asChild>
+                                                                <Button variant="ghost" size="icon" onClick={() => toggleEditing(medium.id)}>
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                            </AccordionTrigger>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => removeMedium(medium.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                                            Excluir
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    </div>
+                                                    <MediumEditor medium={medium} />
+                                                </AccordionItem>
+                                            )
+                                        })}
+                                        </Accordion>
                                          {mediums.length === 0 && (
                                             <p className="text-sm text-muted-foreground italic text-center py-4">Nenhum médium cadastrado.</p>
                                          )}
-                                    </div>
                                 </CardContent>
                            </Card>
                         </TabsContent>
@@ -673,7 +642,3 @@ export function MediumManagement({ user, mediums, spiritualCategories, addMedium
         </div>
     );
 }
-
-    
-
-    
