@@ -186,13 +186,11 @@ export function useSchoolData() {
         createdAt: serverTimestamp(),
       };
       await addDoc(collection(db, 'mediums'), newMedium);
-      toast({
-        title: "Sucesso",
-        description: `Médium ${name.trim()} foi cadastrado(a).`,
-      });
+      // O toast de sucesso foi removido daqui para ser controlado pelo componente que chama.
     } catch (error) {
       console.error("Erro ao adicionar médium:", error);
       toast({ title: "Erro ao Salvar", description: "Não foi possível cadastrar o médium.", variant: "destructive" });
+      throw error; // Propaga o erro
     }
   }, [toast]);
 
@@ -285,21 +283,19 @@ export function useSchoolData() {
     const mediumDocRef = doc(db, 'mediums', mediumId);
     
     try {
-      const docSnap = await getDoc(mediumDocRef);
-
-      if (!docSnap.exists()) {
-        throw new Error("Médium não encontrado no banco de dados.");
-      }
-
-      const currentMedium = docSnap.data() as Omit<Medium, 'id'>;
-
-      const updatedEntities = currentMedium.entities.map(entity =>
-        entity.id === entityId
-          ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
-          : entity
-      );
-
-      await updateDoc(mediumDocRef, { entities: updatedEntities });
+      await runTransaction(db, async (transaction) => {
+        const mediumDoc = await transaction.get(mediumDocRef);
+        if (!mediumDoc.exists()) {
+          throw new Error("Médium não encontrado no banco de dados.");
+        }
+        const currentMedium = mediumDoc.data() as Omit<Medium, 'id'>;
+        const updatedEntities = currentMedium.entities.map(entity =>
+          entity.id === entityId
+            ? { ...entity, consulentes: entity.consulentes.filter(c => c.id !== consulenteId) }
+            : entity
+        );
+        transaction.update(mediumDocRef, { entities: updatedEntities });
+      });
       
       toast({
           title: "Consulente Removido",
@@ -317,67 +313,74 @@ export function useSchoolData() {
    * Se o médium for marcado como ausente, todos os seus consulentes são removidos.
    */
   const toggleMediumPresence = useCallback(async (mediumId: string) => {
-    const medium = mediums.find(m => m.id === mediumId);
-    if (!medium) return;
-
-    const newIsPresent = !medium.isPresent;
-    const updateData: Partial<Medium> = { isPresent: newIsPresent };
-    
-    const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
-    
-    if (!newIsPresent) {
-      updateData.entities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
-    }
-
+    const mediumDocRef = doc(db, 'mediums', mediumId);
     try {
-        const mediumDocRef = doc(db, 'mediums', mediumId);
-        await updateDoc(mediumDocRef, updateData as any);
+      await runTransaction(db, async (transaction) => {
+        const mediumDoc = await transaction.get(mediumDocRef);
+        if (!mediumDoc.exists()) throw new Error("Médium não encontrado.");
+        
+        const medium = mediumDoc.data() as Omit<Medium, 'id'>;
+        const newIsPresent = !medium.isPresent;
+        const updateData: any = { isPresent: newIsPresent };
+        
+        const hadConsulentes = medium.entities.some(e => e.consulentes?.length > 0);
+        
+        if (!newIsPresent) {
+          updateData.entities = medium.entities.map(entity => ({ ...entity, consulentes: [] }));
+        }
+        
+        transaction.update(mediumDocRef, updateData);
+
         const newStatus = newIsPresent ? 'presente' : 'ausente';
         let description = `O(a) médium ${medium.name} foi marcado(a) como ${newStatus}.`;
         if (!newIsPresent && hadConsulentes) {
           description += " Todos os consulentes agendados foram removidos.";
         }
         toast({ title: "Presença Alterada", description });
+      });
     } catch(error) {
         console.error("Erro ao alterar presença:", error);
         toast({ title: "Erro ao Atualizar", description: "Não foi possível alterar a presença do médium.", variant: "destructive" });
     }
-  }, [mediums, toast]);
+  }, [toast]);
 
   /**
    * Alterna a disponibilidade de uma entidade.
    * Se a entidade ficar indisponível, seus consulentes são removidos.
    */
   const toggleEntityAvailability = useCallback(async (mediumId: string, entityId: string) => {
-    const medium = mediums.find(m => m.id === mediumId);
-    if (!medium) return;
-
+    const mediumDocRef = doc(db, 'mediums', mediumId);
     let entityName = '';
-    const updatedEntities = medium.entities.map(entity => {
-        if (entity.id !== entityId) return entity;
-        
-        entityName = entity.name;
-        const hadConsulentes = (entity.consulentes?.length || 0) > 0;
-        const newIsAvailable = !entity.isAvailable;
-        
-        const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
-        let description = `A entidade ${entity.name} foi marcada como ${newStatus}.`;
-        if (!newIsAvailable && hadConsulentes) {
-          description += " Todos os consulentes agendados foram removidos.";
-        }
-        toast({ title: "Disponibilidade Alterada", description });
-
-        return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
-      });
     
     try {
-        const mediumDocRef = doc(db, 'mediums', mediumId);
-        await updateDoc(mediumDocRef, { entities: updatedEntities });
+      await runTransaction(db, async (transaction) => {
+        const mediumDoc = await transaction.get(mediumDocRef);
+        if (!mediumDoc.exists()) throw new Error("Médium não encontrado.");
+        
+        const medium = mediumDoc.data() as Omit<Medium, 'id'>;
+        const updatedEntities = medium.entities.map(entity => {
+            if (entity.id !== entityId) return entity;
+            
+            entityName = entity.name;
+            const newIsAvailable = !entity.isAvailable;
+
+            const newStatus = newIsAvailable ? 'disponível' : 'indisponível';
+            let description = `A entidade ${entity.name} foi marcada como ${newStatus}.`;
+            if (!newIsAvailable && (entity.consulentes?.length || 0) > 0) {
+              description += " Todos os consulentes agendados foram removidos.";
+            }
+            toast({ title: "Disponibilidade Alterada", description });
+
+            return { ...entity, isAvailable: newIsAvailable, consulentes: !newIsAvailable ? [] : entity.consulentes };
+        });
+
+        transaction.update(mediumDocRef, { entities: updatedEntities });
+      });
     } catch(error) {
         console.error("Erro ao alterar disponibilidade:", error);
         toast({ title: "Erro ao Atualizar", description: `Não foi possível alterar a disponibilidade de ${entityName}.`, variant: "destructive" });
     }
-  }, [mediums, toast]);
+  }, [toast]);
 
   /**
    * Atualiza os dados de um médium (nome e entidades) no Firestore.
@@ -397,8 +400,9 @@ export function useSchoolData() {
    */
   const logLoginEvent = useCallback(async (email: string | null) => {
     if (!email) {
-      toast({ title: "Erro de Auditoria", description: "O e-mail do usuário é inválido para registro.", variant: "destructive" });
-      throw new Error("Email is required for logging");
+      // Não mostra toast, pois pode ser um log interno. Apenas registra o erro.
+      console.error("Erro de Auditoria: O e-mail do usuário é inválido para registro.");
+      return;
     }
     try {
       await addDoc(collection(db, 'loginHistory'), {
@@ -408,7 +412,6 @@ export function useSchoolData() {
     } catch (error) {
       console.error("Erro ao registrar login:", error);
       toast({ title: "Erro de Auditoria", description: "Não foi possível registrar o evento de login.", variant: "destructive" });
-      throw error;
     }
   }, [toast]);
 
@@ -464,29 +467,32 @@ export function useSchoolData() {
    * Esta operação é transacional para garantir a consistência dos dados:
    * 1. Remove a categoria da lista de categorias disponíveis.
    * 2. Remove a categoria da lista de categorias selecionadas para a gira atual.
-   * 3. Percorre todos os médiuns e remove a categoria de qualquer entidade associada.
+   * 3. Percorre todos os médiuns e atualiza a categoria das entidades associadas para 'Sem Categoria'.
    */
   const removeSpiritualCategory = useCallback(async (category: string) => {
     try {
         await runTransaction(db, async (transaction) => {
-            // 1. Remover da lista de categorias disponíveis
             const categoriesDocRef = doc(db, CATEGORIES_DOC_PATH);
-            transaction.update(categoriesDocRef, { list: arrayRemove(category) });
-
-            // 2. Remover da seleção da gira atual
             const giraDocRef = doc(db, 'appState', 'gira');
-            transaction.update(giraDocRef, { categories: arrayRemove(category) });
-
-            // 3. Remover de todas as entidades dos médiuns
             const mediumsCollectionRef = collection(db, 'mediums');
-            const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
             
+            // 1. Agendar remoção da lista de categorias
+            transaction.update(categoriesDocRef, { list: arrayRemove(category) });
+            // 2. Agendar remoção da gira atual
+            transaction.update(giraDocRef, { categories: arrayRemove(category) });
+            
+            // 3. Ler todos os médiuns para atualizar entidades
+            const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
             mediumsSnapshot.forEach(mediumDoc => {
                 const mediumData = mediumDoc.data() as Omit<Medium, 'id'>;
-                const updatedEntities = mediumData.entities.map(entity => 
-                    entity.category === category ? { ...entity, category: 'Sem Categoria' as Category } : entity
-                );
-                transaction.update(mediumDoc.ref, { entities: updatedEntities });
+                const hasEntitiesToUpdate = mediumData.entities.some(e => e.category === category);
+                
+                if (hasEntitiesToUpdate) {
+                    const updatedEntities = mediumData.entities.map(entity => 
+                        entity.category === category ? { ...entity, category: 'Sem Categoria' as Category } : entity
+                    );
+                    transaction.update(mediumDoc.ref, { entities: updatedEntities });
+                }
             });
         });
         toast({ title: 'Sucesso', description: `Categoria "${category}" removida.` });
@@ -515,3 +521,5 @@ export function useSchoolData() {
     updateSelectedCategories,
   };
 }
+
+    
