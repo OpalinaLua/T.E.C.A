@@ -47,6 +47,7 @@ function HomeClient() {
     removeSpiritualCategory,
     updateSpiritualCategoryOrder,
     updateAllEntityLimits,
+    updateSpiritualCategoryName,
     selectedCategories,
     updateSelectedCategories,
   } = useSchoolData();
@@ -127,6 +128,7 @@ function HomeClient() {
                     removeSpiritualCategory={removeSpiritualCategory}
                     updateSpiritualCategoryOrder={updateSpiritualCategoryOrder}
                     updateAllEntityLimits={updateAllEntityLimits}
+                    updateSpiritualCategoryName={updateSpiritualCategoryName}
                     selectedCategories={selectedCategories}
                     onSelectionChange={handleCategoryChange}
                     onClose={() => handleDialogChange(false)}
