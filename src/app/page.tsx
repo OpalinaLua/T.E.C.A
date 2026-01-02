@@ -66,17 +66,19 @@ function HomeClient() {
       action: (...args: T) => Promise<R>,
       success: { title: string; description?: string } | ((result: R) => { title: string; description?: string }),
       ...args: T
-  ) => {
+  ): Promise<R> => {
       try {
           const result = await action(...args);
           const toastMessage = typeof success === 'function' ? success(result) : success;
           toast(toastMessage);
+          return result;
       } catch (error: any) {
           toast({
               title: "Erro na Operação",
               description: error.message || "Ocorreu um erro inesperado.",
               variant: "destructive",
           });
+          throw error; // Re-lança o erro para que a chamada original saiba da falha
       }
   }, [toast]);
   

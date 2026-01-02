@@ -215,6 +215,7 @@ export function useSchoolData() {
             });
         } catch(error: any) {
             console.error("Erro ao adicionar consulente:", error);
+            // Re-throw o erro para ser capturado pela UI
             throw new Error(error.message || "Não foi possível agendar o consulente.");
         }
   }, []);
