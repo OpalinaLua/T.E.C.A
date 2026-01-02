@@ -595,6 +595,53 @@ export function useSchoolData() {
       setSelectedCategories(categories);
   }, []);
 
+  const archiveAndResetGira = useCallback(async () => {
+    // 1. Calcular o resumo da gira atual
+    const attendanceSummary = mediums
+      .map(medium => {
+        const attendedCount = medium.entities.reduce((acc, entity) => {
+          return acc + entity.consulentes.filter(c => c.status === 'atendido').length;
+        }, 0);
+        return { mediumName: medium.name, attendedCount };
+      })
+      .filter(summary => summary.attendedCount > 0);
+
+    const totalAttended = attendanceSummary.reduce((acc, summary) => acc + summary.attendedCount, 0);
+
+    if (totalAttended === 0) {
+      throw new Error("Nenhum consulente foi marcado como 'atendido'. Nada para arquivar.");
+    }
+
+    const batch = writeBatch(db);
+
+    // 2. Criar novo documento na coleção 'giraHistory'
+    const historyRef = doc(collection(db, 'giraHistory'));
+    batch.set(historyRef, {
+      date: serverTimestamp(),
+      summary: attendanceSummary,
+      totalAttended: totalAttended,
+    });
+
+    // 3. Limpar os consulentes de todos os médiuns
+    mediums.forEach(medium => {
+      const mediumRef = doc(db, 'mediums', medium.id);
+      const clearedEntities = medium.entities.map(entity => ({
+        ...entity,
+        consulentes: [],
+      }));
+      batch.update(mediumRef, { entities: clearedEntities });
+    });
+
+    // 4. Executar o batch
+    try {
+      await batch.commit();
+      return `Gira arquivada com ${totalAttended} atendimentos. Os agendamentos foram limpos.`;
+    } catch (error) {
+      console.error("Erro ao arquivar e resetar a gira:", error);
+      throw new Error("Ocorreu um erro ao arquivar a gira. Tente novamente.");
+    }
+  }, [mediums]);
+
 
   useEffect(() => {
     if(error) {
@@ -625,5 +672,6 @@ export function useSchoolData() {
     updateSelectedCategories,
     saveAllManagementChanges,
     updateConsulenteStatus,
+    archiveAndResetGira,
   };
 }

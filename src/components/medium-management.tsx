@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown, Search, UserRound } from 'lucide-react';
+import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown, Archive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -39,7 +39,7 @@ import { SUPER_ADMINS } from '@/lib/secrets';
 import type { User } from 'firebase/auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROLES } from '@/lib/types';
-import { ConsulenteHistoryList } from './consulente-history-list';
+import { GiraHistory } from './gira-history';
 
 
 interface MediumManagementProps {
@@ -56,6 +56,7 @@ interface MediumManagementProps {
   updateAllEntityLimits: (newLimit: number) => Promise<void>;
   updateSpiritualCategoryName: (oldName: string, newName: string) => Promise<void>;
   updateSelectedCategories: (categories: Category[]) => Promise<void>;
+  archiveAndResetGira: () => Promise<string>;
   onSaveAndClose: (updatedMediums: Medium[], updatedCategories: Category[]) => Promise<void>;
 }
 
@@ -286,7 +287,7 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
     );
 }
 
-export function MediumManagement({ user, initialMediums, initialSelectedCategories, spiritualCategories, addMedium, removeMedium, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, updateSelectedCategories, onSaveAndClose }: MediumManagementProps) {
+export function MediumManagement({ user, initialMediums, initialSelectedCategories, spiritualCategories, addMedium, removeMedium, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, updateSelectedCategories, archiveAndResetGira, onSaveAndClose }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
     const [activeTab, setActiveTab] = useState("gira");
@@ -567,11 +568,33 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                         <TabsContent value="history">
                             <Card className="border-0 shadow-none">
                                 <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Resumo de Atendimentos</CardTitle>
-                                    <CardDescription>Veja um resumo da quantidade de atendimentos realizados na gira atual, agrupados por médium.</CardDescription>
+                                    <CardTitle>Arquivo de Giras</CardTitle>
+                                    <CardDescription>Veja o histórico de giras passadas e arquive a sessão atual para limpar os registros.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-0">
-                                    <ConsulenteHistoryList mediums={initialMediums} />
+                                <CardContent className="p-0 space-y-6">
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" className="w-full">
+                                                <Archive className="mr-2" /> Arquivar Gira Atual e Limpar Atendimentos
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmar Arquivamento?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta ação irá salvar um resumo dos atendimentos da gira atual no histórico e, em seguida, <strong className="text-destructive">limpará TODOS os consulentes de TODOS os médiuns.</strong> 
+                                                    <br/><br/>Use isso no final da gira para preparar o sistema para o próximo dia. Esta ação não pode ser desfeita.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={archiveAndResetGira}>
+                                                    Confirmar e Arquivar
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                    <GiraHistory />
                                 </CardContent>
                             </Card>
                         </TabsContent>

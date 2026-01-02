@@ -51,6 +51,7 @@ function HomeClient() {
     updateSelectedCategories: _updateSelectedCategories,
     saveAllManagementChanges: _saveAllManagementChanges,
     updateConsulenteStatus: _updateConsulenteStatus,
+    archiveAndResetGira: _archiveAndResetGira,
   } = useSchoolData();
   
   const { toast } = useToast();
@@ -127,6 +128,10 @@ function HomeClient() {
   const saveAllManagementChanges = useCallback((...args: Parameters<typeof _saveAllManagementChanges>) => 
       handleAsyncAction(_saveAllManagementChanges, { title: "Sucesso", description: "Todas as alterações foram salvas." }, ...args),
   [_saveAllManagementChanges, handleAsyncAction]);
+  
+  const archiveAndResetGira = useCallback((...args: Parameters<typeof _archiveAndResetGira>) => 
+    handleAsyncAction(_archiveAndResetGira, (desc) => ({ title: "Gira Arquivada", description: desc as string }), ...args),
+  [_archiveAndResetGira, handleAsyncAction]);
 
   const updateConsulenteStatus = useCallback(async (...args: Parameters<typeof _updateConsulenteStatus>) => {
     try {
@@ -214,6 +219,7 @@ function HomeClient() {
                     updateAllEntityLimits={updateAllEntityLimits}
                     updateSpiritualCategoryName={updateSpiritualCategoryName}
                     updateSelectedCategories={_updateSelectedCategories}
+                    archiveAndResetGira={archiveAndResetGira}
                     onSaveAndClose={async (updatedMediums, updatedCategories) => {
                         await saveAllManagementChanges(updatedMediums, updatedCategories);
                         await handleLogoutOnClose();
