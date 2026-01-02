@@ -76,26 +76,31 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && selectedMediumId && selectedEntityId && !isSubmitting) {
-      setIsSubmitting(true);
-      try {
-        await addConsulente(name.trim(), selectedMediumId, selectedEntityId);
-        // Limpa o formulário apenas em caso de sucesso.
-        setName('');
-        setSelectedMediumId('');
-        setSelectedEntityId('');
-      } catch (error) {
-        // O erro já é exibido pelo hook, então não precisamos fazer nada aqui.
-        console.error("Falha ao agendar consulente:", error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else if (!isSubmitting) {
-        toast({
-            title: "Erro de Validação",
-            description: "Por favor, preencha todos os campos para agendar um consulente.",
-            variant: "destructive",
-        });
+    if (!name.trim() || !selectedMediumId || !selectedEntityId) {
+      toast({
+        title: "Erro de Validação",
+        description: "Por favor, preencha todos os campos para agendar um consulente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await addConsulente(name.trim(), selectedMediumId, selectedEntityId);
+      // Limpa o formulário apenas em caso de sucesso.
+      setName('');
+      setSelectedMediumId('');
+      setSelectedEntityId('');
+    } catch (error) {
+      // O erro já é exibido pelo hook `useSchoolData` através do `handleAsyncAction`,
+      // então não precisamos mostrar outro toast aqui.
+      // O importante é que o formulário NÃO é limpo em caso de erro.
+      console.error("Falha ao agendar consulente:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
