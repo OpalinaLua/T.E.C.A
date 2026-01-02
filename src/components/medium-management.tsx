@@ -1,9 +1,8 @@
 
-
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import type { Medium, Entity, Category, MediumRole } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import type { Medium, Entity, Category, MediumRole, Consulente } from '@/lib/types';
 import {
   Accordion,
   AccordionContent,
@@ -25,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown } from 'lucide-react';
+import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown, Search, UserRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -39,6 +38,7 @@ import { SUPER_ADMINS } from '@/lib/secrets';
 import type { User } from 'firebase/auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROLES } from '@/lib/types';
+import { ConsulenteHistoryList } from './consulente-history-list';
 
 
 interface MediumManagementProps {
@@ -161,6 +161,7 @@ function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeS
                                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-7 w-7" onClick={() => setEditingCategory({ oldName: cat, newName: cat })}>
                                     <Pencil className="h-4 w-4" />
                                 </Button>
+
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7">
@@ -467,9 +468,10 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
         <div className="flex flex-col h-full">
             <div className="flex-grow">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3")}>
+                    <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
                         <TabsTrigger value="mediums" className="flex-col sm:flex-row gap-2 py-2"><Users />Médiuns</TabsTrigger>
+                        <TabsTrigger value="history" className="flex-col sm:flex-row gap-2 py-2"><History />Históricos</TabsTrigger>
                         <TabsTrigger value="register" className="flex-col sm:flex-row gap-2 py-2"><BookUser />Cadastrar</TabsTrigger>
                         {isSuperAdmin && (
                             <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
@@ -512,12 +514,12 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                                                             aria-label={`Marcar presença para ${medium.name}`}
                                                         />
                                                         <AccordionTrigger asChild>
-                                                            <div className="p-0 flex-1 text-left cursor-pointer hover:underline">
-                                                                <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
-                                                                    {medium.name}
-                                                                    {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
-                                                                </Label>
-                                                            </div>
+                                                          <div className="p-0 flex-1 text-left cursor-pointer hover:underline">
+                                                              <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
+                                                                  {medium.name}
+                                                                  {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
+                                                              </Label>
+                                                          </div>
                                                         </AccordionTrigger>
                                                     </div>
                                                     <div className="flex items-center gap-1 pl-2">
@@ -559,6 +561,18 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                                          )}
                                 </CardContent>
                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="history">
+                            <Card className="border-0 shadow-none">
+                                <CardHeader className="p-0 pb-4">
+                                    <CardTitle>Histórico de Consulentes</CardTitle>
+                                    <CardDescription>Veja todos os consulentes que possuem histórico de atendimentos.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <ConsulenteHistoryList mediums={initialMediums} />
+                                </CardContent>
+                            </Card>
                         </TabsContent>
 
                         <TabsContent value="register">
