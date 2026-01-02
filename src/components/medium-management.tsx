@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -356,7 +357,7 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
         setMediums(prev => prev.map(m => {
             if (m.id !== mediumId) return m;
             const newEntities = m.entities.filter(e => e.id !== entityId);
-            return { ...m, entities: newEntities };
+            return { ...medium, entities: newEntities };
         }));
     };
 
@@ -566,8 +567,8 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                         <TabsContent value="history">
                             <Card className="border-0 shadow-none">
                                 <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Histórico de Atendimentos</CardTitle>
-                                    <CardDescription>Veja os atendimentos realizados na gira atual, agrupados por médium.</CardDescription>
+                                    <CardTitle>Resumo de Atendimentos</CardTitle>
+                                    <CardDescription>Veja um resumo da quantidade de atendimentos realizados na gira atual, agrupados por médium.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <ConsulenteHistoryList mediums={initialMediums} />

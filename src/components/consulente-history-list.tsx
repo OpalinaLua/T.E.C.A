@@ -1,116 +1,101 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
-import type { Medium, Consulente, Entity } from '@/lib/types';
+import { useMemo } from 'react';
+import type { Medium } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Input } from "@/components/ui/input";
-import { UserRound } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
-import { Badge } from './ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Separator } from './ui/separator';
 
 interface ConsulenteHistoryListProps {
     mediums: Medium[];
 }
 
-interface AttendanceRecord {
-    consulenteName: string;
+interface AttendanceSummary {
     entityName: string;
     entityCategory: string;
-    status: Consulente['status'];
+    attendedCount: number;
 }
 
 export function ConsulenteHistoryList({ mediums }: ConsulenteHistoryListProps) {
-    const [searchQuery, setSearchQuery] = useState('');
 
-    const mediumsWithAttendance = useMemo(() => {
-        return mediums
+    const { mediumsWithAttendance, totalAttended } = useMemo(() => {
+        let totalAttended = 0;
+        const mediumsWithAttendance = mediums
             .map(medium => {
-                const attendance: AttendanceRecord[] = [];
+                const attendance: AttendanceSummary[] = [];
                 medium.entities.forEach(entity => {
-                    entity.consulentes.forEach(consulente => {
+                    // Conta apenas consulentes marcados como 'atendido'
+                    const attendedCount = entity.consulentes.filter(c => c.status === 'atendido').length;
+                    if (attendedCount > 0) {
                         attendance.push({
-                            consulenteName: consulente.name,
                             entityName: entity.name,
                             entityCategory: entity.category,
-                            status: consulente.status
+                            attendedCount: attendedCount,
                         });
-                    });
+                        totalAttended += attendedCount;
+                    }
                 });
                 return { ...medium, attendance };
             })
             .filter(m => m.attendance.length > 0)
             .sort((a, b) => a.name.localeCompare(b.name));
+        
+        return { mediumsWithAttendance, totalAttended };
     }, [mediums]);
 
-    const filteredMediums = useMemo(() => {
-        if (!searchQuery.trim()) {
-            return mediumsWithAttendance;
-        }
-        const query = searchQuery.toLowerCase().trim();
-        return mediumsWithAttendance
-            .map(medium => {
-                const filteredAttendance = medium.attendance.filter(record =>
-                    record.consulenteName.toLowerCase().includes(query)
-                );
-                return { ...medium, attendance: filteredAttendance };
-            })
-            .filter(m => m.attendance.length > 0);
-    }, [mediumsWithAttendance, searchQuery]);
-    
-    const getStatusBadgeVariant = (status: Consulente['status']) => {
-        switch (status) {
-            case 'atendido': return 'default';
-            case 'ausente': return 'destructive';
-            default: return 'secondary';
-        }
-    };
-    
-    const getStatusLabel = (status: Consulente['status']) => {
-        switch (status) {
-            case 'atendido': return 'Atendido';
-            case 'ausente': return 'Ausente';
-            default: return 'Agendado';
-        }
-    };
 
     return (
         <div className="space-y-4">
-            <div className="relative">
-                <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar por nome do consulente..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-full"
-                />
-            </div>
             <ScrollArea className="h-96">
-                 {filteredMediums.length > 0 ? (
-                    <Accordion type="single" collapsible className="w-full">
-                        {filteredMediums.map(medium => (
-                            <AccordionItem value={medium.id} key={medium.id}>
-                                <AccordionTrigger>{medium.name}</AccordionTrigger>
-                                <AccordionContent>
-                                    <ul className="space-y-3 pl-2">
-                                        {medium.attendance.map((record, i) => (
-                                             <li key={i} className="text-sm border-l-2 pl-4 space-y-1">
-                                                <p><span className="font-semibold">Consulente:</span> {record.consulenteName}</p>
-                                                <p><span className="font-semibold">Entidade:</span> {record.entityName} ({record.entityCategory})</p>
-                                                <Badge variant={getStatusBadgeVariant(record.status)}>{getStatusLabel(record.status)}</Badge>
-                                            </li>
-                                        ))}
-                                    </ul>
+                 {mediumsWithAttendance.length > 0 ? (
+                    <Accordion type="multiple" className="w-full space-y-2">
+                        {mediumsWithAttendance.map(medium => (
+                            <AccordionItem value={medium.id} key={medium.id} className="border rounded-lg bg-card">
+                                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                    <span className="font-medium">{medium.name}</span>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-4 pb-3">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Entidade</TableHead>
+                                                <TableHead className="text-right">Atendidos</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {medium.attendance.map((record, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell>
+                                                        <div className="font-medium">{record.entityName}</div>
+                                                        <div className="text-xs text-muted-foreground">{record.entityCategory}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-bold text-lg">{record.attendedCount}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
                     </Accordion>
                 ) : (
                     <p className="text-sm text-muted-foreground italic text-center py-6">
-                        {searchQuery ? `Nenhum atendimento encontrado para "${searchQuery}".` : "Nenhum atendimento registrado para a gira atual."}
+                        Nenhum atendimento com status "atendido" foi registrado para a gira atual.
                     </p>
                 )}
             </ScrollArea>
+             {totalAttended > 0 && (
+                <div className="pt-4">
+                    <Separator />
+                    <div className="flex justify-between items-center mt-4 px-2">
+                        <span className="text-lg font-bold">Total da Gira:</span>
+                        <span className="text-2xl font-extrabold text-primary">{totalAttended}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
