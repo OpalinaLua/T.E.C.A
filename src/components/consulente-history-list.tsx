@@ -2,77 +2,102 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import type { Medium, Consulente } from '@/lib/types';
+import type { Medium, Consulente, Entity } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Search } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from './ui/scroll-area';
+import { Badge } from './ui/badge';
 
 interface ConsulenteHistoryListProps {
     mediums: Medium[];
 }
 
+interface AttendanceRecord {
+    consulenteName: string;
+    entityName: string;
+    entityCategory: string;
+    status: Consulente['status'];
+}
+
 export function ConsulenteHistoryList({ mediums }: ConsulenteHistoryListProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
-    const consulentesWithHistory = useMemo(() => {
-        const allConsulentes: Consulente[] = [];
-        const seenNames = new Set<string>();
-
-        // Percorre todos os médiuns e entidades para coletar consulentes com histórico
-        mediums.forEach(medium => {
-            medium.entities.forEach(entity => {
-                entity.consulentes.forEach(consulente => {
-                    // Adiciona apenas se tiver histórico e se o nome não tiver sido visto ainda
-                    if (consulente.history && consulente.history.length > 0 && !seenNames.has(consulente.name.toLowerCase())) {
-                        allConsulentes.push(consulente);
-                        seenNames.add(consulente.name.toLowerCase());
-                    }
+    const mediumsWithAttendance = useMemo(() => {
+        return mediums
+            .map(medium => {
+                const attendance: AttendanceRecord[] = [];
+                medium.entities.forEach(entity => {
+                    entity.consulentes.forEach(consulente => {
+                        attendance.push({
+                            consulenteName: consulente.name,
+                            entityName: entity.name,
+                            entityCategory: entity.category,
+                            status: consulente.status
+                        });
+                    });
                 });
-            });
-        });
-        
-        // Ordena por nome
-        allConsulentes.sort((a, b) => a.name.localeCompare(b.name));
-        
-        return allConsulentes;
-
+                return { ...medium, attendance };
+            })
+            .filter(m => m.attendance.length > 0)
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [mediums]);
 
-    const filteredConsulentes = useMemo(() => {
+    const filteredMediums = useMemo(() => {
         if (!searchQuery.trim()) {
-            return consulentesWithHistory;
+            return mediumsWithAttendance;
         }
         const query = searchQuery.toLowerCase().trim();
-        return consulentesWithHistory.filter(c => c.name.toLowerCase().includes(query));
-    }, [consulentesWithHistory, searchQuery]);
+        return mediumsWithAttendance
+            .map(medium => {
+                const filteredAttendance = medium.attendance.filter(record =>
+                    record.consulenteName.toLowerCase().includes(query)
+                );
+                return { ...medium, attendance: filteredAttendance };
+            })
+            .filter(m => m.attendance.length > 0);
+    }, [mediumsWithAttendance, searchQuery]);
+    
+    const getStatusBadgeVariant = (status: Consulente['status']) => {
+        switch (status) {
+            case 'atendido': return 'default';
+            case 'ausente': return 'destructive';
+            default: return 'secondary';
+        }
+    };
+    
+    const getStatusLabel = (status: Consulente['status']) => {
+        switch (status) {
+            case 'atendido': return 'Atendido';
+            case 'ausente': return 'Ausente';
+            default: return 'Agendado';
+        }
+    };
 
     return (
         <div className="space-y-4">
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar consulente..."
+                    placeholder="Buscar por nome do consulente..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 w-full"
                 />
             </div>
             <ScrollArea className="h-96">
-                 {filteredConsulentes.length > 0 ? (
+                 {filteredMediums.length > 0 ? (
                     <Accordion type="single" collapsible className="w-full">
-                        {filteredConsulentes.map(consulente => (
-                            <AccordionItem value={consulente.id} key={consulente.id}>
-                                <AccordionTrigger>{consulente.name}</AccordionTrigger>
+                        {filteredMediums.map(medium => (
+                            <AccordionItem value={medium.id} key={medium.id}>
+                                <AccordionTrigger>{medium.name}</AccordionTrigger>
                                 <AccordionContent>
                                     <ul className="space-y-3 pl-2">
-                                        {consulente.history!.map((h, i) => (
-                                             <li key={i} className="text-sm border-l-2 pl-4">
-                                                <p><span className="font-semibold">Data:</span> {format(new Date(h.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-                                                <p><span className="font-semibold">Entidade:</span> {h.entityName}</p>
-                                                <p><span className="font-semibold">Linhas:</span> {h.categories.join(', ')}</p>
+                                        {medium.attendance.map((record, i) => (
+                                             <li key={i} className="text-sm border-l-2 pl-4 space-y-1">
+                                                <p><span className="font-semibold">Consulente:</span> {record.consulenteName}</p>
+                                                <p><span className="font-semibold">Entidade:</span> {record.entityName} ({record.entityCategory})</p>
+                                                <Badge variant={getStatusBadgeVariant(record.status)}>{getStatusLabel(record.status)}</Badge>
                                             </li>
                                         ))}
                                     </ul>
@@ -82,12 +107,10 @@ export function ConsulenteHistoryList({ mediums }: ConsulenteHistoryListProps) {
                     </Accordion>
                 ) : (
                     <p className="text-sm text-muted-foreground italic text-center py-6">
-                        {searchQuery ? `Nenhum consulente encontrado para "${searchQuery}".` : "Nenhum consulente com histórico encontrado."}
+                        {searchQuery ? `Nenhum atendimento encontrado para "${searchQuery}".` : "Nenhum atendimento registrado para a gira atual."}
                     </p>
                 )}
             </ScrollArea>
         </div>
     );
 }
-
-    

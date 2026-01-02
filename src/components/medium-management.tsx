@@ -513,22 +513,22 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                                                             onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
                                                             aria-label={`Marcar presença para ${medium.name}`}
                                                         />
-                                                        <AccordionTrigger asChild>
-                                                          <div className="p-0 flex-1 text-left cursor-pointer hover:underline">
-                                                              <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2">
-                                                                  {medium.name}
-                                                                  {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
-                                                              </Label>
-                                                          </div>
-                                                        </AccordionTrigger>
+                                                        <div className="flex-1 text-left cursor-pointer p-0" onClick={() => toggleEditing(medium.id)}>
+                                                            <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2 hover:underline">
+                                                                {medium.name}
+                                                                {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
+                                                            </Label>
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-1 pl-2">
                                                         <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
                                                             {medium.isPresent ? 'Presente' : 'Ausente'}
                                                         </Badge>
-                                                        <Button variant="ghost" size="icon" onClick={() => toggleEditing(medium.id)}>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
+                                                        <AccordionTrigger asChild>
+                                                            <Button variant="ghost" size="icon">
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                        </AccordionTrigger>
                                                         <AlertDialog>
                                                             <AlertDialogTrigger asChild>
                                                                 <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
@@ -566,8 +566,8 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
                         <TabsContent value="history">
                             <Card className="border-0 shadow-none">
                                 <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Histórico de Consulentes</CardTitle>
-                                    <CardDescription>Veja todos os consulentes que possuem histórico de atendimentos.</CardDescription>
+                                    <CardTitle>Histórico de Atendimentos</CardTitle>
+                                    <CardDescription>Veja os atendimentos realizados na gira atual, agrupados por médium.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <ConsulenteHistoryList mediums={initialMediums} />

@@ -7,7 +7,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { Medium, Category, Consulente, ConsulenteStatus, GiraHistoryEntry } from '@/lib/types';
+import type { Medium, Category, Consulente, ConsulenteStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +26,6 @@ import {
 import { Pencil, Crown, UserCheck, UserMinus, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface EditConsulenteDialogProps {
   consulente: Consulente;
@@ -86,47 +84,6 @@ function EditConsulenteDialog({ consulente, onSave, trigger }: EditConsulenteDia
       </AlertDialogContent>
     </AlertDialog>
   );
-}
-
-
-function ConsulenteHistoryDialog({ consulente, trigger }: { consulente: Consulente; trigger: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
-
-    return (
-        <AlertDialog open={open} onOpenChange={setOpen}>
-            <AlertDialogTrigger asChild>
-                {trigger}
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Histórico de Atendimento: {consulente.name}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Exibindo os atendimentos mais recentes.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="max-h-60 overflow-y-auto pr-2">
-                    {consulente.history && consulente.history.length > 0 ? (
-                        <ul className="space-y-3">
-                            {consulente.history.map((h, i) => (
-                                <li key={i} className="text-sm border-b pb-2">
-                                    <p><span className="font-semibold">Data:</span> {format(new Date(h.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-                                    <p><span className="font-semibold">Entidade:</span> {h.entityName}</p>
-                                    <p><span className="font-semibold">Linhas:</span> {h.categories.join(', ')}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-sm text-muted-foreground italic text-center py-4">
-                            Nenhum histórico encontrado para este consulente.
-                        </p>
-                    )}
-                </div>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setOpen(false)}>Fechar</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-    );
 }
 
 // Interface para as props do componente.
@@ -255,17 +212,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                             </div>
 
                             <div className="flex items-center">
-                              {consulente.history && consulente.history.length > 0 && (
-                                <ConsulenteHistoryDialog
-                                    consulente={consulente}
-                                    trigger={
-                                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-blue-500 h-8 w-8">
-                                            <History className="h-4 w-4" />
-                                            <span className="sr-only">Ver Histórico</span>
-                                        </Button>
-                                    }
-                                />
-                              )}
                               <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
                                   <UserCheck className="h-4 w-4" />
                                   <span className="sr-only">Marcar como atendido</span>
@@ -299,5 +245,3 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
       </Card>
   );
 }
-
-    
