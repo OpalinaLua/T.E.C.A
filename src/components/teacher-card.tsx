@@ -1,8 +1,6 @@
 /**
  * @fileoverview Componente que exibe as informações de um médium em um card.
  * Este componente mostra os detalhes do médium, suas entidades e consulentes.
- * Também fornece ações como editar, remover, e alterar o status de presença do médium
- * e a disponibilidade de suas entidades.
  */
 "use client";
 
@@ -100,7 +98,6 @@ interface MediumCardProps {
 export function MediumCard({ medium, removeConsulente, updateConsulenteName, updateConsulenteStatus, selectedCategories, spiritualCategories, searchQuery }: MediumCardProps) {
   
   const sortedEntities = useMemo(() => {
-    // Cria um mapa da ordem global das categorias para busca rápida.
     const categoryOrderMap = new Map(spiritualCategories.map((cat, index) => [cat, index]));
     
     return [...medium.entities].sort((a, b) => {
@@ -109,20 +106,16 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
         if (orderA !== orderB) {
             return orderA - orderB;
         }
-        return a.order - b.order; // Fallback para a ordem da entidade, se houver
+        return a.order - b.order;
     });
   }, [medium.entities, spiritualCategories]);
 
   const activeEntitiesForGira = useMemo(() => {
     const query = searchQuery?.toLowerCase().trim() || '';
-
-    // 1. Filtra primeiro pelas categorias selecionadas na gira
     let entitiesForGira = sortedEntities.filter(e => selectedCategories.includes(e.category));
 
-    // 2. Se houver um termo de busca, aplica a filtragem adicional
     if (query) {
       const isSearchingForMedium = medium.name.toLowerCase().includes(query);
-      // Se a busca não for pelo nome do médium, filtramos as entidades
       if (!isSearchingForMedium) {
         entitiesForGira = entitiesForGira.filter(e => 
           e.name.toLowerCase().includes(query) ||
@@ -134,7 +127,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
     
     return entitiesForGira;
   }, [sortedEntities, selectedCategories, searchQuery, medium.name]);
-
 
   const totalConsulentesInGira = useMemo(() => {
      return activeEntitiesForGira.reduce((acc, entity) => acc + entity.consulentes.length, 0);
@@ -165,7 +157,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
 
   return (
       <Card className="flex flex-col h-full transition-all duration-300 ease-in-out">
-        {/* Cabeçalho do Card com nome, status e botões de ação */}
         <CardHeader>
           <div className='flex items-start justify-between w-full'>
             <div className="flex flex-col gap-2">
@@ -183,7 +174,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
           </div>
         </CardHeader>
         
-        {/* Conteúdo do Card com a lista de entidades e consulentes */}
         <CardContent className={cn("flex-grow space-y-4", totalConsulentesInGira === 0 && activeEntitiesForGira.length === 0 && "pt-0 sm:pt-0")}>
           {selectedCategories.length === 0 ? (
             <p className="text-sm text-muted-foreground italic text-center py-4">Selecione uma ou mais categorias de gira para ver as entidades.</p>
