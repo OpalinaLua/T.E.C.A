@@ -91,10 +91,6 @@ function HomeClient() {
       handleAsyncAction(_removeMedium, { title: "Médium Removido", description: `O médium foi removido com sucesso.` }, ...args),
   [_removeMedium, handleAsyncAction]);
 
-  const addConsulente = useCallback((...args: Parameters<typeof _addConsulente>) => 
-      handleAsyncAction(_addConsulente, { title: "Sucesso", description: `Consulente ${args[0]} foi agendado(a).` }, ...args),
-  [_addConsulente, handleAsyncAction]);
-
   const removeConsulente = useCallback((...args: Parameters<typeof _removeConsulente>) => 
       handleAsyncAction(_removeConsulente, { title: "Consulente Removido", description: `${args[3]} foi removido(a).` }, ...args),
   [_removeConsulente, handleAsyncAction]);
@@ -241,7 +237,7 @@ function HomeClient() {
   const RegistrationForm = () => (
       <ConsulenteRegistration
         mediums={mediums}
-        addConsulente={addConsulente}
+        addConsulente={_addConsulente}
         selectedCategories={selectedCategories}
         spiritualCategories={spiritualCategories}
       />

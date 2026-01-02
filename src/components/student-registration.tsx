@@ -90,15 +90,22 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
     setIsSubmitting(true);
     try {
       await addConsulente(name.trim(), selectedMediumId, selectedEntityId);
+      toast({
+        title: "Sucesso",
+        description: `Consulente ${name.trim()} foi agendado(a).`,
+      });
       // Limpa o formulário apenas em caso de sucesso.
       setName('');
       setSelectedMediumId('');
       setSelectedEntityId('');
-    } catch (error) {
-      // O erro já é exibido pelo hook `useSchoolData` através do `handleAsyncAction`,
-      // então não precisamos mostrar outro toast aqui.
-      // O importante é que o formulário NÃO é limpo em caso de erro.
-      console.error("Falha ao agendar consulente:", error);
+    } catch (error: any) {
+      // Exibe o erro para o usuário
+      toast({
+        title: "Erro no Agendamento",
+        description: error.message || "Não foi possível agendar o consulente. Tente novamente.",
+        variant: "destructive",
+      });
+      // O formulário NÃO é limpo em caso de erro.
     } finally {
       setIsSubmitting(false);
     }
