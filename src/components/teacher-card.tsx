@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Crown, UserCheck, UserMinus, History } from 'lucide-react';
+import { Pencil, Crown, UserCheck, UserMinus, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 
@@ -190,12 +190,7 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
           ) : activeEntitiesForGira.length === 0 ? (
              <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium corresponde à sua busca ou às categorias selecionadas.</p>
           ) : (
-            activeEntitiesForGira.map((entity, index) => {
-                const activeConsulentes = entity.consulentes.filter(c => c.status !== 'atendido');
-
-                if (activeConsulentes.length === 0) return null;
-
-                return (
+            activeEntitiesForGira.map((entity, index) => (
               <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
                 {index > 0 && <Separator className="my-4" />}
                 <div className="flex justify-between items-center mb-2">
@@ -209,8 +204,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                 {entity.consulentes.length > 0 ? (
                   <ul className="space-y-2">
                     {entity.consulentes.map(consulente => {
-                      if (consulente.status === 'atendido') return null; // Não renderiza consulentes atendidos
-
                       const isConsulenteMatch = query && consulente.name.toLowerCase().includes(query);
                       return (
                           <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status), isConsulenteMatch && "ring-2 ring-accent")}>
@@ -219,28 +212,10 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                             </div>
 
                             <div className="flex items-center">
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')}>
-                                          <UserCheck className="h-4 w-4" />
-                                          <span className="sr-only">Marcar como atendido</span>
-                                      </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                          <AlertDialogTitle>Confirmar Atendimento?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                              Isso marcará "{consulente.name}" como atendido e o removerá da fila ativa.
-                                          </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
-                                              Confirmar
-                                          </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
+                              <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
+                                  <UserCheck className="h-4 w-4" />
+                                  <span className="sr-only">Marcar como atendido</span>
+                              </Button>
                               <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-amber-500 h-8 w-8", consulente.status === 'ausente' && 'text-amber-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'ausente')}>
                                   <UserMinus className="h-4 w-4" />
                                   <span className="sr-only">Marcar como ausente</span>
@@ -255,6 +230,31 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                                   </Button>
                                 }
                               />
+                               <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8">
+                                    <UserX className="h-4 w-4" />
+                                    <span className="sr-only">Remover consulente</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta ação removerá permanentemente o agendamento de "{consulente.name}".
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => removeConsulente(medium.id, entity.id, consulente.id, consulente.name)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Excluir
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                           </li>
                       )
@@ -264,7 +264,7 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                   <p className="text-sm text-muted-foreground italic">Nenhum consulente agendado.</p>
                 )}
               </div>
-            )})}
+            ))
           )}
         </CardContent>
       </Card>
