@@ -90,10 +90,6 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
     setIsSubmitting(true);
     try {
       await addConsulente(name.trim(), selectedMediumId, selectedEntityId);
-      toast({
-        title: "Sucesso",
-        description: `Consulente ${name.trim()} foi agendado(a).`,
-      });
       // Limpa o formulário apenas em caso de sucesso.
       setName('');
       setSelectedMediumId('');
