@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import type { Medium, Consulente, Entity } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
-import { Search } from 'lucide-react';
+import { UserRound } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 
@@ -77,7 +77,7 @@ export function ConsulenteHistoryList({ mediums }: ConsulenteHistoryListProps) {
     return (
         <div className="space-y-4">
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     placeholder="Buscar por nome do consulente..."
                     value={searchQuery}
