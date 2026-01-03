@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Crown, UserCheck, UserMinus } from 'lucide-react';
+import { Pencil, Crown, UserCheck, UserMinus, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 
@@ -191,7 +191,53 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                     <Badge variant="outline">{entity.category}</Badge>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground italic">Nenhum consulente para esta entidade.</p>
+                {entity.consulentes.length > 0 ? (
+                  <ul className="space-y-2">
+                    {entity.consulentes.map(consulente => (
+                       <li key={consulente.id} className={cn("group flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status))}>
+                          <span className={cn("font-medium", query && consulente.name.toLowerCase().includes(query) && "underline")}>
+                            {consulente.name}
+                          </span>
+                          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-green-500 hover:bg-green-500/10 hover:text-green-600" onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
+                                    <UserCheck className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Atendido</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-500/10 hover:text-red-600" onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'ausente')}>
+                                    <UserMinus className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Ausente</p></TooltipContent>
+                              </Tooltip>
+                              <EditConsulenteDialog
+                                consulente={consulente}
+                                onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
+                                trigger={
+                                   <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:bg-primary/10 hover:text-primary">
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Editar Nome</p></TooltipContent>
+                                    </Tooltip>
+                                }
+                              />
+                            </TooltipProvider>
+                          </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Nenhum consulente para esta entidade.</p>
+                )}
               </div>
             ))
           )}
