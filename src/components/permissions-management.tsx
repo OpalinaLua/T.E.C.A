@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -24,10 +25,10 @@ interface PermissionsManagementProps {
     admins: string[];
     superAdmins: string[];
   };
-  addAdmin: (email: string) => Promise<string>;
-  removeAdmin: (email: string) => Promise<string>;
-  addSuperAdmin: (email: string) => Promise<string>;
-  removeSuperAdmin: (email: string) => Promise<string>;
+  addAdmin: (email: string) => Promise<string | void>;
+  removeAdmin: (email: string) => Promise<string | void>;
+  addSuperAdmin: (email: string) => Promise<string | void>;
+  removeSuperAdmin: (email: string) => Promise<string | void>;
 }
 
 export function PermissionsManagement({
@@ -55,7 +56,7 @@ export function PermissionsManagement({
     }
   };
 
-  const UserList = ({ title, emails, onRemove, icon, variant }: { title: string, emails: string[], onRemove: (email: string) => Promise<string>, icon: React.ReactNode, variant: 'admin' | 'superadmin' }) => (
+  const UserList = ({ title, emails, onRemove, icon, variant }: { title: string, emails: string[], onRemove: (email: string) => Promise<string | void>, icon: React.ReactNode, variant: 'admin' | 'superadmin' }) => (
     <Card>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>

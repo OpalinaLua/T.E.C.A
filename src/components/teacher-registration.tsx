@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Componente de formulário para cadastrar um novo médium.
  * Permite ao usuário inserir o nome do médium e uma ou mais entidades associadas,
@@ -21,7 +22,6 @@ import { ROLES } from '@/lib/types';
 interface MediumRegistrationProps {
   addMedium: (name: string, entities: { name: string; limit: number, category: Category }[], role?: MediumRole) => Promise<void>;
   spiritualCategories: Category[];
-  onSuccess?: () => void;
 }
 
 // Interface para representar a estrutura de uma entidade sendo adicionada.
@@ -31,7 +31,7 @@ interface EntityInput {
     category: Category;
 }
 
-export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }: MediumRegistrationProps) {
+export function MediumRegistration({ addMedium, spiritualCategories }: MediumRegistrationProps) {
   // Estados do componente
   const [name, setName] = useState('');
   const [role, setRole] = useState<MediumRole | undefined>(undefined);
@@ -96,7 +96,6 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
           title: "Sucesso",
           description: `Médium ${name.trim()} foi cadastrado(a).`,
         });
-        onSuccess?.();
       } catch (error) {
           // O hook useSchoolData já lida com o toast de erro.
       } finally {
@@ -230,5 +229,3 @@ export function MediumRegistration({ addMedium, spiritualCategories, onSuccess }
     </Card>
   );
 }
-
-    

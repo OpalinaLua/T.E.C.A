@@ -170,7 +170,7 @@ export function useSchoolData() {
   /**
    * Adiciona um novo médium à coleção no Firestore.
    */
-  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole) => {
+  const addMedium = useCallback(async (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole): Promise<void> => {
     if (!name.trim() || entities.length === 0) {
         throw new Error("Nome e entidades são obrigatórios.");
     }
@@ -486,7 +486,7 @@ export function useSchoolData() {
   /**
    * Atualiza o limite de consulentes para TODAS as entidades de TODOS os médiuns, com exceções.
    */
-  const updateAllEntityLimits = useCallback(async (newLimit: number): Promise<string> => {
+  const updateAllEntityLimits = useCallback(async (newLimit: number): Promise<void> => {
     if (newLimit < 0 || isNaN(newLimit)) {
         throw new Error('O limite deve ser um número igual ou maior que zero.');
     }
@@ -494,7 +494,6 @@ export function useSchoolData() {
     const mediumsCollectionRef = collection(db, 'mediums');
     
     try {
-        let updatedCount = 0;
         await runTransaction(db, async (transaction) => {
             const mediumsSnapshot = await getDocs(query(mediumsCollectionRef));
             
@@ -522,15 +521,8 @@ export function useSchoolData() {
                 });
                 
                 transaction.update(mediumDoc.ref, { entities: updatedEntities });
-                updatedCount++;
             });
         });
-        
-        if (updatedCount > 0) {
-           return `O limite de entidades para ${updatedCount} médiuns foi atualizado para ${newLimit}.`;
-        } else {
-           return 'Nenhum médium elegível para a atualização global foi encontrado.';
-        }
 
     } catch (error) {
         console.error("Erro ao atualizar todos os limites de entidades:", error);
@@ -636,7 +628,7 @@ export function useSchoolData() {
       setSelectedCategories(categories);
   }, []);
 
-  const archiveAndResetGira = useCallback(async () => {
+  const archiveAndResetGira = useCallback(async (): Promise<string> => {
     // 1. Calcular o resumo da gira atual
     const attendanceSummary = mediums
       .map(medium => {
@@ -650,7 +642,7 @@ export function useSchoolData() {
     const totalAttended = attendanceSummary.reduce((acc, summary) => acc + summary.attendedCount, 0);
 
     if (totalAttended === 0) {
-      throw new Error("Nenhum consulente foi marcado como 'atendido'. Nada para arquivar.");
+      return "Não há nada para arquivar. Nenhum consulente foi marcado como 'atendido'.";
     }
 
     const batch = writeBatch(db);
@@ -685,25 +677,25 @@ export function useSchoolData() {
 
   // --- Funções de Gerenciamento de Permissões ---
 
-    const addAdmin = useCallback(async (email: string) => {
+    const addAdmin = useCallback(async (email: string): Promise<string> => {
         const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
         await updateDoc(permissionsDocRef, { admins: arrayUnion(email) });
         return `E-mail ${email} adicionado como Administrador.`;
     }, []);
 
-    const removeAdmin = useCallback(async (email: string) => {
+    const removeAdmin = useCallback(async (email: string): Promise<string> => {
         const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
         await updateDoc(permissionsDocRef, { admins: arrayRemove(email) });
         return `E-mail ${email} removido da lista de Administradores.`;
     }, []);
 
-    const addSuperAdmin = useCallback(async (email: string) => {
+    const addSuperAdmin = useCallback(async (email: string): Promise<string> => {
         const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
         await updateDoc(permissionsDocRef, { superAdmins: arrayUnion(email) });
         return `E-mail ${email} promovido a Super Administrador.`;
     }, []);
 
-    const removeSuperAdmin = useCallback(async (email: string) => {
+    const removeSuperAdmin = useCallback(async (email: string): Promise<string> => {
         const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
         // Garante que o bootstrap admin não pode ser removido
         if (BOOTSTRAP_SUPER_ADMINS.includes(email)) {
