@@ -726,7 +726,7 @@ export function MediumManagement({
                     </div>
                 </Tabs>
             </div>
-            <div className="flex-shrink-0 px-6 py-4 mt-auto border-t">
+            <div className="flex-shrink-0 px-6 py-4 border-t">
                 <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
                     Fechar e Salvar
