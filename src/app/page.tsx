@@ -12,8 +12,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Shield, Loader2, BookUser, Users } from 'lucide-react';
@@ -123,7 +123,7 @@ function HomeClient() {
             Gerenciar Médiuns e Gira
           </Button>
         </DialogTrigger>
-        <DialogContent className="p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90vh]">
+        <DialogContent className="p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] flex flex-col">
             <DialogHeader className="p-6 pb-4 flex-shrink-0">
               <DialogTitle>{userIsAdmin ? 'Painel de Gerenciamento' : 'Acesso Restrito'}</DialogTitle>
               <DialogDescription>
