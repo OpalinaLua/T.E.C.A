@@ -28,7 +28,7 @@ import {
   arrayRemove,
   runTransaction
 } from 'firebase/firestore';
-import { BOOTSTRAP_SUPER_ADMINS } from '@/lib/secrets';
+import { ADMIN_EMAILS, SUPER_ADMINS, BOOTSTRAP_SUPER_ADMINS } from '@/lib/secrets';
 
 const CATEGORIES_DOC_PATH = 'appState/spiritualCategories';
 const PERMISSIONS_DOC_PATH = 'appState/permissions';
@@ -140,9 +140,12 @@ export function useSchoolData() {
                 superAdmins: data.superAdmins || [],
             });
         } else {
-            // Se não existir, cria com o bootstrap super admin
-            setDoc(permissionsDocRef, { admins: [], superAdmins: BOOTSTRAP_SUPER_ADMINS });
-            setPermissions({ admins: [], superAdmins: BOOTSTRAP_SUPER_ADMINS });
+            // LÓGICA DE MIGRAÇÃO: Se o documento não existe, cria-o com os dados do secrets.ts
+            const initialAdmins = [...new Set([...ADMIN_EMAILS])];
+            const initialSuperAdmins = [...new Set([...BOOTSTRAP_SUPER_ADMINS, ...SUPER_ADMINS])];
+            
+            setDoc(permissionsDocRef, { admins: initialAdmins, superAdmins: initialSuperAdmins });
+            setPermissions({ admins: initialAdmins, superAdmins: initialSuperAdmins });
         }
         permissionsLoaded = true;
         updateLoadingState();
@@ -742,7 +745,9 @@ export function useSchoolData() {
     permissions,
     addAdmin,
     removeAdmin,
-    addSuperAdmin,
+addSuperAdmin,
     removeSuperAdmin,
   };
 }
+
+    
