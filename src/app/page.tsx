@@ -202,7 +202,7 @@ function HomeClient() {
 
   return (
     <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-      <header className="max-w-7xl mx-auto mb-6 sm:mb-8">
+      <header className="max-w-7xl mx-auto mb-6 sm:mb-8 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
           T.E.C.A
         </h1>
