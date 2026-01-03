@@ -27,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, Crown, UserCheck, UserMinus } from 'lucide-react';
+import { Pencil, Crown, UserCheck, UserMinus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 
@@ -243,6 +243,32 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                                     </Tooltip>
                                 }
                               />
+                               <AlertDialog>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10">
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Excluir Consulente</p></TooltipContent>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação removerá permanentemente o consulente <strong>{consulente.name}</strong>. Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => removeConsulente(medium.id, entity.id, consulente.id, consulente.name)} variant="destructive">
+                                            Excluir
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                               </AlertDialog>
                             </TooltipProvider>
                           </div>
                       </li>
