@@ -79,19 +79,20 @@ export function useSchoolData() {
     const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
     const unsubscribeMediums = onSnapshot(q, (snapshot) => {
-      const mediumsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Medium[];
-      setMediums(mediumsData);
-      mediumsLoaded = true;
-      updateLoadingState();
+        const mediumsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as Medium[];
+        setMediums(mediumsData);
+        mediumsLoaded = true;
+        updateLoadingState();
     }, (err) => {
-      console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Médiuns) -----------", err);
-      setError("Não foi possível conectar ao banco de dados para buscar os médiuns.");
-      mediumsLoaded = true; // Marca como carregado mesmo com erro para liberar a tela
-      updateLoadingState();
+        console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Médiuns) -----------", err);
+        setError("Não foi possível conectar ao banco de dados para buscar os médiuns.");
+        mediumsLoaded = true; // Marca como carregado mesmo com erro para liberar a tela
+        updateLoadingState();
     });
+
 
     // Listener para Categorias da Gira (selecionadas)
     const giraDocRef = doc(db, 'appState', 'gira');
@@ -175,7 +176,7 @@ export function useSchoolData() {
         throw new Error("Nome e entidades são obrigatórios.");
     }
     try {
-      const newMedium: Omit<Medium, 'id' | 'createdAt'> = {
+      const newMedium: Omit<Medium, 'id'> = {
         name,
         isPresent: true,
         entities: entities.map((entity, index) => ({
@@ -188,7 +189,7 @@ export function useSchoolData() {
           order: index, 
         })),
         role: role,
-        createdAt: serverTimestamp() as any, // Cast to any to avoid type issues with serverTimestamp
+        createdAt: serverTimestamp(),
       };
 
       await addDoc(collection(db, 'mediums'), newMedium);
@@ -606,7 +607,7 @@ export function useSchoolData() {
     // 1. Salvar mudanças nos médiuns
     mediumsToUpdate.forEach(medium => {
         const mediumRef = doc(db, 'mediums', medium.id);
-        const { id, ...dataToSave } = medium; // remove o 'id' do objeto a ser salvo
+        const { id, ...dataToSave } = medium; 
         batch.update(mediumRef, dataToSave);
     });
 
