@@ -67,6 +67,7 @@ export interface Medium {
   entities: Entity[];
   isPresent: boolean;
   createdAt: any; 
+  order: number;
 }
 
 /**

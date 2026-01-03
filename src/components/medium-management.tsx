@@ -439,6 +439,16 @@ export function MediumManagement({
         }));
     };
     
+    const moveMedium = (index: number, direction: 'up' | 'down') => {
+        const newMediums = [...mediums];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= newMediums.length) return;
+
+        [newMediums[index], newMediums[targetIndex]] = [newMediums[targetIndex], newMediums[index]];
+        
+        setMediums(newMediums);
+    };
+
     const MediumEditor = ({ medium }: { medium: Medium }) => {
         return (
              <AccordionContent className="bg-secondary/30 p-4 rounded-b-md">
@@ -500,7 +510,7 @@ export function MediumManagement({
 
     return (
         <div className="flex flex-col flex-1 min-h-0">
-            <div className="px-6 pt-0 pb-4 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
@@ -533,14 +543,22 @@ export function MediumManagement({
                         <Card className="border-0 shadow-none">
                                 <CardHeader className="p-0 pb-4">
                                     <CardTitle>Médiuns Cadastrados</CardTitle>
-                                    <CardDescription>Altere a presença ou edite os dados dos médiuns.</CardDescription>
+                                    <CardDescription>Altere a presença, ordem ou edite os dados dos médiuns.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => setEditingMediumId(value || null)}>
-                                        {mediums.map(medium => (
+                                        {mediums.map((medium, index) => (
                                             <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
                                                 <div className="flex items-center p-3 rounded-lg border bg-card transition-colors data-[state=open]:rounded-b-none">
-                                                    <div className="flex items-center gap-3 flex-1">
+                                                    <div className="flex flex-col">
+                                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveMedium(index, 'up')} disabled={index === 0}>
+                                                            <ArrowUp className="h-3 w-3" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveMedium(index, 'down')} disabled={index === mediums.length - 1}>
+                                                            <ArrowDown className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 flex-1 ml-2">
                                                         <Switch
                                                             id={`presence-${medium.id}`}
                                                             checked={medium.isPresent}
@@ -735,5 +753,3 @@ export function MediumManagement({
         </div>
     );
 }
-
-    

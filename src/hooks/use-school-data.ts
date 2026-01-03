@@ -76,13 +76,28 @@ export function useSchoolData() {
     
     // Listener para Médiuns
     const mediumsCollection = collection(db, 'mediums');
-    const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
+    const q = query(mediumsCollection, orderBy('order', 'asc'));
 
-    const unsubscribeMediums = onSnapshot(q, (snapshot) => {
-      const mediumsData = snapshot.docs.map(doc => ({
+    const unsubscribeMediums = onSnapshot(q, async (snapshot) => {
+      let mediumsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Medium[];
+
+      // One-time migration for existing documents without 'order'
+      const needsMigration = mediumsData.some(m => m.order === undefined);
+      if (needsMigration) {
+          const batch = writeBatch(db);
+          mediumsData.forEach((medium, index) => {
+              if (medium.order === undefined) {
+                  const mediumRef = doc(db, 'mediums', medium.id);
+                  batch.update(mediumRef, { order: index });
+                  medium.order = index; // Update local data immediately
+              }
+          });
+          await batch.commit();
+      }
+
       setMediums(mediumsData);
       mediumsLoaded = true;
       updateLoadingState();
@@ -175,7 +190,7 @@ export function useSchoolData() {
         throw new Error("Nome e entidades são obrigatórios.");
     }
     try {
-      const newMedium: Omit<Medium, 'id' | 'createdAt'> = {
+      const newMedium: Omit<Medium, 'id'> = {
         name,
         isPresent: true,
         entities: entities.map((entity, index) => ({
@@ -188,7 +203,8 @@ export function useSchoolData() {
           order: index, 
         })),
         role: role,
-        createdAt: serverTimestamp() as any, // Cast to any to avoid type issues with serverTimestamp
+        createdAt: serverTimestamp(),
+        order: mediums.length, // Assign the next order number
       };
 
       await addDoc(collection(db, 'mediums'), newMedium);
@@ -196,7 +212,7 @@ export function useSchoolData() {
       console.error("Erro ao adicionar médium:", error);
       throw new Error("Não foi possível cadastrar o médium.");
     }
-  }, []);
+  }, [mediums.length]);
 
   /**
    * Remove um médium da coleção no Firestore.
@@ -611,11 +627,11 @@ export function useSchoolData() {
   ) => {
     const batch = writeBatch(db);
 
-    // 1. Salvar mudanças nos médiuns
-    mediumsToUpdate.forEach(medium => {
+    // 1. Salvar mudanças nos médiuns (incluindo a nova ordem)
+    mediumsToUpdate.forEach((medium, index) => {
         const mediumRef = doc(db, 'mediums', medium.id);
-        const { id, ...dataToSave } = medium; // remove o 'id' do objeto a ser salvo
-        batch.update(mediumRef, dataToSave);
+        const { id, ...dataToSave } = medium; 
+        batch.update(mediumRef, { ...dataToSave, order: index });
     });
 
     // 2. Salvar mudanças nas categorias da gira selecionadas
