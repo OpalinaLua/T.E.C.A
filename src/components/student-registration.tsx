@@ -31,7 +31,7 @@ const getRoleOrder = (role?: MediumRole): number => {
     return index === -1 ? ROLES.length + 1 : index;
 };
 
-export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories }: ConsulenteRegistrationProps) {
+export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories, spiritualCategories }: ConsulenteRegistrationProps) {
   // Estados do componente.
   const [name, setName] = useState('');
   const [selectedMediumId, setSelectedMediumId] = useState('');
@@ -72,13 +72,24 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
     const medium = mediums.find(t => t.id === selectedMediumId);
     if (!medium) return [];
 
-    return medium.entities.filter(s => 
+    const categoryOrderMap = new Map(spiritualCategories.map((cat, index) => [cat, index]));
+    
+    const filtered = medium.entities.filter(s => 
       selectedCategories.includes(s.category) &&
       s.isAvailable && 
       s.consulenteLimit > 0 && 
       s.consulentes.length < s.consulenteLimit
     );
-  }, [mediums, selectedMediumId, selectedCategories]);
+
+    return filtered.sort((a, b) => {
+        const orderA = categoryOrderMap.get(a.category) ?? Infinity;
+        const orderB = categoryOrderMap.get(b.category) ?? Infinity;
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        return a.order - b.order;
+    });
+  }, [mediums, selectedMediumId, selectedCategories, spiritualCategories]);
 
   /**
    * Manipula a mudança de seleção do médium, resetando a entidade selecionada.
