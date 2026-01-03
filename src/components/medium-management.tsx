@@ -514,8 +514,8 @@ export function MediumManagement({
     };
 
     return (
-        <div className="flex flex-col flex-1 h-full">
-            <div className="flex-shrink-0 px-6">
+        <div className="flex-1 grid grid-rows-[auto,1fr,auto] min-h-0">
+            <div className="px-6 flex-shrink-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
@@ -529,7 +529,7 @@ export function MediumManagement({
                 </Tabs>
             </div>
             
-            <div className="flex-grow overflow-y-auto min-h-0">
+            <div className="min-h-0 overflow-y-hidden">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
                     <TabsContent value="gira" className="flex-1 min-h-0">
                         <ScrollArea className="h-full w-full">
