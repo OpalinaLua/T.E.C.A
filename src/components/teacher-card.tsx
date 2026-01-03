@@ -21,7 +21,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Crown, UserCheck, UserMinus, UserX } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Pencil, Crown, UserCheck, UserMinus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 
