@@ -221,31 +221,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                                   </Button>
                                 }
                               />
-                               <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={!entity.isAvailable}>
-                                        <UserX className="h-4 w-4" />
-                                        <span className="sr-only">Remover consulente</span>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta ação irá remover permanentemente o agendamento para {consulente.name}.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => removeConsulente(medium.id, entity.id, consulente.id, consulente.name)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                        Excluir
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                                </AlertDialog>
                             </div>
                           </li>
                       )
