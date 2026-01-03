@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import type { Medium, Category } from '@/lib/types';
+import type { Medium, Category, MediumRole } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Info } from 'lucide-react';
+import { ROLES } from '@/lib/types';
 
 // Interface para as props do componente.
 interface ConsulenteRegistrationProps {
@@ -23,6 +24,12 @@ interface ConsulenteRegistrationProps {
   selectedCategories: Category[];
   spiritualCategories: Category[];
 }
+
+const getRoleOrder = (role?: MediumRole): number => {
+    if (!role) return ROLES.length + 1;
+    const index = ROLES.indexOf(role);
+    return index === -1 ? ROLES.length + 1 : index;
+};
 
 export function ConsulenteRegistration({ mediums, addConsulente, selectedCategories }: ConsulenteRegistrationProps) {
   // Estados do componente.
@@ -37,7 +44,8 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
   // que pertença às categorias selecionadas para a gira.
   const availableMediums = useMemo(() => {
     if (selectedCategories.length === 0) return [];
-    return mediums.filter(t => 
+    
+    const filtered = mediums.filter(t => 
       t.isPresent && t.entities && t.entities.some(s => 
         selectedCategories.includes(s.category) &&
         s.isAvailable && 
@@ -45,6 +53,16 @@ export function ConsulenteRegistration({ mediums, addConsulente, selectedCategor
         s.consulentes.length < s.consulenteLimit
       )
     );
+
+    return filtered.sort((a, b) => {
+        const orderA = getRoleOrder(a.role);
+        const orderB = getRoleOrder(b.role);
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        return 0;
+    });
+
   }, [mediums, selectedCategories]);
   
   // Memoiza a lista de entidades disponíveis para o médium selecionado.

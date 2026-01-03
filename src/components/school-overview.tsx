@@ -2,11 +2,19 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { Medium, Category, ConsulenteStatus } from '@/lib/types';
+import type { Medium, Category, ConsulenteStatus, MediumRole } from '@/lib/types';
 import { MediumCard } from './teacher-card';
 import { Input } from './ui/input';
 import { Search } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ROLES } from '@/lib/types';
+
+
+const getRoleOrder = (role?: MediumRole): number => {
+    if (!role) return ROLES.length + 1;
+    const index = ROLES.indexOf(role);
+    return index === -1 ? ROLES.length + 1 : index;
+};
 
 interface SchoolOverviewProps {
   mediums: Medium[];
@@ -28,10 +36,19 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
   }, [mediums, activeTab]);
 
   const filteredAndSortedMediums = useMemo(() => {
+    const sortedByRole = [...listSource].sort((a, b) => {
+        const orderA = getRoleOrder(a.role);
+        const orderB = getRoleOrder(b.role);
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        return 0; // Mantém a ordem original (createdAt) se os cargos forem iguais
+    });
+
     const query = searchQuery.toLowerCase().trim();
 
     // 1. Filtrar médiuns que têm entidades nas categorias da gira selecionada
-    const mediumsInGira = listSource.filter(medium =>
+    const mediumsInGira = sortedByRole.filter(medium =>
       medium.entities.some(entity => selectedCategories.includes(entity.category))
     );
       
@@ -61,18 +78,7 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
         return false;
     });
 
-    // 4. Ordenar o resultado final
-    return searchedMediums.sort((a, b) => {
-        const countConsulentes = (m: Medium) => 
-            m.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
-
-        const aHasConsulentes = countConsulentes(a) > 0;
-        const bHasConsulentes = countConsulentes(b) > 0;
-
-        if (aHasConsulentes && !bHasConsulentes) return -1;
-        if (!aHasConsulentes && bHasConsulentes) return 1;
-        return 0;
-    });
+    return searchedMediums;
 
   }, [listSource, searchQuery, selectedCategories]);
 

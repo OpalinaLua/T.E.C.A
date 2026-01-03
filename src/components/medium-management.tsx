@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Medium, Entity, Category, MediumRole } from '@/lib/types';
 import {
   Accordion,
@@ -295,6 +295,12 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
     );
 }
 
+const getRoleOrder = (role?: MediumRole): number => {
+    if (!role) return ROLES.length + 1;
+    const index = ROLES.indexOf(role);
+    return index === -1 ? ROLES.length + 1 : index;
+};
+
 export function MediumManagement({ 
     user, 
     initialMediums, 
@@ -334,6 +340,19 @@ export function MediumManagement({
         setMediums(JSON.parse(JSON.stringify(initialMediums)));
         setSelectedCategories(initialSelectedCategories);
     }, [initialMediums, initialSelectedCategories]);
+
+    const sortedMediums = useMemo(() => {
+        return [...mediums].sort((a, b) => {
+            const orderA = getRoleOrder(a.role);
+            const orderB = getRoleOrder(b.role);
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            // If roles are the same or both have no role, maintain original order (which is by createdAt)
+            // Assuming the initial list is already sorted by `createdAt`.
+            return 0;
+        });
+    }, [mediums]);
 
 
     const handleMediumChange = (id: string, field: keyof Medium, value: any) => {
@@ -537,7 +556,7 @@ export function MediumManagement({
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => setEditingMediumId(value || null)}>
-                                        {mediums.map(medium => (
+                                        {sortedMediums.map(medium => (
                                             <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
                                                 <div className="flex items-center p-3 rounded-lg border bg-card transition-colors data-[state=open]:rounded-b-none">
                                                     <div className="flex items-center gap-3 flex-1">
