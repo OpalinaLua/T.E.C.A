@@ -3,7 +3,7 @@
  * @fileoverview Armazena segredos e chaves da aplicação.
  * ATENÇÃO: Estes valores são incluídos no código final enviado ao navegador.
  * A lista de administradores e super administradores agora é gerenciada no banco de dados.
- * Este arquivo mantém apenas o e-mail de "bootstrap" para recuperação e os valores legados para migração.
+ * Este arquivo mantém o e-mail de "bootstrap" para recuperação e os valores legados para migração.
  */
 
 // Lista de e-mails com permissão de administrador geral (acesso ao painel).

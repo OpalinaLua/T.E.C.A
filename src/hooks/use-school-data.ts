@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview Hook personalizado para gerenciar os dados da escola.
  * Este hook encapsula a lógica de estado, comunicando-se em tempo real
@@ -144,8 +145,9 @@ export function useSchoolData() {
             const initialAdmins = [...new Set([...ADMIN_EMAILS])];
             const initialSuperAdmins = [...new Set([...BOOTSTRAP_SUPER_ADMINS, ...SUPER_ADMINS])];
             
-            setDoc(permissionsDocRef, { admins: initialAdmins, superAdmins: initialSuperAdmins });
-            setPermissions({ admins: initialAdmins, superAdmins: initialSuperAdmins });
+            const newPermissions = { admins: initialAdmins, superAdmins: initialSuperAdmins };
+            setDoc(permissionsDocRef, newPermissions);
+            setPermissions(newPermissions);
         }
         permissionsLoaded = true;
         updateLoadingState();
