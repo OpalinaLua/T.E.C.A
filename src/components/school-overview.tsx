@@ -3,7 +3,6 @@
 
 import { useMemo, useState } from 'react';
 import type { Medium, Category, ConsulenteStatus, MediumRole } from '@/lib/types';
-import type { Medium, Category, ConsulenteStatus, MediumRole } from '@/lib/types';
 import { MediumCard } from './teacher-card';
 import { Input } from './ui/input';
 import { Search } from 'lucide-react';
@@ -121,9 +120,9 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
           </div>
         </div>
 
-        {filteredMediums.length > 0 ? (
+        {filteredAndSortedMediums.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredMediums.map(medium => (
+            {filteredAndSortedMediums.map(medium => (
               <MediumCard
                 key={medium.id}
                 medium={medium}
