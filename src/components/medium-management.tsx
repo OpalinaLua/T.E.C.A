@@ -499,8 +499,8 @@ export function MediumManagement({
     };
 
     return (
-        <div className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-grow">
+        <div className="flex flex-col h-full">
+            <ScrollArea>
                 <div className="px-6 py-4">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
