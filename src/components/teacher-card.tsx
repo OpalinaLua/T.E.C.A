@@ -187,17 +187,24 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
              <p className="text-sm text-muted-foreground italic text-center py-4">Nenhuma entidade deste médium corresponde à sua busca ou às categorias selecionadas.</p>
           ) : (
             activeEntitiesForGira.map((entity, index) => (
-              <div key={entity.id} className={cn((!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60")}>
+              <div key={entity.id} className={cn(
+                  (!entity.isAvailable || entity.consulenteLimit === 0) && "opacity-60",
+                  entity.consulentes.length === 0 && "opacity-70 mb-0"
+              )}>
                 {index > 0 && <Separator className="my-4" />}
-                <div className="flex justify-between items-center mb-2">
+                <div className={cn("flex justify-between items-center", entity.consulentes.length > 0 ? "mb-2" : "mb-0")}>
                   <div>
-                    <h3 className={cn("font-semibold text-lg", (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through")}>
+                    <h3 className={cn(
+                        "font-semibold", 
+                        entity.consulentes.length > 0 ? "text-lg" : "text-base",
+                        (!entity.isAvailable || entity.consulenteLimit === 0) && "line-through"
+                    )}>
                       {entity.name} <span className="font-normal text-sm text-muted-foreground">({entity.consulentes.length}/{entity.consulenteLimit})</span>
                     </h3>
                     <Badge variant="outline">{entity.category}</Badge>
                   </div>
                 </div>
-                {entity.consulentes.length > 0 ? (
+                {entity.consulentes.length > 0 && (
                   <ul className="space-y-2">
                     {entity.consulentes.map(consulente => (
                        <li key={consulente.id} className={cn("group flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status))}>
@@ -241,8 +248,6 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                       </li>
                     ))}
                   </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">Nenhum consulente para esta entidade.</p>
                 )}
               </div>
             ))
