@@ -500,7 +500,7 @@ export function MediumManagement({
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-grow px-6 overflow-y-auto">
+            <div className="flex-grow min-h-0 px-6 py-4 overflow-y-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
@@ -624,7 +624,7 @@ export function MediumManagement({
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                    <GiraHistory isSuperAdmin={isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
+                                    <GiraHistory isSuperAdmin={!!isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
                                     {isSuperAdmin && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
@@ -735,3 +735,5 @@ export function MediumManagement({
         </div>
     );
 }
+
+    
