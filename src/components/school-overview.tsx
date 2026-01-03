@@ -27,7 +27,7 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
       : mediums;
   }, [mediums, activeTab]);
 
-  const filteredAndSortedMediums = useMemo(() => {
+  const filteredMediums = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
     // 1. Filtrar médiuns que têm entidades nas categorias da gira selecionada
@@ -61,18 +61,7 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
         return false;
     });
 
-    // 4. Ordenar o resultado final
-    return searchedMediums.sort((a, b) => {
-        const countConsulentes = (m: Medium) => 
-            m.entities.reduce((acc, entity) => acc + entity.consulentes.length, 0);
-
-        const aHasConsulentes = countConsulentes(a) > 0;
-        const bHasConsulentes = countConsulentes(b) > 0;
-
-        if (aHasConsulentes && !bHasConsulentes) return -1;
-        if (!aHasConsulentes && bHasConsulentes) return 1;
-        return 0;
-    });
+    return searchedMediums;
 
   }, [listSource, searchQuery, selectedCategories]);
 
@@ -98,9 +87,9 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
           </div>
         </div>
 
-        {filteredAndSortedMediums.length > 0 ? (
+        {filteredMediums.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAndSortedMediums.map(medium => (
+            {filteredMediums.map(medium => (
               <MediumCard
                 key={medium.id}
                 medium={medium}
