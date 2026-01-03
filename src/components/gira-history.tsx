@@ -5,10 +5,27 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { Separator } from "./ui/separator";
+import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
+import { Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
-export function GiraHistory() {
+interface GiraHistoryProps {
+  isSuperAdmin: boolean;
+  deleteGiraHistoryEntry: (entryId: string) => Promise<void>;
+}
+
+export function GiraHistory({ isSuperAdmin, deleteGiraHistoryEntry }: GiraHistoryProps) {
   const { history, isLoading } = useGiraHistory();
 
   const formatDate = (timestamp: { seconds: number; nanoseconds: number; }) => {
@@ -30,7 +47,30 @@ export function GiraHistory() {
                 </>
             ) : history.length > 0 ? (
                 history.map(entry => (
-                    <Card key={entry.id} className="bg-card">
+                    <Card key={entry.id} className="bg-card relative group">
+                        {isSuperAdmin && (
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação removerá permanentemente o registro da gira de <strong>{formatDate(entry.date)}</strong>. Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteGiraHistoryEntry(entry.id)} variant="destructive">
+                                            Excluir Registro
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">{formatDate(entry.date)}</CardTitle>
                         </CardHeader>

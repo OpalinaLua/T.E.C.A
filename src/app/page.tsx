@@ -57,6 +57,8 @@ function HomeClient() {
     removeAdmin: _removeAdmin,
     addSuperAdmin: _addSuperAdmin,
     removeSuperAdmin: _removeSuperAdmin,
+    deleteGiraHistoryEntry: _deleteGiraHistoryEntry,
+    clearAllGiraHistory: _clearAllGiraHistory,
   } = useSchoolData();
   
   const { toast } = useToast();
@@ -135,6 +137,14 @@ function HomeClient() {
   const archiveAndResetGira = useCallback((...args: Parameters<typeof _archiveAndResetGira>) => 
     handleAsyncAction(_archiveAndResetGira, (desc) => ({ title: "Gira Arquivada", description: desc as string }), ...args),
   [_archiveAndResetGira, handleAsyncAction]);
+
+  const deleteGiraHistoryEntry = useCallback((...args: Parameters<typeof _deleteGiraHistoryEntry>) => 
+    handleAsyncAction(_deleteGiraHistoryEntry, { title: "Registro Removido", description: "A entrada do histórico foi removida." }, ...args),
+  [_deleteGiraHistoryEntry, handleAsyncAction]);
+
+  const clearAllGiraHistory = useCallback((...args: Parameters<typeof _clearAllGiraHistory>) =>
+    handleAsyncAction(_clearAllGiraHistory, (desc) => ({ title: "Histórico Limpo", description: desc as string }), ...args),
+  [_clearAllGiraHistory, handleAsyncAction]);
 
   const updateConsulenteStatus = useCallback(async (...args: Parameters<typeof _updateConsulenteStatus>) => {
     try {
@@ -249,6 +259,8 @@ function HomeClient() {
                     removeAdmin={removeAdmin}
                     addSuperAdmin={addSuperAdmin}
                     removeSuperAdmin={removeSuperAdmin}
+                    deleteGiraHistoryEntry={deleteGiraHistoryEntry}
+                    clearAllGiraHistory={clearAllGiraHistory}
                   />
               ) : (
                 <LoginClient 

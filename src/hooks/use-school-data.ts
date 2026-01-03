@@ -711,6 +711,38 @@ export function useSchoolData() {
         return `E-mail ${email} removido da lista de Super Administradores.`;
     }, []);
 
+  // --- Funções de Gerenciamento do Histórico de Giras ---
+  const deleteGiraHistoryEntry = useCallback(async (entryId: string) => {
+    try {
+      const historyDocRef = doc(db, 'giraHistory', entryId);
+      await deleteDoc(historyDocRef);
+    } catch (error) {
+      console.error("Erro ao remover registro do histórico:", error);
+      throw new Error("Não foi possível remover o registro do histórico.");
+    }
+  }, []);
+
+  const clearAllGiraHistory = useCallback(async () => {
+    try {
+      const historyCollectionRef = collection(db, 'giraHistory');
+      const snapshot = await getDocs(historyCollectionRef);
+      
+      if (snapshot.empty) {
+        return "Não há histórico de giras para limpar.";
+      }
+
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      return "Todo o histórico de giras foi limpo com sucesso.";
+    } catch (error) {
+      console.error("Erro ao limpar o histórico de giras:", error);
+      throw new Error("Não foi possível limpar o histórico de giras.");
+    }
+  }, []);
+
 
   useEffect(() => {
     if(error) {
@@ -745,9 +777,9 @@ export function useSchoolData() {
     permissions,
     addAdmin,
     removeAdmin,
-addSuperAdmin,
+    addSuperAdmin,
     removeSuperAdmin,
+    deleteGiraHistoryEntry,
+    clearAllGiraHistory,
   };
 }
-
-    

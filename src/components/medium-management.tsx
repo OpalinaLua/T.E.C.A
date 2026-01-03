@@ -64,6 +64,8 @@ interface MediumManagementProps {
   removeAdmin: (email: string) => Promise<string>;
   addSuperAdmin: (email: string) => Promise<string>;
   removeSuperAdmin: (email: string) => Promise<string>;
+  deleteGiraHistoryEntry: (entryId: string) => Promise<void>;
+  clearAllGiraHistory: () => Promise<string>;
 }
 
 function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryName, onOrderChange }: { 
@@ -314,6 +316,8 @@ export function MediumManagement({
     removeAdmin,
     addSuperAdmin,
     removeSuperAdmin,
+    deleteGiraHistoryEntry,
+    clearAllGiraHistory,
 }: MediumManagementProps) {
     const { toast } = useToast();
     const isSuperAdmin = user && user.email && (SUPER_ADMINS.includes(user.email) || permissions.superAdmins.includes(user.email));
@@ -621,7 +625,30 @@ export function MediumManagement({
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                    <GiraHistory />
+                                    <GiraHistory isSuperAdmin={isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
+                                    {isSuperAdmin && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" className="w-full">
+                                                    <Trash2 className="mr-2" /> Limpar Todo o Histórico de Giras
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Excluir TODO o Histórico?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Você tem certeza que deseja apagar <strong className="text-destructive">TODOS</strong> os registros de giras arquivadas? Esta ação é irreversível e não pode ser desfeita.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={clearAllGiraHistory} variant="destructive">
+                                                        Sim, Excluir Tudo
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
