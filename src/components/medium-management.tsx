@@ -438,16 +438,6 @@ export function MediumManagement({
             return { ...m, isPresent: newIsPresent, entities: newEntities };
         }));
     };
-    
-    const moveMedium = (index: number, direction: 'up' | 'down') => {
-        const newMediums = [...mediums];
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        if (targetIndex < 0 || targetIndex >= newMediums.length) return;
-
-        [newMediums[index], newMediums[targetIndex]] = [newMediums[targetIndex], newMediums[index]];
-        
-        setMediums(newMediums);
-    };
 
     const MediumEditor = ({ medium }: { medium: Medium }) => {
         return (
@@ -510,240 +500,234 @@ export function MediumManagement({
 
     return (
         <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex-1 overflow-y-auto p-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
-                        <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
-                        <TabsTrigger value="mediums" className="flex-col sm:flex-row gap-2 py-2"><Users />Médiuns</TabsTrigger>
-                        <TabsTrigger value="history" className="flex-col sm:flex-row gap-2 py-2"><History />Históricos</TabsTrigger>
-                        <TabsTrigger value="register" className="flex-col sm:flex-row gap-2 py-2"><BookUser />Cadastrar</TabsTrigger>
-                        {isSuperAdmin && (
-                            <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
-                        )}
-                    </TabsList>
-                    
-                    <div className="pt-6">
-                        <TabsContent value="gira">
-                            <Card className="border-0 shadow-none">
-                                <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Seleção da Gira</CardTitle>
-                                    <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <CategorySelection
-                                        spiritualCategories={spiritualCategories}
-                                        selectedCategories={selectedCategories}
-                                        onSelectionChange={handleCategorySelectionChange}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
+            <ScrollArea className="flex-grow">
+                <div className="p-6">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
+                            <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
+                            <TabsTrigger value="mediums" className="flex-col sm:flex-row gap-2 py-2"><Users />Médiuns</TabsTrigger>
+                            <TabsTrigger value="history" className="flex-col sm:flex-row gap-2 py-2"><History />Históricos</TabsTrigger>
+                            <TabsTrigger value="register" className="flex-col sm:flex-row gap-2 py-2"><BookUser />Cadastrar</TabsTrigger>
+                            {isSuperAdmin && (
+                                <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
+                            )}
+                        </TabsList>
+                        
+                        <div className="pt-6">
+                            <TabsContent value="gira">
+                                <Card className="border-0 shadow-none">
+                                    <CardHeader className="p-0 pb-4">
+                                        <CardTitle>Seleção da Gira</CardTitle>
+                                        <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <CategorySelection
+                                            spiritualCategories={spiritualCategories}
+                                            selectedCategories={selectedCategories}
+                                            onSelectionChange={handleCategorySelectionChange}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
-                        <TabsContent value="mediums">
-                        <Card className="border-0 shadow-none">
-                                <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Médiuns Cadastrados</CardTitle>
-                                    <CardDescription>Altere a presença, ordem ou edite os dados dos médiuns.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => setEditingMediumId(value || null)}>
-                                        {mediums.map((medium, index) => (
-                                            <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
-                                                <div className="flex items-center p-3 rounded-lg border bg-card transition-colors data-[state=open]:rounded-b-none">
-                                                    <div className="flex flex-col">
-                                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveMedium(index, 'up')} disabled={index === 0}>
-                                                            <ArrowUp className="h-3 w-3" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveMedium(index, 'down')} disabled={index === mediums.length - 1}>
-                                                            <ArrowDown className="h-3 w-3" />
-                                                        </Button>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 flex-1 ml-2">
-                                                        <Switch
-                                                            id={`presence-${medium.id}`}
-                                                            checked={medium.isPresent}
-                                                            onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
-                                                            aria-label={`Marcar presença para ${medium.name}`}
-                                                        />
-                                                        <div className="flex-1 text-left cursor-pointer p-0" onClick={() => toggleEditing(medium.id)}>
-                                                            <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2 hover:underline">
-                                                                {medium.name}
-                                                                {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
-                                                            </Label>
+                            <TabsContent value="mediums">
+                            <Card className="border-0 shadow-none">
+                                    <CardHeader className="p-0 pb-4">
+                                        <CardTitle>Médiuns Cadastrados</CardTitle>
+                                        <CardDescription>Altere a presença ou edite os dados dos médiuns.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <Accordion type="single" collapsible value={editingMediumId ?? undefined} onValueChange={(value) => setEditingMediumId(value || null)}>
+                                            {mediums.map((medium) => (
+                                                <AccordionItem value={medium.id} key={medium.id} className="border-b-0 mb-2 last:mb-0">
+                                                    <div className="flex items-center p-3 rounded-lg border bg-card transition-colors data-[state=open]:rounded-b-none">
+                                                        <div className="flex items-center gap-3 flex-1 ml-2">
+                                                            <Switch
+                                                                id={`presence-${medium.id}`}
+                                                                checked={medium.isPresent}
+                                                                onCheckedChange={() => toggleMediumPresenceLocal(medium.id)}
+                                                                aria-label={`Marcar presença para ${medium.name}`}
+                                                            />
+                                                            <div className="flex-1 text-left cursor-pointer p-0" onClick={() => toggleEditing(medium.id)}>
+                                                                <Label htmlFor={`presence-${medium.id}`} className="font-medium cursor-pointer flex items-center gap-2 hover:underline">
+                                                                    {medium.name}
+                                                                    {medium.role && <Crown className="h-4 w-4 text-amber-500" />}
+                                                                </Label>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 pl-2">
+                                                            <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
+                                                                {medium.isPresent ? 'Presente' : 'Ausente'}
+                                                            </Badge>
+                                                            <AccordionTrigger className='p-2 hover:bg-accent rounded-md [&[data-state=open]>svg]:rotate-180'>
+                                                                <Pencil className="h-4 w-4" />
+                                                            </AccordionTrigger>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => removeMedium(medium.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                                            Excluir
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1 pl-2">
-                                                        <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
-                                                            {medium.isPresent ? 'Presente' : 'Ausente'}
-                                                        </Badge>
-                                                        <AccordionTrigger className='p-2 hover:bg-accent rounded-md [&[data-state=open]>svg]:rotate-180'>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </AccordionTrigger>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive">
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                                                    <AlertDialogDescription>
-                                                                        Esta ação não pode ser desfeita. Isso removerá permanentemente o médium e todos os seus consulentes agendados.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => removeMedium(medium.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                                                        Excluir
-                                                                    </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </div>
-                                                <MediumEditor medium={medium} />
-                                            </AccordionItem>
-                                        ))}
-                                        </Accordion>
-                                        {mediums.length === 0 && (
-                                            <p className="text-sm text-muted-foreground italic text-center py-4">Nenhum médium cadastrado.</p>
-                                        )}
-                                </CardContent>
-                        </Card>
-                        </TabsContent>
+                                                    <MediumEditor medium={medium} />
+                                                </AccordionItem>
+                                            ))}
+                                            </Accordion>
+                                            {mediums.length === 0 && (
+                                                <p className="text-sm text-muted-foreground italic text-center py-4">Nenhum médium cadastrado.</p>
+                                            )}
+                                    </CardContent>
+                            </Card>
+                            </TabsContent>
 
-                        <TabsContent value="history">
-                            <Card className="border-0 shadow-none">
-                                <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Arquivo de Giras</CardTitle>
-                                    <CardDescription>Veja o histórico de giras passadas e arquive a sessão atual para limpar os registros.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0 space-y-6">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" className="w-full">
-                                                <Archive className="mr-2" /> Arquivar Gira Atual e Limpar Atendimentos
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Confirmar Arquivamento?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Esta ação irá salvar um resumo dos atendimentos da gira atual no histórico e, em seguida, <strong className="text-destructive">limpará TODOS os consulentes de TODOS os médiuns.</strong> 
-                                                    <br/><br/>Use isso no final da gira para preparar o sistema para o próximo dia. Esta ação não pode ser desfeita.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={archiveAndResetGira}>
-                                                    Confirmar e Arquivar
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                    <GiraHistory isSuperAdmin={!!isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
-                                    {isSuperAdmin && (
+                            <TabsContent value="history">
+                                <Card className="border-0 shadow-none">
+                                    <CardHeader className="p-0 pb-4">
+                                        <CardTitle>Arquivo de Giras</CardTitle>
+                                        <CardDescription>Veja o histórico de giras passadas e arquive a sessão atual para limpar os registros.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-0 space-y-6">
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="destructive" className="w-full">
-                                                    <Trash2 className="mr-2" /> Limpar Todo o Histórico de Giras
+                                                <Button variant="outline" className="w-full">
+                                                    <Archive className="mr-2" /> Arquivar Gira Atual e Limpar Atendimentos
                                                 </Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>Excluir TODO o Histórico?</AlertDialogTitle>
+                                                    <AlertDialogTitle>Confirmar Arquivamento?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Você tem certeza que deseja apagar <strong className="text-destructive">TODOS</strong> os registros de giras arquivadas? Esta ação é irreversível e não pode ser desfeita.
+                                                        Esta ação irá salvar um resumo dos atendimentos da gira atual no histórico e, em seguida, <strong className="text-destructive">limpará TODOS os consulentes de TODOS os médiuns.</strong> 
+                                                        <br/><br/>Use isso no final da gira para preparar o sistema para o próximo dia. Esta ação não pode ser desfeita.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={clearAllGiraHistory} variant="destructive">
-                                                        Sim, Excluir Tudo
+                                                    <AlertDialogAction onClick={archiveAndResetGira}>
+                                                        Confirmar e Arquivar
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        <TabsContent value="register">
-                            <MediumRegistration addMedium={addMedium} spiritualCategories={spiritualCategories} />
-                        </TabsContent>
-
-                        {isSuperAdmin && (
-                            <TabsContent value="advanced">
-                                <Accordion type="single" collapsible className="w-full" defaultValue="manage-permissions">
-                                    <AccordionItem value="manage-permissions">
-                                        <AccordionTrigger className="text-lg font-bold font-headline flex items-center gap-2"><ShieldAlert /> Gerenciar Permissões</AccordionTrigger>
-                                        <AccordionContent>
-                                            <PermissionsManagement
-                                                currentUserEmail={user.email!}
-                                                permissions={permissions}
-                                                addAdmin={addAdmin}
-                                                removeAdmin={removeAdmin}
-                                                addSuperAdmin={addSuperAdmin}
-                                                removeSuperAdmin={removeSuperAdmin}
-                                            />
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="manage-limits">
-                                        <AccordionTrigger className="text-lg font-bold font-headline">Gerenciamento Global</AccordionTrigger>
-                                        <AccordionContent>
-                                            <GlobalSettings updateAllEntityLimits={updateAllEntityLimits} />
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="manage-categories">
-                                        <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
-                                        <AccordionContent>
-                                            <CategoryManagement 
-                                                spiritualCategories={spiritualCategories} 
-                                                addSpiritualCategory={addSpiritualCategory} 
-                                                removeSpiritualCategory={removeSpiritualCategory} 
-                                                updateSpiritualCategoryName={updateSpiritualCategoryName}
-                                                onOrderChange={setPendingCategoryOrder}
-                                            />
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="login-history">
-                                        <AccordionTrigger className="text-lg font-bold font-headline">Histórico de Acesso</AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="space-y-4">
-                                                <LoginHistory />
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="destructive" className="w-full">
-                                                            <History className="mr-2" />
-                                                            Limpar Histórico de Acesso
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas super administradores podem realizar esta ação.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
-                                                                Confirmar e Limpar
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
+                                        <GiraHistory isSuperAdmin={!!isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
+                                        {isSuperAdmin && (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" className="w-full">
+                                                        <Trash2 className="mr-2" /> Limpar Todo o Histórico de Giras
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Excluir TODO o Histórico?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Você tem certeza que deseja apagar <strong className="text-destructive">TODOS</strong> os registros de giras arquivadas? Esta ação é irreversível e não pode ser desfeita.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={clearAllGiraHistory} variant="destructive">
+                                                            Sim, Excluir Tudo
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </CardContent>
+                                </Card>
                             </TabsContent>
-                        )}
-                    </div>
-                </Tabs>
-            </div>
+
+                            <TabsContent value="register">
+                                <MediumRegistration addMedium={addMedium} spiritualCategories={spiritualCategories} />
+                            </TabsContent>
+
+                            {isSuperAdmin && (
+                                <TabsContent value="advanced">
+                                    <Accordion type="single" collapsible className="w-full" defaultValue="manage-permissions">
+                                        <AccordionItem value="manage-permissions">
+                                            <AccordionTrigger className="text-lg font-bold font-headline flex items-center gap-2"><ShieldAlert /> Gerenciar Permissões</AccordionTrigger>
+                                            <AccordionContent>
+                                                <PermissionsManagement
+                                                    currentUserEmail={user.email!}
+                                                    permissions={permissions}
+                                                    addAdmin={addAdmin}
+                                                    removeAdmin={removeAdmin}
+                                                    addSuperAdmin={addSuperAdmin}
+                                                    removeSuperAdmin={removeSuperAdmin}
+                                                />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="manage-limits">
+                                            <AccordionTrigger className="text-lg font-bold font-headline">Gerenciamento Global</AccordionTrigger>
+                                            <AccordionContent>
+                                                <GlobalSettings updateAllEntityLimits={updateAllEntityLimits} />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="manage-categories">
+                                            <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
+                                            <AccordionContent>
+                                                <CategoryManagement 
+                                                    spiritualCategories={spiritualCategories} 
+                                                    addSpiritualCategory={addSpiritualCategory} 
+                                                    removeSpiritualCategory={removeSpiritualCategory} 
+                                                    updateSpiritualCategoryName={updateSpiritualCategoryName}
+                                                    onOrderChange={setPendingCategoryOrder}
+                                                />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="login-history">
+                                            <AccordionTrigger className="text-lg font-bold font-headline">Histórico de Acesso</AccordionTrigger>
+                                            <AccordionContent>
+                                                <div className="space-y-4">
+                                                    <LoginHistory />
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="destructive" className="w-full">
+                                                                <History className="mr-2" />
+                                                                Limpar Histórico de Acesso
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas super administradores podem realizar esta ação.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
+                                                                    Confirmar e Limpar
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+                                </TabsContent>
+                            )}
+                        </div>
+                    </Tabs>
+                </div>
+            </ScrollArea>
             <div className="flex-shrink-0 px-6 py-4 border-t bg-background">
                 <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>

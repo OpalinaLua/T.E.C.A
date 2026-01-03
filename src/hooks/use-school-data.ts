@@ -76,37 +76,23 @@ export function useSchoolData() {
     
     // Listener para Médiuns
     const mediumsCollection = collection(db, 'mediums');
-    const q = query(mediumsCollection, orderBy('order', 'asc'));
+    const q = query(mediumsCollection, orderBy('createdAt', 'asc'));
 
-    const unsubscribeMediums = onSnapshot(q, async (snapshot) => {
-      let mediumsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Medium[];
-
-      // One-time migration for existing documents without 'order'
-      const needsMigration = mediumsData.some(m => m.order === undefined);
-      if (needsMigration) {
-          const batch = writeBatch(db);
-          mediumsData.forEach((medium, index) => {
-              if (medium.order === undefined) {
-                  const mediumRef = doc(db, 'mediums', medium.id);
-                  batch.update(mediumRef, { order: index });
-                  medium.order = index; // Update local data immediately
-              }
-          });
-          await batch.commit();
-      }
-
-      setMediums(mediumsData);
-      mediumsLoaded = true;
-      updateLoadingState();
+    const unsubscribeMediums = onSnapshot(q, (snapshot) => {
+        const mediumsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as Medium[];
+        setMediums(mediumsData);
+        mediumsLoaded = true;
+        updateLoadingState();
     }, (err) => {
-      console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Médiuns) -----------", err);
-      setError("Não foi possível conectar ao banco de dados para buscar os médiuns.");
-      mediumsLoaded = true; // Marca como carregado mesmo com erro para liberar a tela
-      updateLoadingState();
+        console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Médiuns) -----------", err);
+        setError("Não foi possível conectar ao banco de dados para buscar os médiuns.");
+        mediumsLoaded = true; // Marca como carregado mesmo com erro para liberar a tela
+        updateLoadingState();
     });
+
 
     // Listener para Categorias da Gira (selecionadas)
     const giraDocRef = doc(db, 'appState', 'gira');
@@ -204,7 +190,6 @@ export function useSchoolData() {
         })),
         role: role,
         createdAt: serverTimestamp(),
-        order: mediums.length, // Assign the next order number
       };
 
       await addDoc(collection(db, 'mediums'), newMedium);
@@ -212,7 +197,7 @@ export function useSchoolData() {
       console.error("Erro ao adicionar médium:", error);
       throw new Error("Não foi possível cadastrar o médium.");
     }
-  }, [mediums.length]);
+  }, []);
 
   /**
    * Remove um médium da coleção no Firestore.
@@ -627,11 +612,11 @@ export function useSchoolData() {
   ) => {
     const batch = writeBatch(db);
 
-    // 1. Salvar mudanças nos médiuns (incluindo a nova ordem)
-    mediumsToUpdate.forEach((medium, index) => {
+    // 1. Salvar mudanças nos médiuns
+    mediumsToUpdate.forEach(medium => {
         const mediumRef = doc(db, 'mediums', medium.id);
         const { id, ...dataToSave } = medium; 
-        batch.update(mediumRef, { ...dataToSave, order: index });
+        batch.update(mediumRef, dataToSave);
     });
 
     // 2. Salvar mudanças nas categorias da gira selecionadas
