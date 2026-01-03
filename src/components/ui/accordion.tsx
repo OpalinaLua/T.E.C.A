@@ -28,13 +28,12 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
+        "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg:last-child]:rotate-180",
         className
       )}
       {...props}
     >
       {children}
-      {/* A seta só é adicionada se não for um trigger customizado (com asChild) */}
       {!props.asChild && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />}
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>

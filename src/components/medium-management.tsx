@@ -20,7 +20,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +34,7 @@ import { CategorySelection } from './category-selection';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { SUPER_ADMINS } from '@/lib/secrets';
+import { SUPER_ADMINS, BOOTSTRAP_SUPER_ADMINS } from '@/lib/secrets';
 import type { User } from 'firebase/auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROLES } from '@/lib/types';
@@ -320,7 +319,7 @@ export function MediumManagement({
     clearAllGiraHistory,
 }: MediumManagementProps) {
     const { toast } = useToast();
-    const isSuperAdmin = user && user.email && (SUPER_ADMINS.includes(user.email) || permissions.superAdmins.includes(user.email));
+    const isSuperAdmin = user && user.email && (BOOTSTRAP_SUPER_ADMINS.includes(user.email) || SUPER_ADMINS.includes(user.email) || permissions.superAdmins.includes(user.email));
     const [activeTab, setActiveTab] = useState("gira");
     
     // Estado local para gerenciar todas as alterações
@@ -558,10 +557,8 @@ export function MediumManagement({
                                                         <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
                                                             {medium.isPresent ? 'Presente' : 'Ausente'}
                                                         </Badge>
-                                                        <AccordionTrigger asChild>
-                                                            <Button variant="ghost" size="icon">
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
+                                                        <AccordionTrigger>
+                                                            <Pencil className="h-4 w-4" />
                                                         </AccordionTrigger>
                                                         <AlertDialog>
                                                             <AlertDialogTrigger asChild>
@@ -728,7 +725,7 @@ export function MediumManagement({
                     </div>
                 </Tabs>
             </div>
-            <div className="flex-shrink-0 px-6 pt-4 mt-auto border-t">
+            <div className="flex-shrink-0 px-6 py-4 mt-auto border-t">
                 <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
                     Fechar e Salvar
