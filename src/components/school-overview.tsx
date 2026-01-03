@@ -25,6 +25,13 @@ interface SchoolOverviewProps {
   spiritualCategories: Category[];
 }
 
+// Define a ordem de prioridade para os cargos de liderança.
+const roleOrder: Record<string, number> = {
+  "Pai de Santo": 1,
+  "Pai Pequeno": 2,
+  "Mãe Pequena": 3,
+};
+
 export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName, updateConsulenteStatus, selectedCategories, spiritualCategories }: SchoolOverviewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('present');
@@ -52,9 +59,18 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
       medium.entities.some(entity => selectedCategories.includes(entity.category))
     );
       
-    // 2. Se não houver busca, retorna a lista filtrada pela gira
+    // 2. Se não houver busca, apenas ordena e retorna
     if (!query) {
-      return mediumsInGira;
+      // Ordena a lista com base na prioridade do cargo
+      return mediumsInGira.sort((a, b) => {
+        const orderA = a.role ? roleOrder[a.role] : undefined;
+        const orderB = b.role ? roleOrder[b.role] : undefined;
+
+        if (orderA !== undefined && orderB !== undefined) return orderA - orderB; // Ambos têm prioridade
+        if (orderA !== undefined) return -1; // A tem prioridade
+        if (orderB !== undefined) return 1;  // B tem prioridade
+        return 0; // Nenhum tem prioridade, mantém a ordem original (createdAt)
+      });
     }
 
     // 3. Aplicar o critério de busca sobre a lista já filtrada pela gira
