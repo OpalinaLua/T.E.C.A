@@ -499,8 +499,8 @@ export function MediumManagement({
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-grow min-h-0 px-6 py-4 overflow-y-auto">
+        <div className="relative flex-1 flex flex-col min-h-0">
+            <div className="flex-grow px-6 py-4 overflow-y-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
@@ -558,7 +558,7 @@ export function MediumManagement({
                                                         <Badge variant="outline" className={cn("text-xs py-0.5", medium.isPresent ? "text-green-600 border-green-600" : "text-red-600 border-red-600")}>
                                                             {medium.isPresent ? 'Presente' : 'Ausente'}
                                                         </Badge>
-                                                        <AccordionTrigger>
+                                                        <AccordionTrigger className='p-2 hover:bg-accent rounded-md [&[data-state=open]>svg]:rotate-180'>
                                                             <Pencil className="h-4 w-4" />
                                                         </AccordionTrigger>
                                                         <AlertDialog>
@@ -726,7 +726,7 @@ export function MediumManagement({
                     </div>
                 </Tabs>
             </div>
-            <div className="flex-shrink-0 px-6 py-4 border-t">
+            <div className="flex-shrink-0 px-6 py-4 border-t sticky bottom-0 bg-background">
                 <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
                     Fechar e Salvar

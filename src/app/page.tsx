@@ -35,30 +35,30 @@ function HomeClient() {
     mediums,
     spiritualCategories,
     isLoaded: isSchoolDataLoaded,
-    addMedium: _addMedium,
-    removeMedium: _removeMedium,
-    addConsulente: _addConsulente,
-    removeConsulente: _removeConsulente,
-    updateConsulenteName: _updateConsulenteName,
-    logLoginEvent: _logLoginEvent,
-    clearLoginHistory: _clearLoginHistory,
-    addSpiritualCategory: _addSpiritualCategory,
-    removeSpiritualCategory: _removeSpiritualCategory,
-    updateSpiritualCategoryOrder: _updateSpiritualCategoryOrder,
-    updateAllEntityLimits: _updateAllEntityLimits,
-    updateSpiritualCategoryName: _updateSpiritualCategoryName,
+    addMedium,
+    removeMedium,
+    addConsulente,
+    removeConsulente,
+    updateConsulenteName,
+    logLoginEvent,
+    clearLoginHistory,
+    addSpiritualCategory,
+    removeSpiritualCategory,
+    updateSpiritualCategoryOrder,
+    updateAllEntityLimits,
+    updateSpiritualCategoryName,
     selectedCategories,
-    updateSelectedCategories: _updateSelectedCategories,
-    saveAllManagementChanges: _saveAllManagementChanges,
+    updateSelectedCategories,
+    saveAllManagementChanges,
     updateConsulenteStatus: _updateConsulenteStatus,
-    archiveAndResetGira: _archiveAndResetGira,
+    archiveAndResetGira,
     permissions,
-    addAdmin: _addAdmin,
-    removeAdmin: _removeAdmin,
-    addSuperAdmin: _addSuperAdmin,
-    removeSuperAdmin: _removeSuperAdmin,
-    deleteGiraHistoryEntry: _deleteGiraHistoryEntry,
-    clearAllGiraHistory: _clearAllGiraHistory,
+    addAdmin,
+    removeAdmin,
+    addSuperAdmin,
+    removeSuperAdmin,
+    deleteGiraHistoryEntry,
+    clearAllGiraHistory,
   } = useSchoolData();
   
   const { toast } = useToast();
@@ -69,170 +69,17 @@ function HomeClient() {
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState("overview");
   
-  const handleAsyncActionWithToast = useCallback(async <T extends any[], R>(
-      action: (...args: T) => Promise<R>,
-      successMessage: string,
-      ...args: T
-  ): Promise<R | undefined> => {
-      try {
-          const result = await action(...args);
-          toast({ title: "Sucesso", description: successMessage });
-          return result;
-      } catch (error: any) {
-          toast({
-              title: "Erro na Operação",
-              description: error.message || "Ocorreu um erro inesperado.",
-              variant: "destructive",
-          });
-          return undefined;
-      }
-  }, [toast]);
-  
-  // Wrappers for data functions to include toasts
-  const addMedium = useCallback((...args: Parameters<typeof _addMedium>) => 
-      handleAsyncActionWithToast(_addMedium, `Médium ${args[0]} foi cadastrado(a).`, ...args), 
-  [_addMedium, handleAsyncActionWithToast]);
-
-  const removeMedium = useCallback((...args: Parameters<typeof _removeMedium>) => 
-      handleAsyncActionWithToast(_removeMedium, `O médium foi removido com sucesso.`, ...args),
-  [_removeMedium, handleAsyncActionWithToast]);
-
-  const removeConsulente = useCallback((...args: Parameters<typeof _removeConsulente>) => 
-      handleAsyncActionWithToast(_removeConsulente, `${args[3]} foi removido(a).`, ...args),
-  [_removeConsulente, handleAsyncActionWithToast]);
-
-  const updateConsulenteName = useCallback((...args: Parameters<typeof _updateConsulenteName>) => 
-      handleAsyncActionWithToast(_updateConsulenteName, `O nome foi alterado para ${args[3]}.`, ...args),
-  [_updateConsulenteName, handleAsyncActionWithToast]);
-
-  const clearLoginHistory = useCallback(async () => {
+  const updateConsulenteStatus = useCallback(async (mediumId: string, entityId: string, consulenteId: string, status: ConsulenteStatus) => {
     try {
-        const resultMessage = await _clearLoginHistory();
-        toast({ title: "Sucesso", description: resultMessage });
+      await _updateConsulenteStatus(mediumId, entityId, consulenteId, status);
     } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_clearLoginHistory, toast]);
-
-
-  const addSpiritualCategory = useCallback(async (categoryName: string) => {
-    try {
-        const resultMessage = await _addSpiritualCategory(categoryName);
-        toast({ title: "Sucesso", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_addSpiritualCategory, toast]);
-
-
-  const removeSpiritualCategory = useCallback(async (categoryName: string) => {
-    try {
-        const resultMessage = await _removeSpiritualCategory(categoryName);
-        toast({ title: "Sucesso", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_removeSpiritualCategory, toast]);
-  
-  const updateSpiritualCategoryOrder = useCallback((...args: Parameters<typeof _updateSpiritualCategoryOrder>) => 
-    handleAsyncActionWithToast(_updateSpiritualCategoryOrder, 'Ordem das categorias foi atualizada.', ...args),
-  [_updateSpiritualCategoryOrder, handleAsyncActionWithToast]);
-  
-  const updateAllEntityLimits = useCallback(async (newLimit: number) => {
-    try {
-        const resultMessage = await _updateAllEntityLimits(newLimit);
-        toast({ title: "Sucesso!", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_updateAllEntityLimits, toast]);
-  
-  const updateSpiritualCategoryName = useCallback(async (oldName: string, newName: string) => {
-    try {
-        const resultMessage = await _updateSpiritualCategoryName(oldName, newName);
-        toast({ title: "Sucesso!", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_updateSpiritualCategoryName, toast]);
-  
-  const saveAllManagementChanges = useCallback((...args: Parameters<typeof _saveAllManagementChanges>) => 
-      handleAsyncActionWithToast(_saveAllManagementChanges, "Todas as alterações foram salvas.", ...args),
-  [_saveAllManagementChanges, handleAsyncActionWithToast]);
-  
-  const archiveAndResetGira = useCallback(async () => {
-    try {
-        const resultMessage = await _archiveAndResetGira();
-        toast({ title: "Gira Arquivada", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_archiveAndResetGira, toast]);
-
-  const deleteGiraHistoryEntry = useCallback((...args: Parameters<typeof _deleteGiraHistoryEntry>) => 
-    handleAsyncActionWithToast(_deleteGiraHistoryEntry, "A entrada do histórico foi removida.", ...args),
-  [_deleteGiraHistoryEntry, handleAsyncActionWithToast]);
-
-  const clearAllGiraHistory = useCallback(async () => {
-    try {
-        const resultMessage = await _clearAllGiraHistory();
-        toast({ title: "Histórico Limpo", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_clearAllGiraHistory, toast]);
-
-  const updateConsulenteStatus = useCallback(async (...args: Parameters<typeof _updateConsulenteStatus>) => {
-    try {
-        await _updateConsulenteStatus(...args);
-    } catch (error: any) {
-        toast({
-            title: "Erro ao Atualizar Status",
-            description: error.message || "Não foi possível alterar o status do consulente.",
-            variant: "destructive",
-        });
+      toast({
+        title: "Erro ao Atualizar Status",
+        description: error.message || "Não foi possível alterar o status do consulente.",
+        variant: "destructive",
+      });
     }
   }, [_updateConsulenteStatus, toast]);
-  
-  const addAdmin = useCallback(async (email: string) => {
-    try {
-        const resultMessage = await _addAdmin(email);
-        toast({ title: "Sucesso", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_addAdmin, toast]);
-
-  const removeAdmin = useCallback(async (email: string) => {
-    try {
-        const resultMessage = await _removeAdmin(email);
-        toast({ title: "Sucesso", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_removeAdmin, toast]);
-
-  const addSuperAdmin = useCallback(async (email: string) => {
-    try {
-        const resultMessage = await _addSuperAdmin(email);
-        toast({ title: "Sucesso", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_addSuperAdmin, toast]);
-
-  const removeSuperAdmin = useCallback(async (email: string) => {
-    try {
-        const resultMessage = await _removeSuperAdmin(email);
-        toast({ title: "Sucesso", description: resultMessage });
-    } catch (error: any) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-    }
-  }, [_removeSuperAdmin, toast]);
-  
-  const logLoginEvent = useCallback((...args: Parameters<typeof _logLoginEvent>) => {
-     _logLoginEvent(...args); // Erros já são tratados dentro da função
-  }, [_logLoginEvent]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -276,8 +123,8 @@ function HomeClient() {
             Gerenciar Médiuns e Gira
           </Button>
         </DialogTrigger>
-        <DialogContent className="p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col h-full max-h-[90vh]">
-            <DialogHeader className="p-6 pb-4">
+        <DialogContent className="p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90vh]">
+            <DialogHeader className="p-6 pb-4 flex-shrink-0">
               <DialogTitle>{userIsAdmin ? 'Painel de Gerenciamento' : 'Acesso Restrito'}</DialogTitle>
               <DialogDescription>
                   {userIsAdmin ? 'Gerencie a gira, médiuns e configurações. As alterações são salvas ao clicar em "Fechar e Salvar".' : 'Faça login com uma conta autorizada para continuar.'}
@@ -303,10 +150,11 @@ function HomeClient() {
                     updateSpiritualCategoryOrder={updateSpiritualCategoryOrder}
                     updateAllEntityLimits={updateAllEntityLimits}
                     updateSpiritualCategoryName={updateSpiritualCategoryName}
-                    updateSelectedCategories={_updateSelectedCategories}
+                    updateSelectedCategories={updateSelectedCategories}
                     archiveAndResetGira={archiveAndResetGira}
                     onSaveAndClose={async (updatedMediums, updatedCategories) => {
                         await saveAllManagementChanges(updatedMediums, updatedCategories);
+                        toast({ title: "Sucesso!", description: "Todas as alterações foram salvas." });
                         await handleLogoutOnClose();
                     }}
                     permissions={permissions}
@@ -334,7 +182,7 @@ function HomeClient() {
   const RegistrationForm = () => (
       <ConsulenteRegistration
         mediums={mediums}
-        addConsulente={_addConsulente}
+        addConsulente={addConsulente}
         selectedCategories={selectedCategories}
         spiritualCategories={spiritualCategories}
       />
