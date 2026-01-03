@@ -2,11 +2,12 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { Medium, Category, ConsulenteStatus } from '@/lib/types';
+import type { Medium, Category, ConsulenteStatus, MediumRole } from '@/lib/types';
 import { MediumCard } from './teacher-card';
 import { Input } from './ui/input';
 import { Search } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ROLES } from '@/lib/types';
 
 interface SchoolOverviewProps {
   mediums: Medium[];
@@ -16,6 +17,13 @@ interface SchoolOverviewProps {
   selectedCategories: Category[];
   spiritualCategories: Category[];
 }
+
+// Define a ordem de prioridade para os cargos de liderança.
+const roleOrder: Record<string, number> = {
+  "Pai de Santo": 1,
+  "Pai Pequeno": 2,
+  "Mãe Pequena": 3,
+};
 
 export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName, updateConsulenteStatus, selectedCategories, spiritualCategories }: SchoolOverviewProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,9 +43,18 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
       medium.entities.some(entity => selectedCategories.includes(entity.category))
     );
       
-    // 2. Se não houver busca, retorna a lista filtrada pela gira
+    // 2. Se não houver busca, apenas ordena e retorna
     if (!query) {
-      return mediumsInGira;
+      // Ordena a lista com base na prioridade do cargo
+      return mediumsInGira.sort((a, b) => {
+        const orderA = a.role ? roleOrder[a.role] : undefined;
+        const orderB = b.role ? roleOrder[b.role] : undefined;
+
+        if (orderA !== undefined && orderB !== undefined) return orderA - orderB; // Ambos têm prioridade
+        if (orderA !== undefined) return -1; // A tem prioridade
+        if (orderB !== undefined) return 1;  // B tem prioridade
+        return 0; // Nenhum tem prioridade, mantém a ordem original (createdAt)
+      });
     }
 
     // 3. Aplicar o critério de busca sobre a lista já filtrada pela gira
@@ -61,7 +78,16 @@ export function SchoolOverview({ mediums, removeConsulente, updateConsulenteName
         return false;
     });
 
-    return searchedMediums;
+    // 4. Ordena a lista filtrada pela busca
+    return searchedMediums.sort((a, b) => {
+        const orderA = a.role ? roleOrder[a.role] : undefined;
+        const orderB = b.role ? roleOrder[b.role] : undefined;
+
+        if (orderA !== undefined && orderB !== undefined) return orderA - orderB;
+        if (orderA !== undefined) return -1;
+        if (orderB !== undefined) return 1;
+        return 0;
+    });
 
   }, [listSource, searchQuery, selectedCategories]);
 
