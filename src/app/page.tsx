@@ -69,15 +69,14 @@ function HomeClient() {
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState("overview");
   
-  const handleAsyncAction = useCallback(async <T extends any[], R>(
+  const handleAsyncActionWithToast = useCallback(async <T extends any[], R>(
       action: (...args: T) => Promise<R>,
-      success: { title: string; description?: string } | ((result: R) => { title: string; description?: string }),
+      successMessage: string,
       ...args: T
-  ): Promise<R> => {
+  ): Promise<R | undefined> => {
       try {
           const result = await action(...args);
-          const toastMessage = typeof success === 'function' ? success(result) : success;
-          toast(toastMessage);
+          toast({ title: "Sucesso", description: successMessage });
           return result;
       } catch (error: any) {
           toast({
@@ -85,66 +84,103 @@ function HomeClient() {
               description: error.message || "Ocorreu um erro inesperado.",
               variant: "destructive",
           });
-          throw error; // Re-lança o erro para que a chamada original saiba da falha
+          return undefined;
       }
   }, [toast]);
   
   // Wrappers for data functions to include toasts
   const addMedium = useCallback((...args: Parameters<typeof _addMedium>) => 
-      handleAsyncAction(_addMedium, { title: "Sucesso", description: `Médium ${args[0]} foi cadastrado(a).` }, ...args), 
-  [_addMedium, handleAsyncAction]);
+      handleAsyncActionWithToast(_addMedium, `Médium ${args[0]} foi cadastrado(a).`, ...args), 
+  [_addMedium, handleAsyncActionWithToast]);
 
   const removeMedium = useCallback((...args: Parameters<typeof _removeMedium>) => 
-      handleAsyncAction(_removeMedium, { title: "Médium Removido", description: `O médium foi removido com sucesso.` }, ...args),
-  [_removeMedium, handleAsyncAction]);
+      handleAsyncActionWithToast(_removeMedium, `O médium foi removido com sucesso.`, ...args),
+  [_removeMedium, handleAsyncActionWithToast]);
 
   const removeConsulente = useCallback((...args: Parameters<typeof _removeConsulente>) => 
-      handleAsyncAction(_removeConsulente, { title: "Consulente Removido", description: `${args[3]} foi removido(a).` }, ...args),
-  [_removeConsulente, handleAsyncAction]);
+      handleAsyncActionWithToast(_removeConsulente, `${args[3]} foi removido(a).`, ...args),
+  [_removeConsulente, handleAsyncActionWithToast]);
 
   const updateConsulenteName = useCallback((...args: Parameters<typeof _updateConsulenteName>) => 
-      handleAsyncAction(_updateConsulenteName, { title: "Nome Atualizado", description: `O nome foi alterado para ${args[3]}.` }, ...args),
-  [_updateConsulenteName, handleAsyncAction]);
+      handleAsyncActionWithToast(_updateConsulenteName, `O nome foi alterado para ${args[3]}.`, ...args),
+  [_updateConsulenteName, handleAsyncActionWithToast]);
 
-  const clearLoginHistory = useCallback((...args: Parameters<typeof _clearLoginHistory>) =>
-      handleAsyncAction(_clearLoginHistory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-  [_clearLoginHistory, handleAsyncAction]);
+  const clearLoginHistory = useCallback(async () => {
+    try {
+        const resultMessage = await _clearLoginHistory();
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_clearLoginHistory, toast]);
 
-  const addSpiritualCategory = useCallback((...args: Parameters<typeof _addSpiritualCategory>) =>
-      handleAsyncAction(_addSpiritualCategory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-  [_addSpiritualCategory, handleAsyncAction]);
 
-  const removeSpiritualCategory = useCallback((...args: Parameters<typeof _removeSpiritualCategory>) =>
-      handleAsyncAction(_removeSpiritualCategory, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-  [_removeSpiritualCategory, handleAsyncAction]);
+  const addSpiritualCategory = useCallback(async (categoryName: string) => {
+    try {
+        const resultMessage = await _addSpiritualCategory(categoryName);
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_addSpiritualCategory, toast]);
+
+
+  const removeSpiritualCategory = useCallback(async (categoryName: string) => {
+    try {
+        const resultMessage = await _removeSpiritualCategory(categoryName);
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_removeSpiritualCategory, toast]);
   
   const updateSpiritualCategoryOrder = useCallback((...args: Parameters<typeof _updateSpiritualCategoryOrder>) => 
-    handleAsyncAction(_updateSpiritualCategoryOrder, { title: 'Sucesso', description: 'Ordem das categorias foi atualizada.' }, ...args),
-  [_updateSpiritualCategoryOrder, handleAsyncAction]);
+    handleAsyncActionWithToast(_updateSpiritualCategoryOrder, 'Ordem das categorias foi atualizada.', ...args),
+  [_updateSpiritualCategoryOrder, handleAsyncActionWithToast]);
   
-  const updateAllEntityLimits = useCallback((...args: Parameters<typeof _updateAllEntityLimits>) =>
-      handleAsyncAction(_updateAllEntityLimits, (desc) => ({ title: "Sucesso!", description: desc as string }), ...args),
-  [_updateAllEntityLimits, handleAsyncAction]);
+  const updateAllEntityLimits = useCallback(async (newLimit: number) => {
+    try {
+        const resultMessage = await _updateAllEntityLimits(newLimit);
+        toast({ title: "Sucesso!", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_updateAllEntityLimits, toast]);
   
-  const updateSpiritualCategoryName = useCallback((...args: Parameters<typeof _updateSpiritualCategoryName>) =>
-      handleAsyncAction(_updateSpiritualCategoryName, (desc) => ({ title: "Sucesso!", description: desc as string }), ...args),
-  [_updateSpiritualCategoryName, handleAsyncAction]);
+  const updateSpiritualCategoryName = useCallback(async (oldName: string, newName: string) => {
+    try {
+        const resultMessage = await _updateSpiritualCategoryName(oldName, newName);
+        toast({ title: "Sucesso!", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_updateSpiritualCategoryName, toast]);
   
   const saveAllManagementChanges = useCallback((...args: Parameters<typeof _saveAllManagementChanges>) => 
-      handleAsyncAction(_saveAllManagementChanges, { title: "Sucesso", description: "Todas as alterações foram salvas." }, ...args),
-  [_saveAllManagementChanges, handleAsyncAction]);
+      handleAsyncActionWithToast(_saveAllManagementChanges, "Todas as alterações foram salvas.", ...args),
+  [_saveAllManagementChanges, handleAsyncActionWithToast]);
   
-  const archiveAndResetGira = useCallback((...args: Parameters<typeof _archiveAndResetGira>) => 
-    handleAsyncAction(_archiveAndResetGira, (desc) => ({ title: "Gira Arquivada", description: desc as string }), ...args),
-  [_archiveAndResetGira, handleAsyncAction]);
+  const archiveAndResetGira = useCallback(async () => {
+    try {
+        const resultMessage = await _archiveAndResetGira();
+        toast({ title: "Gira Arquivada", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_archiveAndResetGira, toast]);
 
   const deleteGiraHistoryEntry = useCallback((...args: Parameters<typeof _deleteGiraHistoryEntry>) => 
-    handleAsyncAction(_deleteGiraHistoryEntry, { title: "Registro Removido", description: "A entrada do histórico foi removida." }, ...args),
-  [_deleteGiraHistoryEntry, handleAsyncAction]);
+    handleAsyncActionWithToast(_deleteGiraHistoryEntry, "A entrada do histórico foi removida.", ...args),
+  [_deleteGiraHistoryEntry, handleAsyncActionWithToast]);
 
-  const clearAllGiraHistory = useCallback((...args: Parameters<typeof _clearAllGiraHistory>) =>
-    handleAsyncAction(_clearAllGiraHistory, (desc) => ({ title: "Histórico Limpo", description: desc as string }), ...args),
-  [_clearAllGiraHistory, handleAsyncAction]);
+  const clearAllGiraHistory = useCallback(async () => {
+    try {
+        const resultMessage = await _clearAllGiraHistory();
+        toast({ title: "Histórico Limpo", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_clearAllGiraHistory, toast]);
 
   const updateConsulenteStatus = useCallback(async (...args: Parameters<typeof _updateConsulenteStatus>) => {
     try {
@@ -158,22 +194,41 @@ function HomeClient() {
     }
   }, [_updateConsulenteStatus, toast]);
   
-  const addAdmin = useCallback((...args: Parameters<typeof _addAdmin>) => 
-    handleAsyncAction(_addAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-    [_addAdmin, handleAsyncAction]
-  );
-  const removeAdmin = useCallback((...args: Parameters<typeof _removeAdmin>) =>
-    handleAsyncAction(_removeAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-    [_removeAdmin, handleAsyncAction]
-  );
-  const addSuperAdmin = useCallback((...args: Parameters<typeof _addSuperAdmin>) =>
-    handleAsyncAction(_addSuperAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-    [_addSuperAdmin, handleAsyncAction]
-  );
-  const removeSuperAdmin = useCallback((...args: Parameters<typeof _removeSuperAdmin>) =>
-    handleAsyncAction(_removeSuperAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
-    [_removeSuperAdmin, handleAsyncAction]
-  );
+  const addAdmin = useCallback(async (email: string) => {
+    try {
+        const resultMessage = await _addAdmin(email);
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_addAdmin, toast]);
+
+  const removeAdmin = useCallback(async (email: string) => {
+    try {
+        const resultMessage = await _removeAdmin(email);
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_removeAdmin, toast]);
+
+  const addSuperAdmin = useCallback(async (email: string) => {
+    try {
+        const resultMessage = await _addSuperAdmin(email);
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_addSuperAdmin, toast]);
+
+  const removeSuperAdmin = useCallback(async (email: string) => {
+    try {
+        const resultMessage = await _removeSuperAdmin(email);
+        toast({ title: "Sucesso", description: resultMessage });
+    } catch (error: any) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  }, [_removeSuperAdmin, toast]);
   
   const logLoginEvent = useCallback((...args: Parameters<typeof _logLoginEvent>) => {
      _logLoginEvent(...args); // Erros já são tratados dentro da função
@@ -228,9 +283,9 @@ function HomeClient() {
                   {userIsAdmin ? 'Gerencie a gira, médiuns e configurações. As alterações são salvas ao clicar em "Fechar e Salvar".' : 'Faça login com uma conta autorizada para continuar.'}
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-grow overflow-y-auto px-6">
+            
               {isAuthLoading ? (
-                <div className="flex items-center justify-center p-4">
+                <div className="flex items-center justify-center p-4 flex-grow">
                   <Loader2 className="h-6 w-6 animate-spin mr-3" />
                   <span className="text-muted-foreground">Verificando...</span>
                 </div>
@@ -263,13 +318,15 @@ function HomeClient() {
                     clearAllGiraHistory={clearAllGiraHistory}
                   />
               ) : (
-                <LoginClient 
-                    onLoginSuccess={(user) => setAuthenticatedUser(user)}
-                    showDisclaimer={!!authenticatedUser}
-                    permissions={permissions}
-                />
+                <div className="flex-grow flex items-center justify-center">
+                    <LoginClient 
+                        onLoginSuccess={(user) => setAuthenticatedUser(user)}
+                        showDisclaimer={!!authenticatedUser}
+                        permissions={permissions}
+                    />
+                </div>
               )}
-            </div>
+            
         </DialogContent>
       </Dialog>
   )

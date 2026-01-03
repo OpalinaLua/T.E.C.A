@@ -236,7 +236,7 @@ export function useSchoolData() {
                 
                 const entity = mediumData.entities[entityIndex];
                 if (entity.consulentes.length >= entity.consulenteLimit) {
-                    throw new Error(`A entidade "${entity.name}" já atingiu o limite de vagas.`);
+                    throw new Error(`Vagas esgotadas para a entidade "${entity.name}".`);
                 }
 
                 const newConsulente: Consulente = {
@@ -598,7 +598,7 @@ export function useSchoolData() {
                 transaction.update(mediumUpdate.ref, mediumUpdate.data);
             });
         });
-        return `Categoria "${oldName}" foi renomeada para "${trimmedNewName}" em toda a aplicação.`;
+        return `Categoria "${trimmedNewName}" foi renomeada com sucesso.`;
     } catch (error: any) {
         console.error("Erro ao renomear categoria:", error);
         throw new Error(error.message || 'Não foi possível completar a operação.');

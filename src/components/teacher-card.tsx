@@ -19,9 +19,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Crown, UserCheck, UserMinus, UserX } from 'lucide-react';
+import { Pencil, Crown, UserCheck, UserMinus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 

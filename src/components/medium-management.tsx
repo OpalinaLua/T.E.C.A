@@ -48,24 +48,24 @@ interface MediumManagementProps {
   initialMediums: Medium[];
   initialSelectedCategories: Category[];
   spiritualCategories: Category[];
-  addMedium: (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole) => Promise<void>;
+  addMedium: (name: string, entities: { name: string; limit: number; category: Category }[], role?: MediumRole) => Promise<void | undefined>;
   removeMedium: (mediumId: string) => void;
   clearLoginHistory: () => Promise<void>;
   addSpiritualCategory: (category: string) => Promise<void>;
   removeSpiritualCategory: (category: string) => Promise<void>;
-  updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void>;
+  updateSpiritualCategoryOrder: (categories: Category[]) => Promise<void | undefined>;
   updateAllEntityLimits: (newLimit: number) => Promise<void>;
   updateSpiritualCategoryName: (oldName: string, newName: string) => Promise<void>;
   updateSelectedCategories: (categories: Category[]) => Promise<void>;
-  archiveAndResetGira: () => Promise<string>;
+  archiveAndResetGira: () => Promise<void>;
   onSaveAndClose: (updatedMediums: Medium[], updatedCategories: Category[]) => Promise<void>;
   permissions: { admins: string[], superAdmins: string[] };
-  addAdmin: (email: string) => Promise<string>;
-  removeAdmin: (email: string) => Promise<string>;
-  addSuperAdmin: (email: string) => Promise<string>;
-  removeSuperAdmin: (email: string) => Promise<string>;
-  deleteGiraHistoryEntry: (entryId: string) => Promise<void>;
-  clearAllGiraHistory: () => Promise<string>;
+  addAdmin: (email: string) => Promise<void>;
+  removeAdmin: (email: string) => Promise<void>;
+  addSuperAdmin: (email: string) => Promise<void>;
+  removeSuperAdmin: (email: string) => Promise<void>;
+  deleteGiraHistoryEntry: (entryId: string) => Promise<void | undefined>;
+  clearAllGiraHistory: () => Promise<void>;
 }
 
 function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryName, onOrderChange }: { 
@@ -417,11 +417,12 @@ export function MediumManagement({
     }
     
     const handleCategorySelectionChange = (category: Category) => {
-        setSelectedCategories(prev => 
-            prev.includes(category)
-                ? prev.filter(c => c !== category)
-                : [...prev, category]
-        );
+        const newSelected = selectedCategories.includes(category)
+            ? selectedCategories.filter(c => c !== category)
+            : [...selectedCategories, category];
+        
+        setSelectedCategories(newSelected);
+        updateSelectedCategories(newSelected);
     };
     
     const toggleMediumPresenceLocal = (mediumId: string) => {
@@ -499,7 +500,7 @@ export function MediumManagement({
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-grow">
+            <div className="flex-grow px-6 overflow-y-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
                         <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
@@ -727,7 +728,7 @@ export function MediumManagement({
                     </div>
                 </Tabs>
             </div>
-            <div className="flex-shrink-0 pt-4 mt-auto border-t">
+            <div className="flex-shrink-0 px-6 pt-4 mt-auto border-t">
                 <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
                     Fechar e Salvar

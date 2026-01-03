@@ -9,9 +9,6 @@
 // Lista de e-mails com permissão de administrador geral (acesso ao painel).
 // **DEPRECADO**: Usado apenas para a migração inicial para o Firestore.
 export const ADMIN_EMAILS: string[] = [
-    "contato@casa-das-almas.com",
-    "amandrabello@gmail.com",
-    "paola.f.mesquita@gmail.com"
 ];
 
 // E-mail de "bootstrap" que SEMPRE terá permissão de super administrador.
