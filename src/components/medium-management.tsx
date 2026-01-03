@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { Medium, Entity, Category, MediumRole, Consulente } from '@/lib/types';
+import type { Medium, Entity, Category, MediumRole } from '@/lib/types';
 import {
   Accordion,
   AccordionContent,
@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown, Archive } from 'lucide-react';
+import { Pencil, Trash2, X, Plus, Cog, History, Users, Sparkles, BookUser, LogOut, ArrowUp, ArrowDown, Crown, Archive, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediumRegistration } from './teacher-registration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -40,6 +40,7 @@ import type { User } from 'firebase/auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROLES } from '@/lib/types';
 import { GiraHistory } from './gira-history';
+import { PermissionsManagement } from './permissions-management';
 
 
 interface MediumManagementProps {
@@ -58,6 +59,11 @@ interface MediumManagementProps {
   updateSelectedCategories: (categories: Category[]) => Promise<void>;
   archiveAndResetGira: () => Promise<string>;
   onSaveAndClose: (updatedMediums: Medium[], updatedCategories: Category[]) => Promise<void>;
+  permissions: { admins: string[], superAdmins: string[] };
+  addAdmin: (email: string) => Promise<string>;
+  removeAdmin: (email: string) => Promise<string>;
+  addSuperAdmin: (email: string) => Promise<string>;
+  removeSuperAdmin: (email: string) => Promise<string>;
 }
 
 function CategoryManagement({ spiritualCategories, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryName, onOrderChange }: { 
@@ -287,9 +293,30 @@ function GlobalSettings({ updateAllEntityLimits }: { updateAllEntityLimits: (lim
     );
 }
 
-export function MediumManagement({ user, initialMediums, initialSelectedCategories, spiritualCategories, addMedium, removeMedium, clearLoginHistory, addSpiritualCategory, removeSpiritualCategory, updateSpiritualCategoryOrder, updateAllEntityLimits, updateSpiritualCategoryName, updateSelectedCategories, archiveAndResetGira, onSaveAndClose }: MediumManagementProps) {
+export function MediumManagement({ 
+    user, 
+    initialMediums, 
+    initialSelectedCategories, 
+    spiritualCategories, 
+    addMedium, 
+    removeMedium, 
+    clearLoginHistory, 
+    addSpiritualCategory, 
+    removeSpiritualCategory, 
+    updateSpiritualCategoryOrder, 
+    updateAllEntityLimits, 
+    updateSpiritualCategoryName, 
+    updateSelectedCategories, 
+    archiveAndResetGira, 
+    onSaveAndClose,
+    permissions,
+    addAdmin,
+    removeAdmin,
+    addSuperAdmin,
+    removeSuperAdmin,
+}: MediumManagementProps) {
     const { toast } = useToast();
-    const isSuperAdmin = user && user.email && SUPER_ADMINS.includes(user.email);
+    const isSuperAdmin = user && user.email && (SUPER_ADMINS.includes(user.email) || permissions.superAdmins.includes(user.email));
     const [activeTab, setActiveTab] = useState("gira");
     
     // Estado local para gerenciar todas as alterações
@@ -605,7 +632,20 @@ export function MediumManagement({ user, initialMediums, initialSelectedCategori
 
                         {isSuperAdmin && (
                             <TabsContent value="advanced">
-                                 <Accordion type="single" collapsible className="w-full" defaultValue="manage-limits">
+                                 <Accordion type="single" collapsible className="w-full" defaultValue="manage-permissions">
+                                    <AccordionItem value="manage-permissions">
+                                        <AccordionTrigger className="text-lg font-bold font-headline flex items-center gap-2"><ShieldAlert /> Gerenciar Permissões</AccordionTrigger>
+                                        <AccordionContent>
+                                            <PermissionsManagement
+                                                currentUserEmail={user.email!}
+                                                permissions={permissions}
+                                                addAdmin={addAdmin}
+                                                removeAdmin={removeAdmin}
+                                                addSuperAdmin={addSuperAdmin}
+                                                removeSuperAdmin={removeSuperAdmin}
+                                            />
+                                        </AccordionContent>
+                                    </AccordionItem>
                                     <AccordionItem value="manage-limits">
                                         <AccordionTrigger className="text-lg font-bold font-headline">Gerenciamento Global</AccordionTrigger>
                                         <AccordionContent>

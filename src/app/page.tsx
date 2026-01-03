@@ -20,7 +20,7 @@ import { Shield, Loader2, BookUser, Users } from 'lucide-react';
 import { MediumManagement } from "@/components/medium-management";
 import { signOut, onAuthStateChanged, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { ADMIN_EMAILS } from "@/lib/secrets";
+import { BOOTSTRAP_SUPER_ADMINS } from "@/lib/secrets";
 import { LoginClient } from "@/components/login-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +52,11 @@ function HomeClient() {
     saveAllManagementChanges: _saveAllManagementChanges,
     updateConsulenteStatus: _updateConsulenteStatus,
     archiveAndResetGira: _archiveAndResetGira,
+    permissions,
+    addAdmin: _addAdmin,
+    removeAdmin: _removeAdmin,
+    addSuperAdmin: _addSuperAdmin,
+    removeSuperAdmin: _removeSuperAdmin,
   } = useSchoolData();
   
   const { toast } = useToast();
@@ -143,6 +148,23 @@ function HomeClient() {
     }
   }, [_updateConsulenteStatus, toast]);
   
+  const addAdmin = useCallback((...args: Parameters<typeof _addAdmin>) => 
+    handleAsyncAction(_addAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+    [_addAdmin, handleAsyncAction]
+  );
+  const removeAdmin = useCallback((...args: Parameters<typeof _removeAdmin>) =>
+    handleAsyncAction(_removeAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+    [_removeAdmin, handleAsyncAction]
+  );
+  const addSuperAdmin = useCallback((...args: Parameters<typeof _addSuperAdmin>) =>
+    handleAsyncAction(_addSuperAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+    [_addSuperAdmin, handleAsyncAction]
+  );
+  const removeSuperAdmin = useCallback((...args: Parameters<typeof _removeSuperAdmin>) =>
+    handleAsyncAction(_removeSuperAdmin, (desc) => ({ title: "Sucesso", description: desc as string }), ...args),
+    [_removeSuperAdmin, handleAsyncAction]
+  );
+  
   const logLoginEvent = useCallback((...args: Parameters<typeof _logLoginEvent>) => {
      _logLoginEvent(...args); // Erros já são tratados dentro da função
   }, [_logLoginEvent]);
@@ -179,7 +201,7 @@ function HomeClient() {
     return <LoadingScreen text="Carregando dados..."/>;
   }
 
-  const userIsAdmin = authenticatedUser && ADMIN_EMAILS.includes(authenticatedUser.email || '');
+  const userIsAdmin = authenticatedUser && authenticatedUser.email && (permissions.admins.includes(authenticatedUser.email) || permissions.superAdmins.includes(authenticatedUser.email) || BOOTSTRAP_SUPER_ADMINS.includes(authenticatedUser.email));
 
   const ManagementDialog = () => (
      <Dialog open={isManagementOpen} onOpenChange={handleDialogChange}>
@@ -222,11 +244,17 @@ function HomeClient() {
                         await saveAllManagementChanges(updatedMediums, updatedCategories);
                         await handleLogoutOnClose();
                     }}
+                    permissions={permissions}
+                    addAdmin={addAdmin}
+                    removeAdmin={removeAdmin}
+                    addSuperAdmin={addSuperAdmin}
+                    removeSuperAdmin={removeSuperAdmin}
                   />
               ) : (
                 <LoginClient 
                     onLoginSuccess={(user) => setAuthenticatedUser(user)}
                     showDisclaimer={!!authenticatedUser}
+                    permissions={permissions}
                 />
               )}
             </div>

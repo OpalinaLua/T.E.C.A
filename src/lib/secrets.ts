@@ -2,21 +2,20 @@
 /**
  * @fileoverview Armazena segredos e chaves da aplicação.
  * ATENÇÃO: Estes valores são incluídos no código final enviado ao navegador.
- * Para adicionar mais administradores, basta adicionar os e-mails deles à lista ADMIN_EMAILS.
+ * A lista de administradores e super administradores agora é gerenciada no banco de dados.
+ * Este arquivo mantém apenas o e-mail de "bootstrap" para recuperação.
  */
 
 // Lista de e-mails com permissão de administrador geral (acesso ao painel).
-export const ADMIN_EMAILS = [
+// **DEPRECADO**: A lista de administradores agora é gerenciada no painel de controle.
+export const ADMIN_EMAILS: string[] = [];
+
+// E-mail de "bootstrap" que SEMPRE terá permissão de super administrador.
+// Use para recuperar o acesso caso o documento de permissões seja corrompido ou excluído.
+export const BOOTSTRAP_SUPER_ADMINS = [
     "luamdarabello@gmail.com",
-    "castilholuisfelipi@gmail.com",
-    "andersonbarrroso2000@gmail.com",
-    "andrianidasilvapereira520@gmail.com",
-    "douglas-diniz1@outlook.com",
-    // "outro.admin@email.com", // Exemplo de como adicionar outro e-mail
 ];
 
-// Lista de e-mails com permissão para ações destrutivas (como limpar histórico).
-// Apenas os e-mails nesta lista poderão ver e usar o botão de limpar histórico.
-export const SUPER_ADMINS = [
-    "luamdarabello@gmail.com",
-];
+// **DEPRECADO**: A lista de super administradores agora é gerenciada no painel de controle.
+// A verificação agora usa `BOOTSTRAP_SUPER_ADMINS` e a lista do Firestore.
+export const SUPER_ADMINS: string[] = [];

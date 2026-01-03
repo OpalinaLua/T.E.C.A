@@ -7,14 +7,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { ADMIN_EMAILS } from '@/lib/secrets';
+import { BOOTSTRAP_SUPER_ADMINS } from '@/lib/secrets';
 
 interface LoginClientProps {
   onLoginSuccess: (user: User) => void;
   showDisclaimer?: boolean;
+  permissions: { admins: string[], superAdmins: string[] };
 }
 
-export function LoginClient({ onLoginSuccess, showDisclaimer }: LoginClientProps) {
+export function LoginClient({ onLoginSuccess, showDisclaimer, permissions }: LoginClientProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,7 +26,13 @@ export function LoginClient({ onLoginSuccess, showDisclaimer }: LoginClientProps
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      if (user.email && ADMIN_EMAILS.includes(user.email)) {
+      const userEmail = user.email || '';
+      const isAuthorized = 
+        BOOTSTRAP_SUPER_ADMINS.includes(userEmail) ||
+        permissions.admins.includes(userEmail) ||
+        permissions.superAdmins.includes(userEmail);
+
+      if (user.email && isAuthorized) {
         onLoginSuccess(user);
         toast({
           title: "Login bem-sucedido",

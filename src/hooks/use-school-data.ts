@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Hook personalizado para gerenciar os dados da escola.
  * Este hook encapsula a lógica de estado, comunicando-se em tempo real
@@ -27,8 +28,15 @@ import {
   arrayRemove,
   runTransaction
 } from 'firebase/firestore';
+import { BOOTSTRAP_SUPER_ADMINS } from '@/lib/secrets';
 
 const CATEGORIES_DOC_PATH = 'appState/spiritualCategories';
+const PERMISSIONS_DOC_PATH = 'appState/permissions';
+
+interface Permissions {
+    admins: string[];
+    superAdmins: string[];
+}
 
 /**
  * Hook para gerenciar os dados dos médiuns usando o Firebase Firestore.
@@ -38,6 +46,7 @@ export function useSchoolData() {
   const [mediums, setMediums] = useState<Medium[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [spiritualCategories, setSpiritualCategories] = useState<Category[]>([]);
+  const [permissions, setPermissions] = useState<Permissions>({ admins: [], superAdmins: [] });
   const [isLoaded, setIsLoaded] = useState(false);
   
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +57,10 @@ export function useSchoolData() {
     let mediumsLoaded = false;
     let selectedCategoriesLoaded = false;
     let spiritualCategoriesLoaded = false;
+    let permissionsLoaded = false;
     
     const updateLoadingState = () => {
-      if (mediumsLoaded && selectedCategoriesLoaded && spiritualCategoriesLoaded) {
+      if (mediumsLoaded && selectedCategoriesLoaded && spiritualCategoriesLoaded && permissionsLoaded) {
         setIsLoaded(true);
       }
     };
@@ -58,7 +68,7 @@ export function useSchoolData() {
     if (!db) {
       console.error("A conexão com o Firebase (db) não está disponível.");
       setError("A conexão com o banco de dados não foi estabelecida.");
-      mediumsLoaded = selectedCategoriesLoaded = spiritualCategoriesLoaded = true;
+      mediumsLoaded = selectedCategoriesLoaded = spiritualCategoriesLoaded = permissionsLoaded = true;
       updateLoadingState();
       return;
     }
@@ -119,11 +129,36 @@ export function useSchoolData() {
       spiritualCategoriesLoaded = true; // Marca como carregado mesmo com erro
       updateLoadingState();
     });
+    
+     // Listener para Permissões
+    const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
+    const unsubscribePermissions = onSnapshot(permissionsDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            setPermissions({
+                admins: data.admins || [],
+                superAdmins: data.superAdmins || [],
+            });
+        } else {
+            // Se não existir, cria com o bootstrap super admin
+            setDoc(permissionsDocRef, { admins: [], superAdmins: BOOTSTRAP_SUPER_ADMINS });
+            setPermissions({ admins: [], superAdmins: BOOTSTRAP_SUPER_ADMINS });
+        }
+        permissionsLoaded = true;
+        updateLoadingState();
+    }, (err) => {
+        console.error("----------- ERRO DE CONEXÃO DO FIREBASE (Permissões) -----------", err);
+        setError("Não foi possível carregar as permissões de usuário.");
+        permissionsLoaded = true; // Libera a tela mesmo com erro
+        updateLoadingState();
+    });
+
 
     return () => {
       unsubscribeMediums();
       unsubscribeGira();
       unsubscribeCategories();
+      unsubscribePermissions();
     };
   }, []);
 
@@ -643,6 +678,36 @@ export function useSchoolData() {
     }
   }, [mediums]);
 
+  // --- Funções de Gerenciamento de Permissões ---
+
+    const addAdmin = useCallback(async (email: string) => {
+        const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
+        await updateDoc(permissionsDocRef, { admins: arrayUnion(email) });
+        return `E-mail ${email} adicionado como Administrador.`;
+    }, []);
+
+    const removeAdmin = useCallback(async (email: string) => {
+        const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
+        await updateDoc(permissionsDocRef, { admins: arrayRemove(email) });
+        return `E-mail ${email} removido da lista de Administradores.`;
+    }, []);
+
+    const addSuperAdmin = useCallback(async (email: string) => {
+        const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
+        await updateDoc(permissionsDocRef, { superAdmins: arrayUnion(email) });
+        return `E-mail ${email} promovido a Super Administrador.`;
+    }, []);
+
+    const removeSuperAdmin = useCallback(async (email: string) => {
+        const permissionsDocRef = doc(db, PERMISSIONS_DOC_PATH);
+        // Garante que o bootstrap admin não pode ser removido
+        if (BOOTSTRAP_SUPER_ADMINS.includes(email)) {
+            throw new Error("O super administrador principal não pode ser removido.");
+        }
+        await updateDoc(permissionsDocRef, { superAdmins: arrayRemove(email) });
+        return `E-mail ${email} removido da lista de Super Administradores.`;
+    }, []);
+
 
   useEffect(() => {
     if(error) {
@@ -674,5 +739,10 @@ export function useSchoolData() {
     saveAllManagementChanges,
     updateConsulenteStatus,
     archiveAndResetGira,
+    permissions,
+    addAdmin,
+    removeAdmin,
+    addSuperAdmin,
+    removeSuperAdmin,
   };
 }
