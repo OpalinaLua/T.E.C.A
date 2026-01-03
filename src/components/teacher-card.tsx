@@ -191,44 +191,7 @@ export function MediumCard({ medium, removeConsulente, updateConsulenteName, upd
                     <Badge variant="outline">{entity.category}</Badge>
                   </div>
                 </div>
-                {entity.consulentes.length > 0 ? (
-                  <ul className="space-y-2">
-                    {entity.consulentes.map(consulente => {
-                      const isConsulenteMatch = query && consulente.name.toLowerCase().includes(query);
-                      return (
-                          <li key={consulente.id} className={cn("flex items-center justify-between p-2 rounded-md transition-colors", getConsulenteStyle(consulente.status), isConsulenteMatch && "ring-2 ring-accent")}>
-                            <div className="flex items-center gap-2">
-                                <span className={cn("font-medium", consulente.status === 'ausente' && 'line-through')}>{consulente.name}</span>
-                            </div>
-
-                            <div className="flex items-center">
-                              <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-green-500 h-8 w-8", consulente.status === 'atendido' && 'text-green-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'atendido')}>
-                                  <UserCheck className="h-4 w-4" />
-                                  <span className="sr-only">Marcar como atendido</span>
-                              </Button>
-                              
-                              <Button variant="ghost" size="icon" className={cn("text-muted-foreground hover:text-amber-500 h-8 w-8", consulente.status === 'ausente' && 'text-amber-500')} onClick={() => handleUpdateConsulenteStatus(entity.id, consulente, 'ausente')}>
-                                  <UserMinus className="h-4 w-4" />
-                                  <span className="sr-only">Marcar como ausente</span>
-                              </Button>
-                              <EditConsulenteDialog
-                                consulente={consulente}
-                                onSave={(newName) => handleUpdateConsulente(entity.id, consulente.id, newName)}
-                                trigger={
-                                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" disabled={!entity.isAvailable}>
-                                      <Pencil className="h-4 w-4" />
-                                      <span className="sr-only">Editar consulente</span>
-                                  </Button>
-                                }
-                              />
-                            </div>
-                          </li>
-                      )
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">Nenhum consulente para esta entidade.</p>
-                )}
+                <p className="text-sm text-muted-foreground italic">Nenhum consulente para esta entidade.</p>
               </div>
             ))
           )}
