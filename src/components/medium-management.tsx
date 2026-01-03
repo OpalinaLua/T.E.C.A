@@ -457,7 +457,7 @@ export function MediumManagement({
             return { ...m, isPresent: newIsPresent, entities: newEntities };
         }));
     };
-    
+
     const MediumEditor = ({ medium }: { medium: Medium }) => {
         return (
              <AccordionContent className="bg-secondary/30 p-4 rounded-b-md">
@@ -519,34 +519,35 @@ export function MediumManagement({
 
     return (
         <div className="flex flex-col flex-1 min-h-0">
-            <div className="px-6 pt-0 pb-4 overflow-y-auto">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
-                        <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
-                        <TabsTrigger value="mediums" className="flex-col sm:flex-row gap-2 py-2"><Users />Médiuns</TabsTrigger>
-                        <TabsTrigger value="history" className="flex-col sm:flex-row gap-2 py-2"><History />Históricos</TabsTrigger>
-                        <TabsTrigger value="register" className="flex-col sm:flex-row gap-2 py-2"><BookUser />Cadastrar</TabsTrigger>
-                        {isSuperAdmin && (
-                            <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
-                        )}
-                    </TabsList>
-                    
-                    <div className="pt-6">
-                        <TabsContent value="gira">
-                            <Card className="border-0 shadow-none">
-                                <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Seleção da Gira</CardTitle>
-                                    <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <CategorySelection
-                                        spiritualCategories={spiritualCategories}
-                                        selectedCategories={selectedCategories}
-                                        onSelectionChange={handleCategorySelectionChange}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
+            <ScrollArea className="flex-grow">
+                <div className="p-6">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className={cn("grid w-full h-auto", isSuperAdmin ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4")}>
+                            <TabsTrigger value="gira" className="flex-col sm:flex-row gap-2 py-2"><Sparkles />Gira</TabsTrigger>
+                            <TabsTrigger value="mediums" className="flex-col sm:flex-row gap-2 py-2"><Users />Médiuns</TabsTrigger>
+                            <TabsTrigger value="history" className="flex-col sm:flex-row gap-2 py-2"><History />Históricos</TabsTrigger>
+                            <TabsTrigger value="register" className="flex-col sm:flex-row gap-2 py-2"><BookUser />Cadastrar</TabsTrigger>
+                            {isSuperAdmin && (
+                                <TabsTrigger value="advanced" className="flex-col sm:flex-row gap-2 py-2"><Cog />Avançado</TabsTrigger>
+                            )}
+                        </TabsList>
+                        
+                        <div className="pt-6">
+                            <TabsContent value="gira">
+                                <Card className="border-0 shadow-none">
+                                    <CardHeader className="p-0 pb-4">
+                                        <CardTitle>Seleção da Gira</CardTitle>
+                                        <CardDescription>Selecione as linhas de trabalho que estarão ativas hoje.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <CategorySelection
+                                            spiritualCategories={spiritualCategories}
+                                            selectedCategories={selectedCategories}
+                                            onSelectionChange={handleCategorySelectionChange}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
                         <TabsContent value="mediums">
                         <Card className="border-0 shadow-none">
@@ -614,137 +615,138 @@ export function MediumManagement({
                         </Card>
                         </TabsContent>
 
-                        <TabsContent value="history">
-                            <Card className="border-0 shadow-none">
-                                <CardHeader className="p-0 pb-4">
-                                    <CardTitle>Arquivo de Giras</CardTitle>
-                                    <CardDescription>Veja o histórico de giras passadas e arquive a sessão atual para limpar os registros.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0 space-y-6">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" className="w-full">
-                                                <Archive className="mr-2" /> Arquivar Gira Atual e Limpar Atendimentos
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Confirmar Arquivamento?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Esta ação irá salvar um resumo dos atendimentos da gira atual no histórico e, em seguida, <strong className="text-destructive">limpará TODOS os consulentes de TODOS os médiuns.</strong> 
-                                                    <br/><br/>Use isso no final da gira para preparar o sistema para o próximo dia. Esta ação não pode ser desfeita.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={archiveAndResetGira}>
-                                                    Confirmar e Arquivar
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                    <GiraHistory isSuperAdmin={!!isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
-                                    {isSuperAdmin && (
+                            <TabsContent value="history">
+                                <Card className="border-0 shadow-none">
+                                    <CardHeader className="p-0 pb-4">
+                                        <CardTitle>Arquivo de Giras</CardTitle>
+                                        <CardDescription>Veja o histórico de giras passadas e arquive a sessão atual para limpar os registros.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-0 space-y-6">
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="destructive" className="w-full">
-                                                    <Trash2 className="mr-2" /> Limpar Todo o Histórico de Giras
+                                                <Button variant="outline" className="w-full">
+                                                    <Archive className="mr-2" /> Arquivar Gira Atual e Limpar Atendimentos
                                                 </Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>Excluir TODO o Histórico?</AlertDialogTitle>
+                                                    <AlertDialogTitle>Confirmar Arquivamento?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Você tem certeza que deseja apagar <strong className="text-destructive">TODOS</strong> os registros de giras arquivadas? Esta ação é irreversível e não pode ser desfeita.
+                                                        Esta ação irá salvar um resumo dos atendimentos da gira atual no histórico e, em seguida, <strong className="text-destructive">limpará TODOS os consulentes de TODOS os médiuns.</strong> 
+                                                        <br/><br/>Use isso no final da gira para preparar o sistema para o próximo dia. Esta ação não pode ser desfeita.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={clearAllGiraHistory} variant="destructive">
-                                                        Sim, Excluir Tudo
+                                                    <AlertDialogAction onClick={archiveAndResetGira}>
+                                                        Confirmar e Arquivar
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        <TabsContent value="register">
-                            <MediumRegistration addMedium={addMedium} spiritualCategories={spiritualCategories} />
-                        </TabsContent>
-
-                        {isSuperAdmin && (
-                            <TabsContent value="advanced">
-                                <Accordion type="single" collapsible className="w-full" defaultValue="manage-permissions">
-                                    <AccordionItem value="manage-permissions">
-                                        <AccordionTrigger className="text-lg font-bold font-headline flex items-center gap-2"><ShieldAlert /> Gerenciar Permissões</AccordionTrigger>
-                                        <AccordionContent>
-                                            <PermissionsManagement
-                                                currentUserEmail={user.email!}
-                                                permissions={permissions}
-                                                addAdmin={addAdmin}
-                                                removeAdmin={removeAdmin}
-                                                addSuperAdmin={addSuperAdmin}
-                                                removeSuperAdmin={removeSuperAdmin}
-                                            />
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="manage-limits">
-                                        <AccordionTrigger className="text-lg font-bold font-headline">Gerenciamento Global</AccordionTrigger>
-                                        <AccordionContent>
-                                            <GlobalSettings updateAllEntityLimits={updateAllEntityLimits} />
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="manage-categories">
-                                        <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
-                                        <AccordionContent>
-                                            <CategoryManagement 
-                                                spiritualCategories={spiritualCategories} 
-                                                addSpiritualCategory={addSpiritualCategory} 
-                                                removeSpiritualCategory={removeSpiritualCategory} 
-                                                updateSpiritualCategoryName={updateSpiritualCategoryName}
-                                                onOrderChange={setPendingCategoryOrder}
-                                            />
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="login-history">
-                                        <AccordionTrigger className="text-lg font-bold font-headline">Histórico de Acesso</AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="space-y-4">
-                                                <LoginHistory />
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="destructive" className="w-full">
-                                                            <History className="mr-2" />
-                                                            Limpar Histórico de Acesso
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas super administradores podem realizar esta ação.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
-                                                                Confirmar e Limpar
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
+                                        <GiraHistory isSuperAdmin={!!isSuperAdmin} deleteGiraHistoryEntry={deleteGiraHistoryEntry} />
+                                        {isSuperAdmin && (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" className="w-full">
+                                                        <Trash2 className="mr-2" /> Limpar Todo o Histórico de Giras
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Excluir TODO o Histórico?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Você tem certeza que deseja apagar <strong className="text-destructive">TODOS</strong> os registros de giras arquivadas? Esta ação é irreversível e não pode ser desfeita.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={clearAllGiraHistory} variant="destructive">
+                                                            Sim, Excluir Tudo
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </CardContent>
+                                </Card>
                             </TabsContent>
-                        )}
-                    </div>
-                </Tabs>
-            </div>
+
+                            <TabsContent value="register">
+                                <MediumRegistration addMedium={addMedium} spiritualCategories={spiritualCategories} />
+                            </TabsContent>
+
+                            {isSuperAdmin && (
+                                <TabsContent value="advanced">
+                                    <Accordion type="single" collapsible className="w-full" defaultValue="manage-permissions">
+                                        <AccordionItem value="manage-permissions">
+                                            <AccordionTrigger className="text-lg font-bold font-headline flex items-center gap-2"><ShieldAlert /> Gerenciar Permissões</AccordionTrigger>
+                                            <AccordionContent>
+                                                <PermissionsManagement
+                                                    currentUserEmail={user.email!}
+                                                    permissions={permissions}
+                                                    addAdmin={addAdmin}
+                                                    removeAdmin={removeAdmin}
+                                                    addSuperAdmin={addSuperAdmin}
+                                                    removeSuperAdmin={removeSuperAdmin}
+                                                />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="manage-limits">
+                                            <AccordionTrigger className="text-lg font-bold font-headline">Gerenciamento Global</AccordionTrigger>
+                                            <AccordionContent>
+                                                <GlobalSettings updateAllEntityLimits={updateAllEntityLimits} />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="manage-categories">
+                                            <AccordionTrigger className="text-lg font-bold font-headline">Gerenciar Categorias da Gira</AccordionTrigger>
+                                            <AccordionContent>
+                                                <CategoryManagement 
+                                                    spiritualCategories={spiritualCategories} 
+                                                    addSpiritualCategory={addSpiritualCategory} 
+                                                    removeSpiritualCategory={removeSpiritualCategory} 
+                                                    updateSpiritualCategoryName={updateSpiritualCategoryName}
+                                                    onOrderChange={setPendingCategoryOrder}
+                                                />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="login-history">
+                                            <AccordionTrigger className="text-lg font-bold font-headline">Histórico de Acesso</AccordionTrigger>
+                                            <AccordionContent>
+                                                <div className="space-y-4">
+                                                    <LoginHistory />
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="destructive" className="w-full">
+                                                                <History className="mr-2" />
+                                                                Limpar Histórico de Acesso
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Esta ação é irreversível e apagará TODO o histórico de acessos. Apenas super administradores podem realizar esta ação.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={handleConfirmClearHistory} variant="destructive">
+                                                                    Confirmar e Limpar
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+                                </TabsContent>
+                            )}
+                        </div>
+                    </Tabs>
+                </div>
+            </ScrollArea>
             <div className="flex-shrink-0 px-6 py-4 border-t bg-background">
                 <Button onClick={handleCloseAndSaveChanges} variant="outline" className="w-full">
                     <LogOut className="mr-2"/>
@@ -754,5 +756,3 @@ export function MediumManagement({
         </div>
     );
 }
-
-    
